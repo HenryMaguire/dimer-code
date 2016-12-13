@@ -1,0 +1,117 @@
+
+from qutip import basis, ket, mesolve, qeye, tensor, thermal_dm, destroy, steadystate
+import matplotlib.pyplot as plt
+import numpy as np
+import dimer_UD_liouv as RC
+import dimer_driving_liouv as EM
+import electronic_lindblad as EM_naive
+
+reload(RC)
+reload(EM)
+
+def convergence_check(eps, T_EM, T_Ph, wc, alpha_ph, alpha_em, N):
+    timelist = np.linspace(0,5,20000)
+    coh_data = []
+    G = ket([0])
+    E = ket([1])
+    for n in range(3,10):
+        L_n, L_v, H, wRC = RC_function(eps, T_EM, T_Ph, wc, alpha_Ph, alpha_em, n)
+        expects = [tensor(E*E.dag(), qeye(n)), tensor(G*E.dag(), qeye(n))]
+        n_RC = Occupation(wRC, T_Ph)
+        rho_0 = tensor(0.5*((E+G)*(E+G).dag()), thermal_dm(n, n_RC))
+        DATA_v = mesolve(H, rho_0, timelist, [L_v], expects, progress_bar=True)
+        coh_data.append(DATA_v.expect[0])
+    plt.figure()
+    for i in coh_data:
+        plt.plot(i.expect[0])
+    plt.legend()
+
+def SS_convergence_check(sigma, w_1, w_2, w_xx, V, T_1, T_2, w0_1, w0_2, alpha_1, alpha_2, wc,  alpha_EM, T_EM, mu=0, expect_op='bright', time_units='cm', start_n=2, end_n=5, method='direct'):
+
+    """
+    TODO: rewrite this entire method to take in the dimer parameters
+          Plot all of the state populations
+    """
+    # Only for Hamiltonians of rotating wave form
+    XO = basis(4,1)
+    OX = basis(4,2)
+    ss_list_s,ss_list_ns,ss_list_naive  = [],[],[] # steady states
+    r_vector = XO+OX # r_vector is the ket vector on the right in the .matrix_element operation. Default is E.
+    l_vector = (XO+OX).dag() # Default is bright state
+    N_values = range(start_n,end_n)
+    if expect_op == 'coherence':
+        l_vector = (G-E).dag()
+    else:
+        pass
+    for n in N_values:
+        L_RC, H, A_1, A_2, A_EM, wRC_1, wRC_2 = RC.RC_mapping_UD(w_1, w_2, w_xx, V, T_1, T_2, w0_1, w0_2, alpha_1, alpha_2, wc,  n, N_2=n, mu=mu, time_units='cm')
+        L_s = EM.L_vib_lindblad(H, A_EM, alpha_EM, T_EM)
+        L_ns = EM.L_nonsecular(H, A_EM, alpha_EM, T_EM)
+        L_naive = EM_naive.electronic_lindblad(w_xx, w_1, w_2-w_1, V, mu, alpha_EM, T_EM, n, n, 2*n)
+        ss_s = steadystate(H, [L_RC+L_s], method=method).ptrace(0)
+        ss_ns = steadystate(H, [L_RC+L_ns], method=method).ptrace(0)
+        ss_naive = steadystate(H, [L_RC+L_naive], method=method).ptrace(0)
+        ss_list_s.append(ss_s.matrix_element(l_vector, r_vector))
+        ss_list_ns.append(ss_ns.matrix_element(l_vector, r_vector))
+        ss_list_naive.append(ss_naive.matrix_element(l_vector, r_vector))
+        print "N=", n, "\n -----------------------------"
+    plt.figure()
+    #plt.ylim(0,0.4)
+    plt.plot(N_values, ss_list_s, label='secular')
+    plt.plot(N_values, ss_list_ns, label='non-secular')
+    plt.plot(N_values, ss_list_naive, label='naive')
+    plt.legend()
+    plt.ylabel("Excited state population")
+    plt.xlabel("RC Hilbert space dimension")
+    p_file_name = "Notes/Images/Checks/SuperPop_convergence_a{:d}_Tem{:d}_w0{:d}_eps{:d}_{}.pdf".format(int(alpha_ph), int(T_EM), int(w0), int(eps), method)
+    plt.savefig(p_file_name)
+    return ss_list_s,ss_list_ns,ss_list_naive, p_file_name
+
+if __name__ == "__main__":
+    OO = basis(4,0)
+    XO = basis(4,1)
+    OX = basis(4,2)
+    XX = basis(4,3)
+    sigma_m1 = OX*XX.dag() + OO*XO.dag()
+    sigma_m2 = XO*XX.dag() + OO*OX.dag()
+    sigma_x1 = sigma_m1+sigma_m1.dag()
+    sigma_x2 = sigma_m2+sigma_m2.dag()
+
+    w_1 = 6000
+    w_2 = 5000
+    V = 1000
+    eps = w_1-w_2
+
+    T_EM = 6000. # Optical bath temperature
+    alpha_EM = 0.3 # System-bath strength (optical)
+    mu = 0
+
+    T_2 = T_1 = 300. # Phonon bath temperature
+
+    wc = 53. # Ind.-Boson frame phonon cutoff freq
+    w0_2  = w0_1 = 300. # underdamped SD parameter omega_0
+    w_xx = w0_2 + w0_1 + V
+    alpha_2 = alpha_1 = 100. # Ind.-Boson frame coupling
+    #N_1 = 6 # set Hilbert space sizes
+    #N_2 = 6
+    #Now we build all the operators
+    """
+    L_RC, H, A_EM, A_nrwa, wRC, kappa= RC.RC_function_UD(sigma, eps, T_ph, wc, w0, alpha_ph, N)
+    L_s = EM.L_vib_lindblad(H, A_EM, alpha_EM, T_EM)
+    L_ns = EM.L_nonsecular(H, A_EM, alpha_EM, T_EM)
+    L_naive = EM.L_EM_lindblad(eps, A_EM, alpha_EM, T_EM)
+    ss_naive = steadystate(H, [L_RC+L_naive]).ptrace(0)
+    #TD, rates  = nonsec_check_A(H, A_EM, alpha_EM, T_EM, N)
+    #plt.figure()
+    #plt.scatter(TD, rates)
+    #plt.show()
+    """
+    plt.figure()
+    ss_list_s,ss_list_ns,ss_list_naive, p_file_name = SS_convergence_check(sigma_m1+(1-mu)*sigma_m1, w_1, w_2, w_xx, V, T_1, T_2, w0_1, w0_2, alpha_1, alpha_2, wc,  alpha_EM, T_EM, start_n = 2, end_n=5)
+    #eps_values = range(1000, 2000, 50)+range(2000, 4000, 500)+range(4000, 14000, 1000)
+    #N_values = [30]*len(range(1000, 2000, 50)) + [20]*len(range(2000, 4000, 500)) + [12]*len(range(4000, 14000, 1000))
+    #solver_method = 'power'
+    #ss_list_s,ss_list_ns,ss_list_naive, p_file_name = plot_SS_divergences(sigma, eps, T_EM, T_ph, wc, w0, alpha_ph, alpha_EM, N_values, eps_values, method=solver_method)
+    print "Plot saved: ",p_file_name
+    plt.savefig(p_file_name)
+    plt.close()

@@ -1,0 +1,517 @@
+\documentclass[]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{physics}
+\usepackage{graphicx}
+\usepackage{color,soul}
+\usepackage{verbatim}
+\usepackage[toc,page]{appendix}
+%opening
+\usepackage{authblk}
+\title{Thermally-driven molecular dimer under the influence of strongly-coupled phonons}
+\author[1]{H. Maguire}
+\author[1]{A. Nazir}
+
+
+\affil[1]{Photon Science Institute and School of Physics and Astronomy, The University of Manchester, Oxford Road,
+	Manchester M13 9PL, United Kingdom}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+
+We investigate a model for a molecular dimer system driven by an incoherent thermal electromagnetic field and damped by strongly-coupled phonons. The many-mode vibra`12tional structure of the molecules and their interaction with site populations are treated non-perturbatively using the reaction co-ordinate (RC) formalism\footnote{J. Iles-Smith, N. Lambert and A. Nazir Phys. Rev. A 90, 032114 (2014)}. Using the RC mapping to bring essential phonon-bath characteristics within an effective system Hamiltonian allows non-Markovian dynamics and important system-bath correlations to be studied, which are not possible in weak-coupling theory. All external couplings are derived microscopically from their respective Hamiltonians, allowing a rigorous treatment of both incoherent decay processes and interesting environment-induced site-couplings and energy renormalisations which arise in multi-level quantum systems. These strong-coupling regimes are of great importance to models of light-harvesting in photosynthetic pigment-protein complexes, biomimetic nano-photocells and continuous quantum heat engines.
+
+\end{abstract}
+
+\section{Introduction}
+Some motivation:
+\begin{itemize}
+	\item Studying the existence, origins and effects of quantum coherence in photosynthetic systems
+	\item Developing models for artificial light-harvesting systems. These models are based on molecular dimers, which give rise to dark state behaviour. Vibronic coupling allows transitions between the bright and dark state, which can protect the absorbed energy from being quickly reemitted. Brendan has suggested that there is a tradeoff between dark state protection and (efficiency maximising) vibronic coupling. We need a way of studying the vibronic manifolds and their effect on energy transport. Need to iron this out by talking to Brendan.
+	\item Do well defined vibronic manifolds (small $\Omega_{RC}$) have an effect on the transport properties/efficiency of heat engine? Non-secular effects may cause the vibronic systems with either well-defined or overlapping (large $\Omega_{RC}$) manifold structures to exhibit different transport properties. What is physically happening here?
+\end{itemize}
+We will be primarily concerned with two coupled spin-half (two-level) systems, these will be referred to as "molecules". The Hamiltonian will consist of the system energies and couplings itself, which gives the set of states in the combined space $\{\ket{OO},\ket{OX}, \ket{XO}, \ket{XX}\}$. This notation represents a tensor product of the two separate Hilbert spaces of each two-level system, $\ket{X}_1\otimes\ket{X}_2 = \ket{XX}$. Raising and lowering operators for the $k$th two-level system can be defined as $\dyad{X}{O}_k = \sigma_k^+$, $\dyad{O}{X}_k = \sigma_k^-$, where the tensor products give the same ordering in the operators as in the states. Setting the ground state energy of both molecules  to zero, the combined coupled-system Hamiltonian can be written
+\begin{align}
+H_S &=  \epsilon_1\dyad{X}{X}_1\otimes \mathcal{I}_2 +  \epsilon_2\mathcal{I}_1 \otimes\dyad{X}{X}_2 + V(\dyad{XO}{OX} + \dyad{OX}{XO}) \\
+&=\epsilon_1(\dyad{XO}{XO} + \dyad{XX}{XX}) +  \epsilon_2(\dyad{OX}{OX} + \dyad{XX}{XX}) + V(\dyad{XO}{OX} + \dyad{OX}{XO})\\
+&=\epsilon_1\dyad{XO}  +  \epsilon_2\dyad{OX} + (\epsilon_1 + \epsilon_2) \dyad{XX} + V(\dyad{XO}{OX} + \dyad{OX}{XO})
+\end{align}
+where $\mathcal{I}_k = \dyad{X}{X}+\dyad{O}{O}$.
+\subsection{Long-lived coherence in photosynthetic systems}
+Here I would like to explore the idea of coherence in natural photosynthetic systems, what people are referring to as coherence in the well known papers and what it truly means for something to be \textit{coherent}.
+
+\subsection{Independent boson model: Reaction-Coordinate approach}
+\begin{itemize}
+	\item Exact solution of the independent boson model.
+	\item Perform reaction coordinate mapping of a Lorentzian IB bath to an Ohmic RC-residual bath. Keep it in the underdamped form. Show agreement of overdamped in the large $\omega_{RC}$ regime and how it breaks and starts to agree with the underdamped model in the small $\omega_{RC}$ regime.
+\end{itemize}
+\subsection{Dissipation between Vibronic Manifolds}
+We model the phonon-exciton interaction in an open-systems framework using a Reaction Coordinate (RC) mapping, whereby we bring a single mode of the environment into our system of interest, mapping the new and old spectral densities to recover the dynamics in the original frame. In the new RC frame  a perturbation can be made around the coupling between the reaction coordinate and the remaining bath. This allows us to treat strong-coupling between the system and the bath and some non-Markovian bath characteristics.
+
+We model dissipation on the vibronic manifolds of the system due to the electromagnetic field by a Born-Markov master equation. We make a further secular approximation, whereby we only keep terms in our master equation which remove explicit time-dependence on the basis that any time-dependent terms will oscillate much faster than the relevant dynamics and therefore average to zero. We think this is valid because the only terms in the master equation are those describing transitions between closely spaced vibronic energy levels. If we assume that the electronic splitting of a particular molecule is much larger than the phonon frequency then closely spaced energy levels are either on the same vibronic manifold and thus not accessible through optical transitions, or the lower vibronic level must be so high in the potential well that they are unlikely to ever be occupied. We will see that this assumption must be made carefully, but we can check it's validity by comparing to the fully non-secular case.
+\begin{itemize}
+	\item How can we define $\omega_{RC}$ in order to have clustered vibronic energy levels ($\Omega_{RC}\ll \epsilon$) while satisfying the requirements of the overdamped limit ($\omega_{c} \ll \Omega_{RC}$). Do we need clustered vibronic levels to make the secular approximation? Since the dipole transition elements to irrelevant modes will be zero anyway. Underdamped limit (small $\omega_{RC}$) requires the vibronic approach, but is the overdamped (large $\omega_{RC}$) okay with naive? Due to widely spaced vibronic levels, higher ones being rarely occupied and therefore easily described by just the lowest vibronic state on each manifold.
+	\item Calculate an exact version of the vibrational interaction (independent boson model) to check whether the assumptions of the overdamped limit are still valid in the parameter regime we have chosen.
+	\item Show how the two theories (naive and vibronic) give rise to different behaviour in high T, strong-coupling limit. What does it take for the two theories to become equivalent.
+	\item Can  we retrieve the dark state behaviour in either the naive or vibronic case? (Yes, in negligible phonon coupling.)
+\end{itemize}
+Only interested in the EM coupling right now (RWA, harmonic and dipole approx.). Suppose we have already done the RC mapping.
+\begin{align}
+\begin{split}
+H_S &= \epsilon \sigma^{\dagger}\sigma\otimes I_{RC} + \xi\sigma^{\dagger}\sigma(c + c^{\dagger}) + \Omega ( I_{TLS}\otimes c^{\dagger}c) \\
+H_B^{E} &= \sum_{j}\omega_j b^{\dagger}_j b_j \quad \quad H_I^{E} = \sum_{j}g_j\sigma b^{\dagger}_j+ g_j^*\sigma^{\dagger} b_j 
+\end{split}
+\end{align}
+We transform the interaction Hamiltonian to the interaction picture by $H_I(t) = e^{i(H_S+H_B) t}H_I e^{-i (H_S+H_B)t}$.
+\begin{equation}
+\label{eq:IDecomposition}
+H_I(t) = A(t) B^{\dagger}(t) + A^{\dagger}(t) B(t)  
+\end{equation}
+where $A(t) \equiv e^{iH_S t}(\sigma\otimes I_{RC})e^{-i H_S t}$ and $B(t)= \sum_{j}g_ja_je^{-i\omega_j t}$. Since $H_S$ is a composite of two interacting subsystems, it is not straightforward to perform the matrix exponentiation and becomes useful to write down the system operator $\sigma\otimes I_{RC}$ in terms of the eigenstates of $H_S$,
+\begin{equation}
+\sigma\otimes I_{RC} = \sum_{m,n} \bra{\varphi_m}\sigma\otimes I_{RC}\ket{\varphi_n}\dyad{\varphi_m}{\varphi_n}
+\end{equation}
+such that $H_S\ket{\varphi_m}=\varphi_m\ket{\varphi_m}$. So we have the system operator as a superposition of various oscillatory components
+\begin{equation}
+A(t) = \sum_{m,n} A_{m,n} e^{i\xi_{mn}t}\dyad{\varphi_m}{\varphi_n}
+\end{equation}
+where $\xi_{mn} = \varphi_m - \varphi_n$ and $A_{m,n} = \bra{\varphi_m}A\ket{\varphi_n}$.
+Following the standard derivation of a Redfield master equation (Born-Markov but non-secular) we find
+\begin{align}
+	\begin{split}
+		\pdv{\tilde{\rho}(t)}{t} = - \sum_{\xi_{lm}, \xi_{pq}}\int_{0}^{\infty}& d\tau e^{-i(\xi_{lm}-\xi_{pq})t} e^{-i\xi_{pq}\tau} \left[A(\xi_{lm}), A^{\dagger}(\xi_{pq})\tilde{\rho}(t)\right] \expval{B^{\dagger}(\tau)B} \\
+		&+ e^{i(\xi_{lm}-\xi_{pq})t} e^{i\xi_{pq}\tau} \left[A^{\dagger}(\xi_{lm}), A(\xi_{pq})\tilde{\rho}(t)\right] \expval{B(\tau)B^{\dagger}} + h.c.,
+	\end{split}
+\end{align}
+\begin{align}
+	\begin{split}
+		\pdv{\tilde{\rho}(t)}{t} = - \sum_{l,m,p,q}\int_{0}^{\infty}& d\tau e^{-i(\xi_{lm}-\xi_{pq})t} e^{-i\xi_{pq}\tau} A_{l,m}A_{p,q}^{*}\big[\dyad{\varphi_l}{\varphi_m}, \dyad{\varphi_q}{\varphi_p}\tilde{\rho}(t)\big] \expval{B^{\dagger}(\tau)B} \\
+		&+ e^{i(\xi_{lm}-\xi_{pq})t} e^{i\xi_{pq}\tau} A_{l,m}^{*}A_{p,q}\big[\dyad{\varphi_m}{\varphi_l}, \dyad{\varphi_p}{\varphi_q}\tilde{\rho}(t)\big] \expval{B(\tau)B^{\dagger}} + h.c.,
+	\end{split}
+\end{align}
+where $A_{l,m}^*=\bra{\varphi_m}A^{\dagger}\ket{\varphi_l}$. The correlation functions can be written as
+\begin{align}
+	\begin{split}
+		\expval{B^{\dagger}(\tau)B} = \tr\left(\sum_{k,k^{\prime}}e^{i\omega_k \tau}g_k^*g_{k^{\prime}} b_k^{\dagger}b_{k^{\prime}}\rho_E\right)\\
+		\expval{B(\tau)B^{\dagger}}=\tr\left(\sum_{k,k^{\prime}}e^{-i\omega_k \tau}g_k^*g_{k^{\prime}} b_{k^{\prime}}b_k^{\dagger}\rho_E\right)
+	\end{split}
+\end{align}
+which, after moving to the continuum limit in the number of environmental modes become;
+\begin{align}
+	\begin{split}
+		\expval{B^{\dagger}(\tau)B} = \int_0^{\infty}d\omega e^{i\omega \tau}J(\omega)N(\omega)\\
+		\expval{B(\tau)B^{\dagger}}=\int_0^{\infty}d\omega e^{-i\omega \tau}J(\omega)(N(\omega)+1)
+	\end{split}
+\end{align}
+where $J(\omega)$ is the spectral density and $N(\omega)$ is the boson occupation number. Moving back to the Schrodinger picture and performing the integrals over $\tau$ and $\omega$ yields
+\begin{align} 
+	\begin{split}
+		\pdv{\rho(t)}{t} = -i[H_S, \rho_S(t)] &- \sum_{l,m,p,q}  (N(\xi_{pq})\gamma(\xi_{pq})+i\Lambda_2(\xi_{pq})) A_{l,m}A_{p,q}^{*}\big[\dyad{\varphi_l}{\varphi_m}, \dyad{\varphi_q}{\varphi_p}\tilde{\rho}(t)\big] \\
+		&+ (\gamma(\xi_{pq})(N(\xi_{pq})+1)-i(\Lambda_1(\xi_{pq})+\Lambda_2(\xi_{pq})))  A_{l,m}^{*}A_{p,q}\big[\dyad{\varphi_m}{\varphi_l}, \dyad{\varphi_p}{\varphi_q}\tilde{\rho}(t)\big]\\ &+ h.c.,
+	\end{split}
+\end{align}
+$\Lambda_1$ and $\Lambda_2$ are the principle value parts of the integral.
+\begin{align}
+	\begin{split}
+		\pdv{\tilde{\rho}(t)}{t} = - \sum_{\xi_{lm}, \xi_{pq}}  e^{-i(\xi_{lm}-\xi_{pq})t}\Gamma_1 \left[A(\xi_{lm}), A^{\dagger}(\xi_{pq})\tilde{\rho}(t)\right] 
+		+   e^{i(\xi_{lm}-\xi_{pq})t} &\Gamma_2 \left[A^{\dagger}(\xi_{lm}), A(\xi_{pq})\tilde{\rho}(t)\right] + h.c.
+	\end{split}
+\end{align}
+at which point one normally carries out a secular approximation whereby only slowly oscillating terms are kept $\xi_{lm}-\xi_{pq} = 0$, this is justified on the basis that the spectrum of eigenvalue differences will have large spacings or none at all (in a TLS, we either have differences of $\epsilon$ or zero, so we discard the fast oscillating terms). This is because, terms in the master equation equate different transitions to each other and two transitions with very different frequencies are not likely to drive each other. However, since the potential well of each electronic energy state is actually a manifold of vibronic states, it is feasible that some higher vibrational states of the electronic ground state may be closely resonant with low lying vibrational states of the electronic excited state.
+The full vibronic structure of the system-plus-reaction coordinate is going to have a countably-infinite number of eigenstates, however since there is some dissociation energy associated with real molecular systems the ladder of excited vibrational states will not extend arbitrarily high. Electromagnetic transitions are mediated by an interaction between the field and an electric dipole moment. There is no dipole-moment associated with transitions between vibrational states within the same electronic state manifold, therefore in the uncoupled basis
+\begin{align}
+	\begin{split}
+		\bra{g,n}\sigma\ket{g,m} = \bra{e,n}\sigma\ket{e,m} = 0, \quad \textnormal{for any phonon modes } m,n.
+	\end{split}
+\end{align}
+This means that it is only terms describing transitions between the two manifolds which we need to check are oscillating slowly, these will correspond to terms with non-zero coefficients $A_{l,m}^{*}A_{p,q}$ which relate to the dipole elements of different transitions within the multilevel system.
+\begin{align}
+\begin{split}
+\pdv{\tilde{\rho}(t)}{t} = - \sum_{\xi_{lm}}\int_{0}^{\infty}& d\tau e^{-i(\xi_{lm}-\xi_{pq})t} e^{-i\xi_{pq}\tau} \left[A(\xi_{lm}), A^{\dagger}(\xi_{pq})\tilde{\rho}(t)\right] \expval{B^{\dagger}(\tau)B} \\
+&+ e^{i(\xi_{lm}-\xi_{pq})t} e^{i\xi_{pq}\tau} \left[A^{\dagger}(\xi_{lm}), A(\xi_{pq})\tilde{\rho}(t)\right] \expval{B(\tau)B^{\dagger}} + h.c.,
+\end{split}
+\end{align}
+\begin{comment}
+\begin{figure}
+	\includegraphics[width=\textwidth]{"C:/Users/mbcxrhm2/Dropbox/PhD/1st year/DrivenTLS/Images/NonSecularity".png}
+	\caption{Inspecting the validity of the secular approximation. There are many slowly evolving terms with large coefficients.}
+	\label{fig:}
+\end{figure}
+
+\begin{figure}[t]
+	\centering
+	\begin{minipage}[b]{0.325\textwidth}
+		\includegraphics[width=\textwidth]{"C:/Users/mbcxrhm2/Dropbox/PhD/1st year/DrivenTLS/Images/alpha_ph Dep/Populations/a0p01_T6000".png}
+		\caption{}
+		\label{fig:a0p01_T6000}
+	\end{minipage}
+	\begin{minipage}[b]{0.325\textwidth}
+		\includegraphics[width=\textwidth]{"C:/Users/mbcxrhm2/Dropbox/PhD/1st year/DrivenTLS/Images/alpha_ph Dep/Populations/a100_T6000".png}
+		\caption{}
+		\label{fig:a100_T6000}
+	\end{minipage}
+	\begin{minipage}[b]{0.325\textwidth}
+		\includegraphics[width=\textwidth]{"C:/Users/mbcxrhm2/Dropbox/PhD/1st year/DrivenTLS/Images/alpha_ph Dep/Populations/a500_T6000".png}
+		\caption{}
+		\label{fig:a500_T6000}
+	\end{minipage}
+\end{figure}
+\begin{figure}[t]
+	\centering
+	\begin{minipage}[b]{0.325\textwidth}
+		\includegraphics[width=\textwidth]{"C:/Users/mbcxrhm2/Dropbox/PhD/1st year/DrivenTLS/Images/alpha_ph Dep/Populations/a300_T0".png}
+		\caption{}
+		\label{fig:a300_T6000}
+	\end{minipage}
+	\begin{minipage}[b]{0.325\textwidth}
+		\includegraphics[width=\textwidth]{"C:/Users/mbcxrhm2/Dropbox/PhD/1st year/DrivenTLS/Images/alpha_ph Dep/Populations/a300_T300".png}
+		\caption{}
+		\label{fig:a300_T300}
+	\end{minipage}
+	\begin{minipage}[b]{0.325\textwidth}
+		\includegraphics[width=\textwidth]{"C:/Users/mbcxrhm2/Dropbox/PhD/1st year/DrivenTLS/Images/alpha_ph Dep/Populations/a300_T1000".png}
+		\caption{}
+		\label{fig:a300_T6000}
+	\end{minipage}
+\end{figure}
+\begin{figure}	\centering
+\includegraphics[width=0.7\textwidth]{"C:/Users/mbcxrhm2/Dropbox/PhD/1st year/DrivenTLS/Images/SS_vs_alpha_ph".png}
+\caption{Steady excited state population of TLS as a function of phonon coupling strength. The electromagnetic temperature is chosen to be 6000K.}
+\label{fig:a300_T6000}
+\end{figure}
+\end{comment}
+\begin{itemize}
+	\item Small phonon coupling - steady states agree even at high temperature, but short time dynamics are drastically different.
+	\item As phonon coupling increases: In the naive theory, steady states remain the same. In the vibronic theory we see that for intermediate values the excited steady state population is higher than the naive but this swaps over as the coupling becomes strong. Why? Interestingly, on short times and strong couping the excited state population goes over 0.5, meaning that the TLS exhibits phonon-assisted population inversion.
+	\item As EM temperature increases: Similar things happen, for intermediate temperatures you see a slight population increase in the vibronic over the naive, then this swaps over as temperatures get higher.
+	\item Why are naive and vibronic theories predicting different steady states, even when the two "baths" are in equilibrium? The vibronic manifolds are opening up more interaction pathways, should this still predict a thermal equilibrium state? If so, with respect to which Hamiltonian?
+	\item check if the equation can be put into 1st standard form?
+	\item Full non-secular equation. Does it agree with the secular theory?
+\end{itemize}
+
+\subsection{Dipole-Dipole Coupling}
+\label{ssec:NonInteracting}
+When two dipoles are immersed in a shared electromagnetic field they may experience a coupling, depending on their alignment. If the fluorescence spectrum of a donor molecule overlaps with the absorption spectrum of a neighbouring acceptor, this dipole-dipole coupling can mediate energy transfer from the donor to the acceptor. In the limit where no coherence persists between the sites, this is commonly known as F\"orster Resonance Energy Transfer (FRET). The efficiency of FRET\cite{Hussain_FRET} depends sharply on the distance between the pair of systems, $E_{FRET}=R_0^{6}/(R_0^{6}+r^6)$, where $R_0$ is the distance at which the efficiency is $50\%$. $R_0$ depends on the quantum yield of the donor fluorophore (ratio of photons emitted per photons absorbed), the refractive index of the environment, the angular orientation of each dipole and their spectral overlap.
+
+We start with the uncoupled Hamiltonian, whereby the total accessible energy states of the donor and acceptor are
+\begin{equation}
+H_S = \epsilon_{00}\dyad{00} + \epsilon_{0X}\dyad{0X} + \epsilon_{X0}\dyad{X0} + \epsilon_{XX}\dyad{XX}.
+\end{equation}
+We can set $\epsilon_{00}$ to zero with no loss of generality. The full interaction between the electromagnetic field can be written
+\begin{equation}
+H_I = \sum_{j}\left(f_j^1\sigma_x^{(1)} + f_j^2\sigma_x^{(2)}\right)a_j + h.c.
+\end{equation}
+where 
+\begin{align}
+\sigma_x^{(1)} &= (\dyad{X}{0} + \dyad{0}{X})\otimes I_2 = \dyad{XX}{0X} +  \dyad{0X}{XX} + \dyad{X0}{00} + \dyad{00}{X0} \\
+\sigma_x^{(2)} &= I_1 \otimes (\dyad{X}{0} + \dyad{0}{X}) = \dyad{XX}{X0} +  \dyad{X0}{XX} + \dyad{0X}{00} + \dyad{00}{0X}
+\end{align}
+and $f_j^i$ are the coupling strengths between the \textit{i}th molecular transition and \textit{j}th field mode. Under the assumption that both molecules are in a shared field and there is only a constant difference (or perhaps just a phase factor) between each spectral density, we make the substitution $f_j^2 = \mu f_j^1$ and $f_j = f_j^1$. \textit{Does this restrict us from using different molecules at each site? Since the interaction between the system and the electromagnetic field might be different in this case.}
+
+We can simplify this Hamiltonian by assuming $\abs{\epsilon_i-\omega}\ll \epsilon_i+\omega$ making a rotating-wave approximation, whereby we discard the number non-conserving terms in the expansion since they are far off resonance. This amounts to keeping track of only the slowly evolving parts of the interaction and not those which oscillate with $e^{\pm ()\epsilon_i+\omega)t}$, since they will oscillate many times over other timescales and average to zero. For optical transitions in the visible part of the spectrum, fast oscillating terms will have characteristic timescales on the order of femtoseconds which is on the same order as a typical absorption process in molecular systems. 
+
+\begin{equation}
+H_I^{EM} =\sum_{j} \left(\sigma_-^{(1)} + \mu\sigma_-^{(2)}\right) f_j^*a_j^{\dagger} + h.c.
+\end{equation}
+whereby we have defined
+\begin{equation}
+\sigma_1 = \dyad{0X}{XX} + \dyad{00}{X0} \quad \textmd{and}\quad \sigma_2 = \dyad{X0}{XX} + \dyad{00}{0X}.
+\end{equation}
+
+In the interaction picture we can write this Hamiltonian as 
+\begin{equation}
+\label{eq:IDecomposition}
+H_I(t) = \sum_{j}f_j^*A(t)\otimes a_j^{\dagger}e^{i\omega_j t} + h.c. 
+\end{equation}
+where we have taken
+\begin{equation}
+\label{eq:SystemOperator}
+A = \sigma_1 + \mu\sigma_2
+\end{equation}
+and $A(t) = e^{i H_S t} A e^{-i H_S t}$. The interaction Hamiltonian is already written in terms of eigenstates of $H_S$ so the unitary transformation can be performed easily
+\begin{equation}
+A(t) = e^{-i(\omega_1 + \omega_{XX})t} \dyad{0X}{XX} + e^{-i\omega_1 t} \dyad{00}{X0} + \mu\left(e^{-i(\omega_2 + \omega_{XX})t} \dyad{X0}{XX} + e^{-i\omega_2t} \dyad{00}{0X}\right).
+\end{equation}
+We can now decompose the system operator into the different oscillatory components
+\begin{equation}
+A(t) = \sum_{\omega}A(\omega)e^{-i\omega t}
+\end{equation}
+where $\omega = \{\omega_1+\omega_{XX}, \omega_1, \omega_2 + \omega_{XX}, \omega_2\}$, such that
+\begin{align}
+A(\omega_1+\omega_{XX}) &= \dyad{0X}{XX}, \quad  A(\omega_1) = \dyad{00}{X0},\\ A(\omega_2+\omega_{XX}) &= \mu\dyad{X0}{XX}, \quad A(\omega_2) = \mu\dyad{00}{0X}.
+\end{align}
+This enables us to write down a generalised Born-Markov master equation of the form
+\begin{align}
+\label{eq:generalBM}
+\begin{split}
+\pdv{\tilde{\rho}(t)}{t} = - \sum_{\omega, \omega^{\prime}}\int_{0}^{\infty}& d\tau e^{-i(\omega-\omega^{\prime})t} e^{-i\omega^{\prime}\tau} \left[A(\omega), A^{\dagger}(\omega^{\prime})\tilde{\rho}(t)\right] \expval{B^{\dagger}(\tau)B} \\
+&+ e^{i(\omega-\omega^{\prime})t} e^{i\omega^{\prime}\tau} \left[A^{\dagger}(\omega), A(\omega^{\prime})\tilde{\rho}(t)\right] \expval{B(\tau)B^{\dagger}} + h.c. 
+\end{split}
+\end{align}
+Each term in the master equation term will have some time-dependence if $\omega \neq\omega^{\prime}$ and a secular approximation is often made whereby any terms with time-dependence are discarded on the grounds that they are off-resonance, very similar to the RWA. In fact for dissipative two-state systems, the secular and rotating-wave approximations are equivalent.
+
+We can define the one-sided Fourier transform of the correlation functions as 
+\begin{equation}
+\Gamma_1(\omega) = \int_{0}^{\infty} d\tau e^{-i\omega \tau}\expval{B^{\dagger}(\tau)B} \quad \textnormal{and} \quad \Gamma_2(\omega) = \int_{0}^{\infty} d\tau e^{i\omega \tau}\expval{B(\tau)B^{\dagger}}
+\end{equation}
+and decompose them into real and imaginary parts, such that $\Gamma_i(\omega) = \frac{\gamma_i(\omega)}{2} + i S_i(\omega)$. This allows us to rewrite the master equation in the familiar Lindblad form
+
+After making the secular approximation we have the master equation in Lindblad form;
+\begin{align}
+\begin{split}
+\pdv{\tilde{\rho}(t)}{t} &= - \sum_{\omega}i S_1(\omega)\left[A(\omega)A^{\dagger}(\omega),\tilde{\rho}(t)\right] + iS_2(\omega)\left[A^{\dagger}(\omega)A(\omega),\tilde{\rho}(t)\right] \\& +\frac{\gamma_1(\omega)}{2}\left(2A^{\dagger}(\omega)\tilde{\rho}(t)A(\omega) - \{A(\omega)A^{\dagger}(\omega), \tilde{\rho}(t)\}\right)+ \frac{\gamma_1(\omega)}{2}\left(2A^{\dagger}(\omega)\tilde{\rho}(t)A(\omega) - \{A^{\dagger}(\omega)A(\omega), \tilde{\rho}(t)\}\right).
+\end{split}
+\end{align}
+The first two terms in this equation are Hamiltonian-like contributions, since they can be included in the Liouville-Von Neumann part of the dynamics after transforming back into the Schr\"odinger picture. In the case where the two transitions are off-resonance $\omega_1 \neq \omega_2$, these terms behave like Lamb-shifts ($...+iS_2(\omega_2)\left[\dyad{X0}, \rho(t)\right]+...$ etc.). However, when the systems are on resonance, there will be master equation terms which have no time dependence but relate different eigenstates together, contributing off-diagonal terms to the Hamiltonian. This means that in the secular theory, there are resonant dipole-dipole coupling effects mediated by the electromagnetic field of the form
+\begin{align}
+	\pdv{\tilde{\rho}(t)}{t} = - \int_{0}^{\infty}& d\tau e^{-i\omega_2 \tau} \left[A(\omega_1), A^{\dagger}(\omega_2)\tilde{\rho}(t)\right] \expval{B^{\dagger}(\tau)B} \\
+	&+ e^{i\omega_1\tau} \left[A^{\dagger}(\omega_1), A(\omega_2)\tilde{\rho}(t)\right] \expval{B(\tau)B^{\dagger}} \\
+	& + e^{-i\omega_1 \tau} \left[A(\omega_2), A^{\dagger}(\omega_1)\tilde{\rho}(t)\right] \expval{B^{\dagger}(\tau)B} \\
+	&+ e^{i\omega_2\tau} \left[A^{\dagger}(\omega_2), A(\omega_1)\tilde{\rho}(t)\right] \expval{B(\tau)B^{\dagger}} \\
+	& + e^{-i(\omega_2 +\omega_{XX} )\tau} \left[A(\omega_1 +\omega_{XX}), A^{\dagger}(\omega_2 +\omega_{XX})\tilde{\rho}(t)\right] \expval{B^{\dagger}(\tau)B} \\
+	&+ e^{i(\omega_1 +\omega_{XX} )\tau} \left[A^{\dagger}(\omega_1 +\omega_{XX}), A(\omega_2 +\omega_{XX})\tilde{\rho}(t)\right] \expval{B(\tau)B^{\dagger}}\\
+	& + e^{-i(\omega_1 +\omega_{XX} )\tau} \left[A(\omega_2 +\omega_{XX}), A^{\dagger}(\omega_1 +\omega_{XX})\tilde{\rho}(t)\right] \expval{B^{\dagger}(\tau)B} \\
+	&+ e^{i(\omega_2 +\omega_{XX} )\tau} \left[A^{\dagger}(\omega_2 +\omega_{XX}), A(\omega_1 +\omega_{XX})\tilde{\rho}(t)\right] \expval{B(\tau)B^{\dagger}}\\
+	&+ h.c. + \textnormal{diagonal terms}
+\end{align}
+which look like
+\begin{align}
+	\begin{split}
+		\mathcal{L}_{\textnormal{off-diag}} = &-i S_1(\omega)\left[\mu^*\dyad{00},\tilde{\rho}(t)\right] - iS_2(\omega)\left[\mu\dyad{X0}{0X},\tilde{\rho}(t)\right]  \\&- i S_1(\omega)\left[\mu\dyad{00},\tilde{\rho}(t)\right] - iS_2(\omega)\left[\mu^*\dyad{0X}{X0},\tilde{\rho}(t)\right] + \textnormal{dissipative terms} + \textit{etc.}
+	\end{split}
+\end{align}
+It is important to note that since $\omega_{XX}\geq \omega_{1}+\omega_{2}>0$, the secular theory will not introduce resonant couplings of the form $\left[\dyad{XX}{00}, \rho\right]$, so there are no two-photon processes. This motivates a number conserving form of the interaction Hamiltonian.
+
+
+Phenomenologically it is known that neighbouring dipoles may interact with one another, such as in F\"orster resonance energy transfer. The coupling terms that have arisen from the Born-Markov equation are first order approximations to the dipole-dipole coupling and are Hamiltonian-like contributions which affect the overall system eigenstructure. We would like to study the effect that strongly-coupled vibrations have on the energy transfer properties of donor-acceptor type systems. Strongly-coupled phonons are going to interact with the coupled system, this will cause the fluorescence and absorption spectra of neighbouring molecules to broaden, causing off-resonant systems to interact. It thus becomes important to include the coupling directly in the Hamiltonian, known as minimal-coupling, giving us access to the interesting eigenstructure of the coupled system. Furthermore, it is often only the behaviour of molecular systems in this dipole-dipole coupled eigenstate basis (dressed basis) that is experimentally observable. It is also worth noting that there can be no mediation of real photon interactions by an electromagnetic bath in the Born-Markov approximations, since any photons that emit can never be reabsorbed, thus these are virtual photon processes.
+\section{Simplified treatment of the Dimer}
+\begin{itemize}
+	\item One RC coupled to both of the sites, some magnitude factor.
+	\item One EM field coupled to both of the sites.
+	\item This should mean that the problem converges more easily.
+\end{itemize}
+\section{Vibronic treatment of the Dimer}
+We have seen how the electromagnetic field mediates the transfer of energy between two neighbouring molecules which we can include as an off-diagonal term in a minimal-coupling Hamiltonian,
+\begin{equation}
+H_{dim} = \epsilon_{1}\dyad{0X} + \epsilon_{2}\dyad{X0} + \epsilon_{XX}\dyad{XX} + V\left(\dyad{X0}{0X} + \dyad{0X}{X0}\right).
+\end{equation}
+Each molecular site has a separate phonon bath, whose interaction with the system is completely characterised by the spectral density
+\begin{equation}
+J^{(i)} (\omega)= \sum_{k}\abs{g_{\textbf{k}}^{(i)}}^2 \delta (\omega-\omega_k^{(i)}),
+\end{equation}
+which is a measure of coupling strength weighted by the environmental density of states. The total Hilbert space of the system plus phonon-baths has the form $\mathcal{H}= \mathcal{H}_{dim} \otimes \mathcal{H}_{Ph_1} \otimes \mathcal{H}_{Ph_2}$, so the system-phonon interaction is modelled by an independent-boson Hamiltonian of the form
+\begin{equation}
+H_{I}^{Ph} = \sigma_1^{\dagger}\sigma_1\sum_{k}g_{1,k}(b_{1,k}^{\dagger} + b_{1,k})\otimes I_2 + \sigma_2^{\dagger}\sigma_2\sum_{k}g_{2,k}I_1\otimes (b_{2,k}^{\dagger} + b_{2,k}).
+\end{equation}
+Deriving a Born-Markov equation for the system in this form gives the familiar weakly-coupling approximation to the resultant open-system dynamics. It was shown by Iles-Smith et al. that the validity range of the Born-Markov equation can be extended, by incorporating a collective coordinate associated with the environment within the system-Hamiltonian. After properly mapping the spectral densities, the interaction between the collective coordinate and the residual environment can then be treated within the Born-Markov framework. The new Born-Markov master equation is then perturbative to second-order in this oscillator-bath coupling parameter, however a large enough amount of the strong-coupling and non-Markovian effects are included within the system itself for the resultant dynamics to agree very closely to numerically exact solutions. 
+
+
+\subsection{The RC mapping for phonon baths}
+We now define collective coordinates of each phonon bath, such that 
+\begin{equation}
+\eta_i (a_i^{\dagger} + a_i) = \sum_k g_{i,k}(b^{\dagger}_{i,k} + b_{i,k})
+\end{equation}
+where $i$ denotes the collective coordinate of site 1 or site 2.
+The total Hilbert space of the composite system has the form $\mathcal{H}_{dim} \otimes \mathcal{H}_{RC_1} \otimes \mathcal{H}_{RC_1}$, which means that if two subsystems are interacting then the Hamiltonians must be multiplied by the identity of the third (keeping the order consistent). The full vibronic system Hamiltonian is of the form
+\begin{align}
+	H_{S}= H_{dim} &+ \eta_1\left(\sigma_1^{\dagger}\sigma_1(a_1^{\dagger}+a_1)\otimes I_{RC_2}\right) + \eta_2\left(\sigma_2^{\dagger}\sigma_2^{(2)}\otimes I_{RC_1}\otimes(a_2^{\dagger}+a_2)\right) \\
+	&+\Omega_1 \left( I_{dim}\otimes a_1^{\dagger}a_1 \otimes I_{RC_2}\right)+\Omega_1 \left( I_{dim}\otimes I_{RC_1}\otimes a_2^{\dagger}a_2 \right)
+\end{align}
+but in the following we will write the short-hand version
+
+\begin{equation}
+	H_{S}= H_{dim} + \sum_i^2 \eta_i \sigma_i^{\dagger}\sigma_i (a_i^{\dagger}+a_i) +\sum_i^2 \Omega_i a_i^{\dagger}a_i.
+\end{equation}
+The residual bath and RC-bath interaction Hamiltonians are
+\begin{align}
+	H_B &= \sum_{i}^2\sum_{k} \nu_{i,k}  c_{i,k}^{\dagger} c_{i,k} \\
+	H_I &=  \sum_{i}^{2} \left[(a_i^{\dagger} + a_i) \sum_{k}g_{i,k} ( c_{i,k}^{\dagger} + c_{i,k}) + (a_i^{\dagger} + a_i)^2\sum_{k} \frac{g_{i,k}^2}{2\nu_{i,k}}\right],
+\end{align}
+where the quadratic term in the interaction Hamiltonian emerges from the definition of a system coupled linearly to a harmonic oscillator, this cancels out a divergent term in the derivation of a master equation.
+\begin{enumerate}
+	\item Mapping by equating dynamics before and after
+\end{enumerate}
+\subsection{Reaction Coordinate Master Equation}
+Lots of work, need to copy this up.
+Essentially, all we need to know is that 
+\begin{equation}
+A_i(t) =e^{i H_0 t}(a_i^{\dagger} + a_i)e^{-i H_0 t}
+\end{equation}
+
+\begin{equation}
+\begin{split}
+\mathcal{L}_{Ph}[\rho_s(t)] = &-i[H_S, \rho_s(t)] - \sum_i \int_{0}^{\infty}d\tau \int_{0}^{\infty}d\omega J_i(\omega)\coth\frac{\beta \omega}{2} \cos\omega\tau [A_i,[A_i(t-\tau), \rho_s(t)]] \\
+&+J_i(\omega)\frac{\cos(\omega\tau)}{\omega} \big[A_i(t), \big\{[A_i(-\tau), H_S], \rho_s(t)\big\}\big]
+\end{split}
+\end{equation}
+We can now bring all of the integrals onto the $\tau$ dependent operator to define two new operators
+\begin{align}
+	\begin{split}
+	\label{eq:NewRCOperators}
+	\chi_i &\equiv \int_{0}^{\infty}d\tau\int_{0}^{\infty}d\omega   J_{RC}(\omega) \coth\frac{\beta \omega}{2}\cos\omega \tau A_i(-\tau)\\
+	\Xi_i &\equiv \int_{0}^{\infty}d\tau\int_{0}^{\infty}d\omega  J_{RC}(\omega) \frac{\cos\omega\tau}{\omega} \left[H_S, A_i(-\tau)\right]
+	\end{split}
+\end{align}
+so that
+\begin{equation}
+\pdv{\rho(t)}{t} = -i\left[H_S, \rho(t)\right] - \sum_i^2\left[A_i, \left[\chi_i, \rho(t)\right]\right] + \left[A_i, \big\lbrace\Xi_i, \rho(t)\big\rbrace\right].
+\end{equation}
+Performing the transformation we write each of the operators $A_i$ in terms of the system (vibronic) eigenbasis $\{\ket{\varphi_j}\}_{j=1}^{\infty}$ such that $H_S\ket{\varphi_j}=\varphi_j\ket{\varphi_j}$
+\begin{equation}
+A_i(t) = \sum_{lm}A_{lm}^{(i)}e^{i\xi_{lm}t} \dyad{\varphi_l}{\varphi_m}
+\end{equation}
+where $\xi_{lm} = \varphi_l - \varphi_n$ and $A_{m,n} = \bra{\varphi_l}A\ket{\varphi_m}$. The operators \ref{eq:NewRCOperators} now become
+\begin{align}
+	\label{eq:NewRCOperators}
+	\chi_i &= \sum_{lm}\int_{0}^{\infty}d\tau\int_{0}^{\infty}d\omega A_{lm}^{(i)}  J_{RC}(\omega) \coth\frac{\beta \omega}{2}\cos(\omega \tau)e^{-i\xi_{lm}\tau} \dyad{\varphi_l}{\varphi_m}\\
+	\Xi_i &= \sum_{lm}\int_{0}^{\infty}d\tau\int_{0}^{\infty}d\omega A_{lm}^{(i)} J_{RC}(\omega) \frac{\cos\omega\tau}{\omega}e^{-i\xi_{lm}\tau}  \left[\sum_{j}\varphi_j\dyad{\varphi_j}{\varphi_j}, \dyad{\varphi_l}{\varphi_m}\right]
+\end{align}
+where we have used the spectral decomposition of $H_S$ in the last expression. We evaluate the integrals using the Sokhotski identity
+\begin{equation}
+\label{eq:Sokhotski}
+\int_{0}^{\infty}f(\omega)d\omega\int_{0}^{\infty}d\tau e^{\pm (\omega-\eta)\tau} = \pi\int_{0}^{\infty}f(\omega)\delta(\omega-\eta)d\omega \pm i \mathcal{P}\left[\int_{0}^{\infty}\frac{f(\omega)}{\omega-\eta}d\omega\right],
+\end{equation}
+where $\mathcal{P}$ denotes taking the Cauchy principle value of the divergent integral. We get 
+\begin{align}
+	\label{eq:NewRCOperators}
+	\chi_i &= \frac{\pi}{2}\sum_{lm} A_{lm}^{(i)}  J_{RC}(\xi_{lm}) \coth\frac{\beta \xi_{lm}}{2}\dyad{\varphi_l}{\varphi_m}\\
+	\Xi_i &= \frac{\pi}{2}\sum_{lm}A_{lm}^{(i)} J_{RC}(\xi_{lm})  \dyad{\varphi_l}{\varphi_m}
+\end{align}
+where we have neglected the imaginary (Principal value) part.
+\section{Incoherent driving}
+\subsection{Simple Lindblad Method}
+\begin{align}
+	\begin{split}
+		\mathcal{D}_{EM}[\rho_S]=\sum_{i=+,-}\frac{\gamma_1(\lambda_i)}{2}\mathcal{L}_{A^{\dagger}}(\lambda_i)[\rho_S]&+\frac{\gamma_2(\lambda_i)}{2}\mathcal{L}_{A}(\lambda_i)[\rho_S]
+		+\frac{\gamma_1(\omega_{XX}-\lambda_i)}{2}\mathcal{L}_{A^{\dagger}}(\omega_{XX}-\lambda_i)[\rho_S]\\ &+\frac{\gamma_2(\omega_{XX}-\lambda_i)}{2}\mathcal{L}_{A}(\omega_{XX}-\lambda_i)[\rho_S]
+	\end{split}
+\end{align}
+\subsection{Secular Vibronic Method}
+\subsection{Non-Secular Vibronic Method}
+The strength of interaction between fluorescent molecules and the ambient electromagnetic field is considered to be small compared to typical system energy scales. This is experimentally motivated (???). Since we have included phonon-interactions as a strong contribution to the dynamics, a rigorous derivation of the optical part of the Liouvillian will have to be perturbative with respect to the full vibronic Hamiltonian $H_S$,
+%\begin{equation}
+%H_{dim} = \epsilon_{1}\dyad{0X} + \epsilon_{2}\dyad{X0} + \epsilon_{XX}\dyad{XX} + %V\left(\dyad{X0}{0X} + \dyad{0X}{X0}\right).
+%\end{equation}
+\begin{align}
+	H_{S}= H_{dim} + \sum_j\eta_j\sigma_j^{\dagger}\sigma_j(a_j^{\dagger}+a_j) +\sum_j \Omega_j a_j^{\dagger}a_j.
+\end{align}
+The interaction and electromagnetic bath Hamiltonians are
+\begin{equation}
+H_I^{EM} =\sum_{i} \left(\sigma_-^{(1)} + \mu\sigma_-^{(2)}\right)\otimes I_{RC_1}\otimes I_{RC_2}\otimes f_i^*c_i^{\dagger} + h.c.
+\end{equation}
+\begin{equation}
+H_B^{EM} = \sum_i \zeta_i c_i^{\dagger}c_i,
+\end{equation}
+respectively, where $c_j$ are the bath annihilation operators and the molecule-bath interaction strength is fully characterised by the spectral density
+\begin{equation}
+J_{EM} (\omega)= \sum_{k}\abs{f_{\textbf{k}}}^2 \delta (\omega-\zeta_k),
+\end{equation}
+which differs on each site by a constant factor $\mu$. To continue with the derivation of a second-order Born-Markov master equation, we then decompose the interaction Hamiltonian into a product of system and bath operators 
+\begin{equation}
+A =  \left(\sigma_-^{(1)} + \mu\sigma_-^{(2)}\right)\otimes I_{RC_1}\otimes I_{RC_2} \quad \textnormal{and} \quad B = \sum_{j}f_j a_j
+\end{equation}
+and move to the interaction picture with respect to the full vibronic Hamiltonian $H_S$, which is simplified by writing
+\begin{equation}
+A = \sum_{p,q} \bra{\varphi_p}A\ket{\varphi_q}\dyad{\varphi_p}{\varphi_q}
+\end{equation}
+where $\ket{\varphi_l}$ are the eigenstates of $H_S$, such that $H_S\ket{\varphi_l} = \varphi_l H_S$. This gives the time-dependent form
+\begin{equation}
+A(t) = \sum_{p,q} \bra{\varphi_p}A\ket{\varphi_q}e^{i\xi_{pq}t}\dyad{\varphi_p}{\varphi_q}
+\end{equation}
+where $\xi_{pq} = \varphi_p - \varphi_q$.
+This was done because the system Hamiltonian does not commute with the interaction-Hamiltonian term which means a series expansion may not converge to something manageable. We can now break up the system operator into different oscillatory components as before
+\begin{equation}
+A(t) = \sum_{\xi_{pq}}A(\xi_{pq})e^{i\xi_{pq} t}
+\end{equation} 
+where 
+\begin{equation}
+A(\xi_{lm}) =  \bra{\varphi_l}A\ket{\varphi_m}\dyad{\varphi_l}{\varphi_m}
+\end{equation}
+
+
+\begin{align}
+\begin{split}
+\pdv{\tilde{\rho}(t)}{t} = - \sum_{\xi_{lm}, \xi_{pq}}\int_{0}^{\infty}& d\tau e^{-i(\xi_{lm}-\xi_{pq})t} e^{-i\xi_{pq}\tau} \left[A(\xi_{lm}), A^{\dagger}(\xi_{pq})\tilde{\rho}(t)\right] \expval{B^{\dagger}(\tau)B} \\
+&+ e^{i(\xi_{lm}-\xi_{pq})t} e^{i\xi_{pq}\tau} \left[A^{\dagger}(\xi_{lm}), A(\xi_{pq})\tilde{\rho}(t)\right] \expval{B(\tau)B^{\dagger}} + h.c. 
+\end{split}
+\end{align}
+
+
+It is common to make a secular approximation at this stage, with the reasoning that the system will relax slowly compared to the typical time-dependence associated with $(\xi_{lm}-\xi_{pq})$, so we focus only on the slowly evolving parts of the Liouvillian as the others will average out over typical relaxation timescales. However, the rich vibronic structure means that in general it is not safe to assume the secular approximation (the difference between some eigenvalue differences are very small). For the above Liouvillian, this is equivalent to saying $(\xi_{lm}=\xi_{pq})$ so it becomes
+
+\begin{align}
+	\begin{split}
+		\pdv{\tilde{\rho}(t)}{t} = - \sum_{\alpha, \beta}\sum_{\xi_{lm}}\int_{0}^{\infty}& d\tau e^{-i\xi_{lm}\tau} \left[A_{\alpha}(\xi_{lm}), A_{\beta}^{\dagger}(\xi_{lm})\tilde{\rho}(t)\right] \expval{B^{\dagger}(\tau)B} \\
+		&+ e^{i \xi_{lm}\tau} \left[A_{\beta}^{\dagger}(\xi_{lm}), A_{\alpha}(\xi_{lm})\tilde{\rho}(t)\right] \expval{B(\tau)B^{\dagger}} + h.c. 
+	\end{split}
+\end{align}
+in general, the vibronic spectrum is degenerate, so any different eigenvectors $\alpha, \beta$ which correspond to the same $\xi_{lm}$ are summed over. Looking at the distribution of time-dependence on master equation terms vs. their coefficients (related to dipole overlap of transitions and hence, whether they are included in the physics), there are many slowly evolving terms which are associated with large combined dipole coefficients.
+\begin{comment}
+\begin{figure}
+	\includegraphics[width=\textwidth]{"C:/Users/mbcxrhm2/Dropbox/PhD/1st year/TwoSpins/DrivenDimer/EM_and_RC/EM_and_RC/Images/NonSecularity".png}
+	\caption{Inspecting the validity of the secular approximation in the case of the dimer eigenst. There are many slowly evolving terms with large coefficients.}
+	\label{fig:}
+\end{figure}
+\end{comment}
+\subsection{Dynamics}
+
+\iffalse
+\begin{figure}[t]
+	\centering
+	\begin{minipage}[b]{0.325\textwidth}
+		\includegraphics[width=\textwidth]{"C:/Users/mbcxrhm2/Dropbox/PhD/1st year/".png}
+		\caption{Naive small phonon coupling, low temperature}
+		\label{fig:}
+	\end{minipage}
+	\begin{minipage}[b]{0.325\textwidth}
+		\includegraphics[width=\textwidth]{"C:/Users/mbcxrhm2/Dropbox/PhD/1st year/".png}
+		\caption{Naive large phonon coupling, low temperature}
+		\label{fig:a100_T6000}
+	\end{minipage}
+	\begin{minipage}[b]{0.325\textwidth}
+		\includegraphics[width=\textwidth]{"C:/Users/mbcxrhm2/Dropbox/PhD/1st year/".png}
+		\caption{Naive large phonon coupling, high temperature}
+		\label{fig:a500_T6000}
+	\end{minipage}
+\end{figure}
+\begin{figure}[t]
+	\centering
+	\begin{minipage}[b]{0.325\textwidth}
+		\includegraphics[width=\textwidth]{"C:/Users/mbcxrhm2/Dropbox/PhD/1st year/".png}
+		\caption{Vibronic small phonon coupling, low temperature}
+		\label{fig:a300_T6000}
+	\end{minipage}
+	\begin{minipage}[b]{0.325\textwidth}
+		\includegraphics[width=\textwidth]{"C:/Users/mbcxrhm2/Dropbox/PhD/1st year/".png}
+		\caption{Vibronic large phonon coupling, low temperature}
+		\label{fig:a300_T300}
+	\end{minipage}
+	\begin{minipage}[b]{0.325\textwidth}
+		\includegraphics[width=\textwidth]{"C:/Users/mbcxrhm2/Dropbox/PhD/1st year/".png}
+		\caption{Vibronic large phonon coupling, high temperature}
+		\label{fig:a300_T6000}
+	\end{minipage}
+\end{figure}
+\fi
+\begin{enumerate}
+	\item Regime where they agree (small phonon coupling)
+	\item Low EM Temperature. Intermediate coupling. Two different biases.
+	\item High EM Temperature. Strong coupling and Intermediate Coupling.
+	\item  Are there any regimes in the vibronic theory where dark state population is higher than the naive theory (or maybe ground state is lower)?
+	\item Compare to the weak-coupling theory, higher dark state population, lower bright/ground? Would this lead to a more efficient solar cell?
+\end{enumerate}
+\section{Conclusions and further work}
+\begin{enumerate}
+\item Connect each site to another "charge separated" state where the decay from the upper level to lower level describes the amount of current that is generated, like in all of the photocell papers.
+\item See how the QHE model relates to charge-separation in photosynthetic reaction centres and nano-photocells. Perform a similar analysis but with Fermions describing the onsite electrons in the excited and ground state, this can lead to calculating the actual current generated by a nano-photocell.
+\item Extending the model to have many molecules. 
+\item Investigate Fano interference - important to have RC model to compare against.
+\item Study the limitations of the reaction coordinate model in depth
+\end{enumerate}
+\begin{appendices}
+
+\end{appendices}
+
+\end{document}
