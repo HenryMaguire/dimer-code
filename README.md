@@ -23,9 +23,11 @@ All the python files are written in Python 2.7. The modules will need to be at l
 - Check in the Notes/Images folder for default plots of dynamics and spectra, or alternatively use the data files in DATA to plot your own.
 
 # Bugs
+- Electronic Lindblad does not work at the moment. Agrees with neither the other two theories or the non-canonical thermal state (not accounting for RC bath).
 
 
 # To do:
+- Incorporate excitation number restriction into the non-secular and secular equations.
 - Test across many parameter regimes.
 - Create a module which loads up datafiles and turns them into good pandas dataframes
 

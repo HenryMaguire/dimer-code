@@ -8,6 +8,23 @@ from qutip import Qobj, basis, destroy, tensor, qeye, spost, spre, sprepost, enr
 import time
 from dimer_driving_liouv import rate_up, rate_down
 
+def J_multipolar(omega, Gamma, omega_0):
+    return Gamma*(omega**3)/(2*np.pi*(omega_0**3))
+
+def J_minimal(omega, Gamma, omega_0):
+    return Gamma*omega/(2*np.pi*omega_0)
+
+def J_flat(omega, Gamma, omega_0):
+    return Gamma
+
+def rate_up(w, n, gamma):
+    rate = 0.5 * pi * n
+    return rate
+
+def rate_down(w, n, gamma):
+    rate = 0.5 * pi * (n + 1. )
+    return rate
+
 def lin_construct(O):
     Od = O.dag()
     L = 2. * spre(O) * spost(Od) - spre(Od * O) - spost(Od * O)

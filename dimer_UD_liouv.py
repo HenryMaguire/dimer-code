@@ -123,7 +123,6 @@ def liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2, T_1, T_2, 
 
 def RC_mapping_UD(w_1, w_2, w_xx, V, T_1, T_2, wRC_1, wRC_2, alpha_1, alpha_2, wc,  N_1, N_2=False, mu=1, time_units='cm'):
 
-
     if not N_2:
         N_2 = N_1
     # we define all of the RC parameters by the underdamped spectral density
