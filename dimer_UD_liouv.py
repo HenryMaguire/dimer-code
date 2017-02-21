@@ -1,4 +1,5 @@
 from qutip import basis, ket, mesolve, qeye, tensor, thermal_dm, destroy, steadystate, spost, spre, sprepost
+from sympy.functions import coth
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy as sp
@@ -53,14 +54,14 @@ def RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2):
             A_jk = A_1.matrix_element(eVecs[j].dag(), eVecs[k])
             outer_eigen = eVecs[j] * (eVecs[k].dag())
             if sp.absolute(A_jk) > 0:
-                if sp.absolute(e_jk) > 0and sp.absolute(beta_1) > 0:
+                if sp.absolute(e_jk) > 0 and sp.absolute(beta_1) > 0:
                     #print e_jk
                     # If e_jk is zero, coth diverges but J goes to zero so limit taken seperately
                     #print beta_1, e_jk
-                    Chi_1 += e_jk*gamma_1 * sp.tanh(beta_1*e_jk*0.5)*A_jk*outer_eigen # e_jk*gamma is the spectral density
-                    Xi_1 += e_jk*gamma_1 * A_jk * outer_eigen
+                    Chi_1 += 0.5*np.pi*e_jk*gamma_1 * float(coth(e_jk * beta_1 / 2).evalf())*A_jk*outer_eigen
+                    Xi_1 += 0.5*np.pi*e_jk*gamma_1 * A_jk * outer_eigen
                 else:
-                    Chi_1 += gamma_1*A_jk*outer_eigen # Just return coefficients which are left over
+                    Chi_1 += np.pi*gamma_1*A_jk*outer_eigen/beta_1 # Just return coefficients which are left over
                     #Xi += 0 #since J_RC goes to zero
             A_jk = A_2.matrix_element(eVecs[j].dag(), eVecs[k])
             if sp.absolute(A_jk) > 0:
@@ -68,38 +69,42 @@ def RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2):
                     #print e_jk
                     # If e_jk is zero, coth diverges but J goes to zero so limit taken seperately
                     #print beta_2, e_jk
-                    Chi_2 += e_jk*gamma_2 *sp.tanh(beta_2*e_jk*0.5)*A_jk*outer_eigen # e_jk*gamma is the spectral density
-                    Xi_2 += e_jk*gamma_2 * A_jk * outer_eigen
+                    Chi_2 += 0.5*np.pi*e_jk*gamma_2 *float(coth(e_jk * beta_2 / 2).evalf())*A_jk*outer_eigen # e_jk*gamma is the spectral density
+                    Xi_2 += 0.5*np.pi*e_jk*gamma_2 * A_jk * outer_eigen
                 else:
-                    Chi_2 += gamma_2*A_jk*outer_eigen # Just return coefficients which are left over
+                    Chi_2 += np.pi*gamma_2*A_jk*outer_eigen/beta_2 # Just return coefficients which are left over
                     #Xi += 0 #since J_RC goes to zero
 
-    return H_0, np.pi*Chi_1*0.5, np.pi*0.5*Xi_1, np.pi*Chi_2*0.5, np.pi*0.5*Xi_2
+    return H_0, Chi_1, Xi_1, Chi_2, Xi_2
 
 def liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2, T_1, T_2, time_units='cm'):
     ti = time.time()
     conversion = 0.695
+    if time_units == 'ev':
+        conversion == 8.617E-5
     if time_units == 'ps':
-        conversion == 7.13 # Boltzmann constant giving ps units of time
+        conversion == 0.131
     else:
         pass
 
     beta_1 = 0. # We want to calculate beta for each reaction coordinate, but avoid divergences
+    RCnb_1 = 0
     if T_1 == 0.0:
-        beta_1 = 10000000000. # This is a hack but hopefully won't have to be used
+        beta_1 = np.infty # This is a hack but hopefully won't have to be used
         RCnb_1 = 0
         print "Temperature is too low in RC 1, this won't work"
     else:
         beta_1 = 1./(conversion * T_1)
         RCnb_1 = (1 / (sp.exp( beta_1 * wRC_1)-1))
     beta_2 = 0.
+    RCnb_2 = 0
     if T_2 == 0.0:
-        beta_2 = 10000000000.
+        beta_2 = np.infty
         RCnb_2 = 0
         print "Temperature is too low in RC 2, this won't work"
     else:
-        beta_2 = 1./(conversion * T_1)
-        RCnb_2 = (1 / (sp.exp( beta_1 * wRC_1)-1))
+        beta_2 = 1./(conversion * T_2)
+        RCnb_2 = (1 / (sp.exp( beta_2 * wRC_2)-1))
     # Now this function has to construct the liouvillian so that it can be passed to mesolve
     H_0, Chi_1, Xi_1,Chi_2, Xi_2  = RCME_operators(H_0, A_1, A_2, gamma_1, beta_1, gamma_2, beta_2) # Inefficient to loop over eigenstates twice: fix
     L = 0
@@ -141,6 +146,17 @@ def RC_mapping_UD(w_1, w_2, w_xx, V, T_1, T_2, wRC_1, wRC_2, alpha_1, alpha_2, w
 
 
 if __name__ == "__main__":
+    ev_to_inv_cm = 8065.5
+    w_1, w_2 = 1.4*ev_to_inv_cm, 1.*ev_to_inv_cm
+    V = 200.
+    w_xx = w_1+w_2+V
+    T_1, T_2 = 300., 300.
+    wRC_1, wRC_2 = 300., 300.
+    alpha_1, alpha_2 = 100./np.pi, 100./np.pi
+    wc =53.
+    N_1, N_2= 5, False
+    mu=1
+
     OO = basis(4,0)
     XO = basis(4,1)
     OX = basis(4,2)
@@ -149,6 +165,7 @@ if __name__ == "__main__":
     sigma_m2 = XO*XX.dag() + OO*OX.dag()
     sigma_x1 = sigma_m1+sigma_m1.dag()
     sigma_x2 = sigma_m2+sigma_m2.dag()
-    L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2 = RC_mapping_UD(sigma_m1, sigma_m2, 9000, 9000, 200, 100., 100., 300., 300., 10., 10., 53,  6) # test that it works
+
+    L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2 = RC_mapping_UD(w_1, w_2, w_xx, V, T_1, T_2, wRC_1, wRC_2, alpha_1, alpha_2, wc,  N_1, N_2=False, mu=1, time_units='cm') # test that it works
 
     print "dimer_UD_liouv is finished. It is an {}by{} of type {}.".format(L_RC.shape[0], L_RC.shape[0], L_RC.type)
