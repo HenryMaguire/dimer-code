@@ -285,7 +285,7 @@ if __name__ == "__main__":
     print "Naive steady-state dimer DM is, "
     print ss_n
     print ss_n.tr()
+    real_therm = (((-1./(0.695*T_EM))*H_vib).expm().ptrace(0))/(((-1./(0.695*T_EM))*H_vib).expm().tr())
+    # This is just a thermal state of the TLS-RC with respect to the electromagnetic bath only.
 
-    print real_therm = ((-1./(0.695*T_EM))*H_vib).expm().ptrace(0)/((-1./(0.695*T_EM))*H_vib).expm().tr() # This is just a thermal state of the TLS-RC with respect to the electromagnetic bath only.
-    
     #print L_RC.dims == L_ns.dims, L_RC.dims == L_s.dims, L_ns.dims ==L_s.dims, L_n.dims == L_RC.dims

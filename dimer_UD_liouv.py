@@ -16,6 +16,7 @@ def dimer_ham_RC(w_1, w_2, w_xx, V, mu, Omega_1, Omega_2, kap_1, kap_2, N_1, N_2
     XX = basis(4,3)
     sigma_1 = OX*XX.dag() + OO*XO.dag()
     sigma_2 = XO*XX.dag() + OO*OX.dag()
+    print sigma_1*basis(4,2)
     if not N_2: # allow for different Hilbert space sizes (in case of T_1!=T_2), but it's okay to leave it to default
         N_2=N_1
     I_RC_1 = qeye(N_1)
@@ -30,7 +31,7 @@ def dimer_ham_RC(w_1, w_2, w_xx, V, mu, Omega_1, Omega_2, kap_1, kap_2, N_1, N_2
 
     H_RC1 = tensor(I_dim, Omega_1*destroy(N_1).dag()*destroy(N_1), I_RC_2)
     H_RC2 = tensor(I_dim, I_RC_1, Omega_2*destroy(N_2).dag()*destroy(N_2))
-
+    
     H_I1 = kap_1*tensor(sigma_1.dag()*sigma_1, I_RC_1, I_RC_2)*A_1
     H_I2 = kap_2*tensor(sigma_2.dag()*sigma_2, I_RC_1, I_RC_2)*A_2
 
@@ -108,6 +109,7 @@ def liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2, T_1, T_2, 
     # Now this function has to construct the liouvillian so that it can be passed to mesolve
     H_0, Chi_1, Xi_1,Chi_2, Xi_2  = RCME_operators(H_0, A_1, A_2, gamma_1, beta_1, gamma_2, beta_2) # Inefficient to loop over eigenstates twice: fix
     L = 0
+    print beta_1, beta_2
     for A, Chi in zip([A_1, A_2],[Chi_1, Chi_2]):
         L=L-spre(A*Chi)
         L=L+sprepost(A, Chi)
@@ -137,7 +139,6 @@ def RC_mapping_UD(w_1, w_2, w_xx, V, T_1, T_2, wRC_1, wRC_2, alpha_1, alpha_2, w
     print "splitting ={}, coupling SB cutoff={}\n RC1 oscillator frequency={}, RC2 oscillator frequency={} \n  gamma={} N={}".format(w_1-w_2, wc, wRC_1, wRC_2, gamma_1, N_1)
     H_0, A_1, A_2, A_EM = dimer_ham_RC(w_1, w_2, w_xx, V, mu, wRC_1, wRC_2, kappa_1, kappa_2, N_1, N_2=False)
     L_RC =  liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2, T_1, T_2, time_units='cm')
-
     return L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2
     #H_dim_full = w_1*XO*XO.dag() + w_2*w_1*OX*OX.dag() + w_xx*XX*XX.dag() + V*((sigma_m1+sigma_m1.dag())*(sigma_m2+sigma_m2.dag()))
 

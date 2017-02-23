@@ -21,6 +21,32 @@ def plot_dynamics(DATA, title=''):
     plt.figure()
     if T_EM>0.0: # No need to plot SS for T=0
         ss_ns = steadystate(H_0, [L_RC+L_ns]).ptrace(0)
+        #ss_v = steadystate(H_0, [L_RC+L_s]).ptrace(0)
+        #ss_n = steadystate(H_0, [L_RC+L_naive]).ptrace(0)
+        ss_g_ns = ss_ns.matrix_element(G.dag(), G)
+        #ss_g_v = ss_v.matrix_element(G.dag(), G)
+        #ss_g_n = ss_n.matrix_element(OO.dag(), OO)
+        #plt.axhline(1-ss_g_v, color='b', ls='--')
+        plt.axhline(1-ss_g_ns, color='g', ls='--')
+        #plt.axhline(1-ss_g_n, color='r', ls='--')
+    title = title + r"$\omega_0=$""%i"r"$cm^{-1}$, $\alpha_{ph}=$""%f"r"$cm^{-1}$, $T_{EM}=$""%i K" %(w0_1, alpha_1, T_EM)
+    plt.title(title)
+    # Want to plot the dynamics for all of the eigenstates
+    plt.plot(timelist, DATA.expect[0].real, label=r'|00>', color='y')
+    plt.plot(timelist, DATA.expect[4].real, label=r'|XO>', color='g')
+    plt.plot(timelist, DATA.expect[5].real, label=r'|OX>', color='b')
+    plt.plot(timelist, DATA.expect[1].real, label=r'|XX>', color='r')
+    plt.ylabel("Site populations")
+    plt.xlabel("Time (ps)")
+    plt.legend()
+    #p_file_name = "Notes/Images/Dynamics/Pop_a{:d}_Tph{:d}_Tem{:d}_w0{:d}.pdf".format(int(alpha_ph), int(T_ph), int(T_EM), int(w0))
+    #plt.savefig(p_file_name)
+
+def plot_eig_dynamics(DATA, title=''):
+    # takes a string saying the plot title
+    plt.figure()
+    if T_EM>0.0: # No need to plot SS for T=0
+        ss_ns = steadystate(H_0, [L_RC+L_ns]).ptrace(0)
         ss_v = steadystate(H_0, [L_RC+L_s]).ptrace(0)
         ss_n = steadystate(H_0, [L_RC+L_naive]).ptrace(0)
         #ss_g_ns = ss_ns.matrix_element(G.dag(), G)
@@ -33,15 +59,14 @@ def plot_dynamics(DATA, title=''):
     plt.title(title)
     # Want to plot the dynamics for all of the eigenstates
     plt.plot(timelist, DATA.expect[0].real, label=r'|00>', color='y')
-    plt.plot(timelist, DATA.expect[-1].real, label=r'|+>', color='g')
-    plt.plot(timelist, DATA.expect[-2].real, label=r'|->', color='b')
-    plt.plot(timelist, DATA.expect[3].real, label=r'|XX>', color='r')
+    plt.plot(timelist, DATA.expect[4].real, label=r'|+>', color='g')
+    plt.plot(timelist, DATA.expect[5].real, label=r'|->', color='b')
+    plt.plot(timelist, DATA.expect[1].real, label=r'|XX>', color='r')
     plt.ylabel("Eigenstate population")
-    plt.xlabel("Time (cm)")
+    plt.xlabel("Time (ps)")
     plt.legend()
     #p_file_name = "Notes/Images/Dynamics/Pop_a{:d}_Tph{:d}_Tem{:d}_w0{:d}.pdf".format(int(alpha_ph), int(T_ph), int(T_EM), int(w0))
     #plt.savefig(p_file_name)
-    plt.show()
 def plot_coherences(DATA, title=''):
 
     plt.figure()
@@ -78,6 +103,33 @@ def plot_dynamics_spec(DAT, t):
     np.savetxt(d_file_name, np.array([spec, freq]), delimiter = ',', newline= '\n')
     plt.close()
 
+
+def plot_RC_pop(ax):
+
+    #ax.title(r"$\omega_0=$""%i"r"$cm^{-1}$, $\alpha_{ph}=$""%f"r"$cm^{-1}$, $T_{EM}=$""%i K" %(w0, alpha_ph, T_EM))
+    #ax.plot(timelist, 1-DATA_nrwa.expect[0], label='nrwa', color='y')
+    ax.plot(timelist, DATA_ns.expect[7].real, label='Left RC NS', color='g')
+    ax.plot(timelist, DATA_ns.expect[8].real, label='Right RC NS', color='r')
+    #ax.plot(timelist, DATA_s.expect[3].real, label='Vib. Lindblad', color='b')
+    #ax.plot(timelist, DATA_naive.expect[7].real, label='Left RC Naive', color='g')
+    #ax.plot(timelist, DATA_naive.expect[8].real, label='Right RC Naive', color='g')
+    ax.set_ylabel("Reaction-Coordinate displacement")
+    ax.set_xlabel("Time (ps)")
+    ax.legend()
+
+def plot_RC_disp(ax):
+
+    #ax.title(r"$\omega_0=$""%i"r"$cm^{-1}$, $\alpha_{ph}=$""%f"r"$cm^{-1}$, $T_{EM}=$""%i K" %(w0, alpha_ph, T_EM))
+    #ax.plot(timelist, 1-DATA_nrwa.expect[0], label='nrwa', color='y')
+    ax.plot(timelist, DATA_ns.expect[9].real, label='Left RC NS', color='g')
+    ax.plot(timelist, DATA_ns.expect[10].real, label='Right RC NS', color='r')
+    #ax.plot(timelist, DATA_s.expect[3].real, label='Vib. Lindblad', color='b')
+    #ax.plot(timelist, DATA_naive.expect[9].real, label='Left RC Naive', color='g')
+    #ax.plot(timelist, DATA_naive.expect[10].real, label='Right RC Naive', color='g')
+    ax.set_ylabel("Reaction-Coordinate displacement")
+    ax.set_xlabel("Time (ps)")
+    ax.legend()
+
 if __name__ == "__main__":
 
     OO = basis(4,0)
@@ -89,48 +141,60 @@ if __name__ == "__main__":
     sigma_x1 = sigma_m1+sigma_m1.dag()
     sigma_x2 = sigma_m2+sigma_m2.dag()
 
-    w_1 = 11000
-    w_2 = 10000
-    V = 0
+    w_1 = 1.1*8065.5
+    w_2 = 1.0*8065.5
+    V = 0. #0.1*8065.5
     eps = w_1-w_2
 
-    T_EM = 6000. # Optical bath temperature
-    alpha_EM = 0.3 # System-bath strength (optical)
-    mu = 0
+    T_EM = 0. # Optical bath temperature
+    alpha_EM = 1.*5.309 # Optical S-bath strength (from inv. ps to inv. cm)(optical)
+    mu = 1.
 
-    T_2 = T_1 = 300. # Phonon bath temperature
+    T_1, T_2 = 300., 300. # Phonon bath temperature
 
     wc = 53. # Ind.-Boson frame phonon cutoff freq
-    w0_2  = w0_1 = 300. # underdamped SD parameter omega_0
+    w0_2, w0_1 = 300., 300. # underdamped SD parameter omega_0
     w_xx = w0_2 + w0_1 + V
-    alpha_2 = alpha_1 = 100. # Ind.-Boson frame coupling
-    N_1 = 6 # set Hilbert space sizes
+    alpha_2, alpha_1 = 10., 10. # Ind.-Boson frame coupling
+    N_1 = 5 # set Hilbert space sizes
 
-    N_2 = 6
+    N_2 = 5
     exc = N_1 + N_2
+    J = EM.J_minimal
     #Now we build all of the mapped operators and RC Liouvillian.
     L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2 = RC.RC_mapping_UD(w_1, w_2, w_xx, V, T_1, T_2, w0_1, w0_2, alpha_1, alpha_2, wc,  N_1, mu=mu)
     # electromagnetic bath liouvillians
-    L_ns = EM.L_nonsecular(H_0, A_EM, alpha_EM, T_EM)
-    L_s = EM.L_vib_lindblad(H_0, A_EM, alpha_EM, T_EM)
-    L_naive = EM_lind.electronic_lindblad(w_xx, w_1, eps, V, mu, alpha_EM, T_EM, N_1, N_2, exc)
+    L_ns = EM.L_nonsecular(H_0, A_EM, eps, alpha_EM, T_EM, J)
+    #L_s = EM.L_vib_lindblad(H_0, A_EM, eps, alpha_EM, T_EM, J)
+    #L_naive = EM_lind.electronic_lindblad(w_xx, w_1, eps, V, mu, alpha_EM, T_EM, N_1, N_2, exc)
     # Set up the initial density matrix
-
+    I_dimer = qeye(4)
     I_RC_1 = qeye(N_1)
     I_RC_2 = qeye(N_2)
     n_RC_1 = EM.Occupation(wRC_1, T_1)
     n_RC_2 = EM.Occupation(wRC_2, T_2)
+    phonon_num_1 = destroy(N_1).dag()*destroy(N_1)
+    phonon_num_2 = destroy(N_2).dag()*destroy(N_2)
+    x_1 = (destroy(N_1).dag()+destroy(N_1))
+    x_2 = (destroy(N_2).dag()+destroy(N_2))
 
-    initial_sys = OO*OO.dag()
-    rho_0 = tensor(initial_sys, thermal_dm(N_1, n_RC_1), thermal_dm(N_2, n_RC_2))
+
     OO = tensor(OO, I_RC_1, I_RC_2)
     XO = tensor(XO, I_RC_1, I_RC_2)
     OX = tensor(OX, I_RC_1, I_RC_2)
     XX = tensor(XX, I_RC_1, I_RC_2)
+    Phonon_1 = tensor(I_dimer, phonon_num_1, I_RC_2)
+    Phonon_2 = tensor(I_dimer, I_RC_1, phonon_num_2)
+    disp_1 = tensor(I_dimer, x_1, I_RC_2)
+    disp_2 = tensor(I_dimer, I_RC_1, x_2)
 
+    initial_sys = XX*XX.dag()
+    rho_0 = initial_sys*tensor(I_dimer, thermal_dm(N_1, n_RC_1), thermal_dm(N_2, n_RC_2))
+    rho_0 = rho_0/rho_0.tr()
+    exciton_coherence = OX*XO.dag()
     # Expectation values and time increments needed to calculate the dynamics
-    expects = [OO*OO.dag(), XX*XX.dag(), (XO+OX)*(XO+OX).dag(), (XO-OX)*(XO-OX).dag(), OX*XO.dag(), XO*XO.dag(), OX*OX.dag()]
-    timelist = np.linspace(0,10,30000) # you need lots of points so that coherences are well defined -> spectra
+    expects = [OO*OO.dag(), XX*XX.dag(), 0.5*(XO+OX)*(XO+OX).dag(), 0.5*(XO-OX)*(XO-OX).dag(), XO*XO.dag(), OX*OX.dag(), exciton_coherence, Phonon_1, Phonon_2, disp_1, disp_2]
+    timelist = np.linspace(0,1.,10000)*0.188 # you need lots of points so that coherences are well defined -> spectra
     #nonsec_check(eps, H, A_em, N) # Plots a scatter graph representation of non-secularity. Could use nrwa instead.
 
     # Calculate dynamics
@@ -139,6 +203,13 @@ if __name__ == "__main__":
     #DATA_naive = mesolve(H_0, rho_0, timelist, [L_RC+L_naive], expects, progress_bar=True)
 
     plot_dynamics(DATA_ns, title='Non-secular driving\n')
+
+    fig = plt.figure(figsize=(12, 6))
+    ax1 = fig.add_subplot(121)
+    ax2 = fig.add_subplot(122)
+    plot_RC_pop(ax1)
+    plot_RC_disp(ax2)
+    plt.show()
     #SS, nvals = check.SS_convergence_check(eps, T_EM, T_ph, wc, w0, alpha_ph, alpha_EM, start_n=10)
     #plt.plot(nvals, SS)
     #plot_dynamics_spec(DATA_s, timelist)
