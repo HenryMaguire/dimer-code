@@ -3,9 +3,10 @@ Plotting module for the dimer dynamics
 """
 
 from qutip import basis, ket, mesolve, qeye, tensor, thermal_dm, destroy, steadystate
+import qutip as qt
 import matplotlib.pyplot as plt
 import numpy as np
-import qutip.parallel as par
+
 import dimer_UD_liouv as RC
 import dimer_driving_liouv as EM
 import electronic_lindblad as EM_lind
@@ -186,9 +187,11 @@ if __name__ == "__main__":
     w0_2, w0_1 = 300., 300. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1 + V
     alpha_1, alpha_2 = 10., 10. # Ind.-Boson frame coupling
-    N_1, N_2 = 7, 7  # set Hilbert space sizes
+    N_1, N_2 = 4, 4  # set Hilbert space sizes
     exc = N_1 + N_2
     J = EM.J_minimal
+    H_dim = w_1*XO*XO.dag() + w_2*OX*OX.dag() + w_xx*XX*XX.dag() + V*(XO*OX.dag() + OX*XO.dag())
+
     #Now we build all of the mapped operators and RC Liouvillian.
     L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2 = RC.RC_mapping_UD(w_1, w_2, w_xx, V, T_1, T_2, w0_1, w0_2, alpha_1, alpha_2, wc,  N_1, N_2, mu=mu)
     # electromagnetic bath liouvillians
@@ -214,7 +217,11 @@ if __name__ == "__main__":
     XO = tensor(XO, I_RC_1, I_RC_2)
     OX = tensor(OX, I_RC_1, I_RC_2)
     XX = tensor(XX, I_RC_1, I_RC_2)
-
+    evals, estates = H_dim.eigenstates()
+    evals, estates = zip(*sorted(zip(evals, estates))) # sort them
+    dark = tensor(estates[1]*estates[1].dag(), I_RC_1, I_RC_2)
+    bright = tensor(estates[2]*estates[2].dag(), I_RC_1, I_RC_2)
+    exciton_coherence = tensor(estates[1]*estates[2].dag(), I_RC_1, I_RC_2)
     Phonon_1 = tensor(I_dimer, phonon_num_1, I_RC_2)
     Phonon_2 = tensor(I_dimer, I_RC_1, phonon_num_2)
     disp_1 = tensor(I_dimer, x_1, I_RC_2)
@@ -222,13 +229,15 @@ if __name__ == "__main__":
 
     rho_0 = tensor(initial_sys,thermal_dm(N_1, n_RC_1), thermal_dm(N_2, n_RC_2))
     #rho_0 = rho_0/rho_0.tr()
-    exciton_coherence = OX*XO.dag()
+
+
+    site_coherence = OX*XO.dag()
     # Expectation values and time increments needed to calculate the dynamics
     expects = [OO*OO.dag(), XO*XO.dag(), OX*OX.dag(), XX*XX.dag()]
-    expects +=[0.5*(XO-OX)*(XO-OX).dag(), 0.5*(XO+OX)*(XO+OX).dag(), exciton_coherence]
+    expects +=[dark, bright, exciton_coherence]
     expects +=[Phonon_1, Phonon_2, disp_1, disp_2]
 
-    timelist = np.linspace(0,0.2,5000) # you need lots of points so that coherences are well defined -> spectra
+    timelist = np.linspace(0,0.5,6000) # you need lots of points so that coherences are well defined -> spectra
     #nonsec_check(eps, H, A_em, N) # Plots a scatter graph representation of non-secularity. Could use nrwa instead.
     #fig = plt.figure(figsize=(12, 6))
     #ax1 = fig.add_subplot(111)
@@ -236,7 +245,8 @@ if __name__ == "__main__":
 
 
     # Calculate dynamics
-    DATA_ns = mesolve(H_0, rho_0, timelist, [L_RC], expects, progress_bar=True)
+    opts = qt.Options(num_cpus=1)
+    DATA_ns = mesolve(H_0, rho_0, timelist, [L_RC], expects, options=opts, progress_bar=True)
     #DATA_s = mesolve(H_0, rho_0, timelist, [L_RC+L_s], expects, progress_bar=True)
     #DATA_naive = mesolve(H_0, rho_0, timelist, [L_RC+L_naive], expects, progress_bar=True)
 
