@@ -187,13 +187,13 @@ if __name__ == "__main__":
     w0_2, w0_1 = 300., 300. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1 + V
     alpha_1, alpha_2 = 10., 10. # Ind.-Boson frame coupling
-    N_1, N_2 = 4, 4  # set Hilbert space sizes
+    N_1, N_2 = 5,5  # set Hilbert space sizes
     exc = N_1 + N_2
     J = EM.J_minimal
     H_dim = w_1*XO*XO.dag() + w_2*OX*OX.dag() + w_xx*XX*XX.dag() + V*(XO*OX.dag() + OX*XO.dag())
 
     #Now we build all of the mapped operators and RC Liouvillian.
-    L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2 = RC.RC_mapping_UD(w_1, w_2, w_xx, V, T_1, T_2, w0_1, w0_2, alpha_1, alpha_2, wc,  N_1, N_2, mu=mu)
+    L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2 = RC.RC_mapping_UD(w_1, w_2, w_xx, V, T_1, T_2, w0_1, w0_2, alpha_1, alpha_2, wc,  N_1, N_2, exc, mu=mu)
     # electromagnetic bath liouvillians
     #L_ns = EM.L_nonsecular(H_0, A_EM, eps, alpha_EM, T_EM, J)
     #L_s = EM.L_vib_lindblad(H_0, A_EM, eps, alpha_EM, T_EM, J)
