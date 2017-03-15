@@ -1,5 +1,13 @@
 from qutip import basis, ket, mesolve, qeye, tensor, thermal_dm, destroy
 
+import dimer_phonons as RC
+import dimer_optical as EM
+from utils import *
+from dimer_plotting import *
+
+reload(RC)
+reload(EM)
+
 if __name__ == "__main__":
 
     OO = basis(4,0)
@@ -26,24 +34,25 @@ if __name__ == "__main__":
     w0_2, w0_1 = 300., 300. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1 + V
     alpha_1, alpha_2 = 10., 10. # Ind.-Boson frame coupling
-    N_1, N_2 = 5,5  # set Hilbert space sizes
+    N_1, N_2 = 6,6  # set Hilbert space sizes
     exc = 5
-    J = EM.J_minimal
+    num_cpus = 4
+    J = J_minimal
     H_dim = w_1*XO*XO.dag() + w_2*OX*OX.dag() + w_xx*XX*XX.dag() + V*(XO*OX.dag() + OX*XO.dag())
 
     #Now we build all of the mapped operators and RC Liouvillian.
-    L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2 = RC.RC_mapping_UD(w_1, w_2, w_xx, V, T_1, T_2, w0_1, w0_2, alpha_1, alpha_2, wc,  N_1, N_2, exc, mu=mu)
+    L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2 = RC.RC_mapping_UD(w_1, w_2, w_xx, V, T_1, T_2, w0_1, w0_2, alpha_1, alpha_2, wc,  N_1, N_2, exc, mu=mu, num_cpus=num_cpus)
     # electromagnetic bath liouvillians
-    #L_ns = EM.L_nonsecular(H_0, A_EM, eps, alpha_EM, T_EM, J)
-    #L_s = EM.L_vib_lindblad(H_0, A_EM, eps, alpha_EM, T_EM, J)
+    L_ns = EM.L_nonsecular(H_0, A_EM, eps, alpha_EM, T_EM, J, num_cpus=num_cpus)
+    L_s = EM.L_secular(H_0, A_EM, eps, alpha_EM, T_EM, J, num_cpus=num_cpus)
     #L_naive = EM_lind.electronic_lindblad(w_xx, w_1, eps, V, mu, alpha_EM, T_EM, N_1, N_2, exc)
     # Set up the initial density matrix
     I_dimer = qeye(4)
     I_RC_1 = qeye(N_1)
     I_RC_2 = qeye(N_2)
 
-    n_RC_1 = EM.Occupation(wRC_1, T_1)
-    n_RC_2 = EM.Occupation(wRC_2, T_2)
+    n_RC_1 = Occupation(wRC_1, T_1)
+    n_RC_2 = Occupation(wRC_2, T_2)
 
     phonon_num_1 = destroy(N_1).dag()*destroy(N_1)
     phonon_num_2 = destroy(N_2).dag()*destroy(N_2)
@@ -56,11 +65,11 @@ if __name__ == "__main__":
     XO = tensor(XO, I_RC_1, I_RC_2)
     OX = tensor(OX, I_RC_1, I_RC_2)
     XX = tensor(XX, I_RC_1, I_RC_2)
-    evals, estates = H_dim.eigenstates()
-    evals, estates = zip(*sorted(zip(evals, estates))) # sort them
-    dark = tensor(estates[1]*estates[1].dag(), I_RC_1, I_RC_2)
-    bright = tensor(estates[2]*estates[2].dag(), I_RC_1, I_RC_2)
-    exciton_coherence = tensor(estates[1]*estates[2].dag(), I_RC_1, I_RC_2)
+    eVals, eVecs = H_dim.eigenstates()
+    eVals, eVecs = zip(*sorted(zip(eVals, eVecs))) # sort them
+    dark = tensor(eVecs[1]*eVecs[1].dag(), I_RC_1, I_RC_2)
+    bright = tensor(eVecs[2]*eVecs[2].dag(), I_RC_1, I_RC_2)
+    exciton_coherence = tensor(eVecs[1]*eVecs[2].dag(), I_RC_1, I_RC_2)
     Phonon_1 = tensor(I_dimer, phonon_num_1, I_RC_2)
     Phonon_2 = tensor(I_dimer, I_RC_1, phonon_num_2)
     disp_1 = tensor(I_dimer, x_1, I_RC_2)
@@ -84,7 +93,7 @@ if __name__ == "__main__":
 
 
     # Calculate dynamics
-    opts = qt.Options(num_cpus=1)
+    opts = qt.Options(num_cpus=num_cpus)
     DATA_ns = mesolve(H_0, rho_0, timelist, [L_RC], expects, options=opts, progress_bar=True)
     #DATA_s = mesolve(H_0, rho_0, timelist, [L_RC+L_s], expects, progress_bar=True)
     #DATA_naive = mesolve(H_0, rho_0, timelist, [L_RC+L_naive], expects, progress_bar=True)

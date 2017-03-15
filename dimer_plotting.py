@@ -7,13 +7,6 @@ import qutip as qt
 import matplotlib.pyplot as plt
 import numpy as np
 
-import dimer_UD_liouv as RC
-import dimer_driving_liouv as EM
-import electronic_lindblad as EM_lind
-
-reload(RC)
-reload(EM)
-reload(EM_lind)
 
 
 
@@ -105,7 +98,7 @@ def plot_dynamics_spec(DAT, t):
     plt.close()
 
 
-def plot_RC_pop(ax): # No need to plot SS for T=0
+def plot_RC_pop(DATA_ns, ax): # No need to plot SS for T=0
     ss_ns = steadystate(H_0, [L_RC])
     #ss_v = steadystate(H_0, [L_RC+L_s])
     #ss_n = steadystate(H_0, [L_RC+L_naive])
@@ -126,7 +119,7 @@ def plot_RC_pop(ax): # No need to plot SS for T=0
 
 
 
-def plot_RC_disp(ax):
+def plot_RC_disp(DATA_ns,ax):
 
     #ax.title(r"$\omega_0=$""%i"r"$cm^{-1}$, $\alpha_{ph}=$""%f"r"$cm^{-1}$, $T_{EM}=$""%i K" %(w0, alpha_ph, T_EM))
     #ax.plot(timelist, 1-DATA_nrwa.expect[0], label='nrwa', color='y')

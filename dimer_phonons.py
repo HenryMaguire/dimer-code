@@ -1,4 +1,4 @@
-from qutip import basis, ket, mesolve, qeye, tensor, thermal_dm, destroy, steadystate, spost, spre, sprepost, enr_destroy, enr_identity, steadystate, to_super
+from qutip import Qobj,basis, ket, mesolve, qeye, tensor, thermal_dm, destroy, steadystate, spost, spre, sprepost, enr_destroy, enr_identity, steadystate, to_super
 import qutip.parallel as par
 from sympy.functions import coth
 import matplotlib.pyplot as plt
@@ -44,39 +44,41 @@ def dimer_ham_RC(w_1, w_2, w_xx, V, mu, Omega_1,
     H_S = H_dim + H_RC1 + H_RC2 + H_I1 + H_I2
     return H_S, A[0], A[1], A_EM
 
-def operator_func(index_2tuples, eVals=[], eVecs=[], A_1=[], A_2=[],
+def operator_func(j, k, eVals=[], eVecs=[], A_1=[], A_2=[],
                     gamma_1=1., gamma_2=1., beta_1=0.4, beta_2=0.4):
     """ For parallelising the Liouvillian contruction
     """
     Chi_1, Xi_1, Chi_2, Xi_2 = 0, 0, 0, 0 # Initialise operators
-    for j,k in index_2tuples:
-        try:
-            # eigenvalue difference, needs to be real for coth and hermiticity
-            e_jk = (eVals[j] - eVals[k]).real
-            # Overlap of collapse operator for site 1 with vibronic eigenbasis
-            A_jk_1 = A_1.matrix_element(eVecs[j].dag(), eVecs[k])
-            outer_eigen = eVecs[j] * (eVecs[k].dag())
+    try:
+        # eigenvalue difference, needs to be real for coth and hermiticity
+        e_jk = (eVals[j] - eVals[k]).real
+        # Overlap of collapse operator for site 1 with vibronic eigenbasis
+        J, K = eVecs[j], eVecs[k]
+        A_jk_1 = A_1.matrix_element(J.dag(), K)
+        outer_eigen = J*K.dag()
 
-            if sp.absolute(A_jk_1) > 0:
-                if sp.absolute(e_jk) > 0 and sp.absolute(beta_1) > 0:
-                    Chi_1 += 0.5*np.pi*e_jk*gamma_1 * float(coth(e_jk * beta_1 / 2).evalf())*A_jk_1*outer_eigen
-                    Xi_1 += 0.5*np.pi*e_jk*gamma_1 * A_jk_1 * outer_eigen
-                else:
-                    Chi_1 += np.pi*gamma_1*A_jk_1*outer_eigen/beta_1 # Just return coefficients which are left over
-                    #Xi += 0 #since J_RC goes to zero
-            A_jk_2 = A_2.matrix_element(eVecs[j].dag(), eVecs[k])
-            if sp.absolute(A_jk_2) > 0:
-                if sp.absolute(e_jk) > 0 and sp.absolute(beta_2)>0:
-                    # e_jk*gamma is the spectral density
-                    Chi_2 += 0.5*np.pi*e_jk*gamma_2 * float(coth(e_jk * beta_2 / 2).evalf())*A_jk_2*outer_eigen
-                    Xi_2 += 0.5*np.pi*e_jk*gamma_2 * A_jk_2 * outer_eigen
-                else:
-                    # If e_jk is zero, coth diverges but J goes to zero so limit taken seperately
-                    Chi_2 += np.pi*gamma_2*A_jk_2*outer_eigen/beta_2 # Just return coefficients which are left over
-                    #Xi += 0 #since J_RC goes to zero
-        except TypeError, e:
-            print eVals[j] - eVals[k], j,k, e
-    return Chi_1, Xi_1, Chi_2, Xi_2
+        if sp.absolute(A_jk_1) > 0:
+            if sp.absolute(e_jk) > 0 and sp.absolute(beta_1) > 0:
+                Chi_1 = 0.5*np.pi*e_jk*gamma_1 * float(coth(e_jk * beta_1 / 2).evalf())*A_jk_1*outer_eigen
+                Xi_1 = 0.5*np.pi*e_jk*gamma_1 * A_jk_1 * outer_eigen
+            else:
+                Chi_1 = np.pi*gamma_1*A_jk_1*outer_eigen/beta_1 # Just return coefficients which are left over
+                #Xi += 0 #since J_RC goes to zero
+        A_jk_2 = A_2.matrix_element(eVecs[j].dag(), eVecs[k])
+        if sp.absolute(A_jk_2) > 0:
+            if sp.absolute(e_jk) > 0 and sp.absolute(beta_2)>0:
+                # e_jk*gamma is the spectral density
+                Chi_2 = 0.5*np.pi*e_jk*gamma_2 * float(coth(e_jk * beta_2 / 2).evalf())*A_jk_2*outer_eigen
+                Xi_2 = 0.5*np.pi*e_jk*gamma_2 * A_jk_2 * outer_eigen
+            else:
+                # If e_jk is zero, coth diverges but J goes to zero so limit taken seperately
+                Chi_2 = np.pi*gamma_2*A_jk_2*outer_eigen/beta_2 # Just return coefficients which are left over
+                #Xi += 0 #since J_RC goes to zero
+    except e:
+        print e
+    #if type(Chi_1) != type(1):
+    #    print Chi_1.dims
+    return Qobj(Chi_1), Qobj(Xi_1), Qobj(Chi_2), Qobj(Xi_2)
 
 def RCME_operators_par(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus=1):
     dim_ham = H_0.shape[0]
@@ -86,9 +88,8 @@ def RCME_operators_par(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus
     for name in names:
         kwargs[name] = eval(name)
     l = dim_ham*range(dim_ham) # Perform two loops in one
-    index_2tuples = zip(sorted(l), l)
-    Chi_1, Xi_1, Chi_2, Xi_2 = par.parfor(operator_func, [index_2tuples],num_cpus=num_cpus, **kwargs)
-    return H_0, Chi_1[0], Xi_1[0], Chi_2[0], Xi_2[0]
+    Chi_1, Xi_1, Chi_2, Xi_2 = par.parfor(operator_func,  sorted(l), l, num_cpus=num_cpus, **kwargs)
+    return H_0, sum(Chi_1), sum(Xi_1), sum(Chi_2), sum(Xi_2)
 
 
 def RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2):
@@ -195,8 +196,8 @@ if __name__ == "__main__":
     wRC_1, wRC_2 = 300., 300.
     alpha_1, alpha_2 = 100./np.pi, 100./np.pi
     wc =53.
-    N_1, N_2= 8,8
-    exc = int(N_1+N_2/2.)-1
+    N_1, N_2= 5,5
+    exc = int(N_1+N_2)
     mu=1
 
     OO = basis(4,0)
@@ -208,14 +209,14 @@ if __name__ == "__main__":
     SIGMA_x1 = SIGMA_m1+SIGMA_m1.dag()
     SIGMA_x2 = SIGMA_m2+SIGMA_m2.dag()
 
-    L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2 = RC_mapping_UD(w_1, w_2,
-                w_xx, V, T_1, T_2, wRC_1, wRC_2, alpha_1, alpha_2, wc,
-                  N_1, N_2, exc, mu=1, num_cpus=3) # test that it works
+    L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2 = RC_mapping_UD(w_1, w_2, w_xx, V, T_1, T_2, wRC_1,
+                                            wRC_2, alpha_1, alpha_2, wc, N_1, N_2,
+                                            exc, mu=1, num_cpus=1) # test that it works
     I = enr_identity([N_1,N_2], exc)
     try:
         ss = steadystate(to_super(H_0), [L_RC], method='eigen')
-        print "Ground state population should be 1 "
-        assert (ss*tensor(OO*OO.dag(), I)).tr().real == 1 # ptrace doesn't really work
+        #print "Ground state population should be 1 "
+        #assert (ss*tensor(OO*OO.dag(), I)).tr().real == 1 # ptrace doesn't really work
     except ValueError, e:
         print "steady states error:", e
     print "dimer_phonons is finished. It is an {}by{} of type {}.".format(L_RC.shape[0],
