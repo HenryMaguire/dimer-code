@@ -1,12 +1,18 @@
-from qutip import basis, ket, mesolve, qeye, tensor, thermal_dm, destroy
+import sys
+from numpy import pi
+
+from qutip import basis, ket, mesolve, qeye, tensor, thermal_dm, destroy, enr_identity, enr_destroy, enr_thermal_dm
+import qutip as qt
+import matplotlib.pyplot as plt
 
 import dimer_phonons as RC
 import dimer_optical as EM
 from utils import *
-from dimer_plotting import *
+import dimer_plotting as vis
 
 reload(RC)
 reload(EM)
+reload(vis)
 
 if __name__ == "__main__":
 
@@ -19,7 +25,7 @@ if __name__ == "__main__":
     sigma_x1 = sigma_m1+sigma_m1.dag()
     sigma_x2 = sigma_m2+sigma_m2.dag()
 
-    w_1 = 1.0*8065.5
+    w_1 = 1.1*8065.5
     w_2 = 1.0*8065.5
     V = 92. #0.1*8065.5
     eps = (w_1+w_2)*0.5
@@ -33,49 +39,42 @@ if __name__ == "__main__":
     wc = 53. # Ind.-Boson frame phonon cutoff freq
     w0_2, w0_1 = 300., 300. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1 + V
-    alpha_1, alpha_2 = 10., 10. # Ind.-Boson frame coupling
-    N_1, N_2 = 6,6  # set Hilbert space sizes
-    exc = 5
-    num_cpus = 4
+    alpha_1, alpha_2 = 400/pi, 400/pi # Ind.-Boson frame coupling
+    N_1, N_2 = 5,5  # set Hilbert space sizes
+    exc = int((N_1+N_2)*0.75)
+    num_cpus = 1
     J = J_minimal
     H_dim = w_1*XO*XO.dag() + w_2*OX*OX.dag() + w_xx*XX*XX.dag() + V*(XO*OX.dag() + OX*XO.dag())
 
-    #Now we build all of the mapped operators and RC Liouvillian.
-    L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2 = RC.RC_mapping_UD(w_1, w_2, w_xx, V, T_1, T_2, w0_1, w0_2, alpha_1, alpha_2, wc,  N_1, N_2, exc, mu=mu, num_cpus=num_cpus)
-    # electromagnetic bath liouvillians
-    L_ns = EM.L_nonsecular(H_0, A_EM, eps, alpha_EM, T_EM, J, num_cpus=num_cpus)
-    L_s = EM.L_secular(H_0, A_EM, eps, alpha_EM, T_EM, J, num_cpus=num_cpus)
-    #L_naive = EM_lind.electronic_lindblad(w_xx, w_1, eps, V, mu, alpha_EM, T_EM, N_1, N_2, exc)
-    # Set up the initial density matrix
+
     I_dimer = qeye(4)
-    I_RC_1 = qeye(N_1)
-    I_RC_2 = qeye(N_2)
+    I = enr_identity([N_1,N_2], exc)
+    atemp = enr_destroy([N_1,N_2], exc)
+    n_RC_1 = Occupation(w0_1, T_1)
+    n_RC_2 = Occupation(w0_2, T_2)
 
-    n_RC_1 = Occupation(wRC_1, T_1)
-    n_RC_2 = Occupation(wRC_2, T_2)
-
-    phonon_num_1 = destroy(N_1).dag()*destroy(N_1)
-    phonon_num_2 = destroy(N_2).dag()*destroy(N_2)
-    x_1 = (destroy(N_1).dag()+destroy(N_1))
-    x_2 = (destroy(N_2).dag()+destroy(N_2))
+    phonon_num_1 = atemp[0].dag()*atemp[0]
+    phonon_num_2 = atemp[1].dag()*atemp[1]
+    x_1 = (atemp[0].dag()+atemp[0])
+    x_2 = (atemp[1].dag()+atemp[1])
 
     initial_sys = 0.5*(XO+OX)*(XO+OX).dag()
 
-    OO = tensor(OO, I_RC_1, I_RC_2)
-    XO = tensor(XO, I_RC_1, I_RC_2)
-    OX = tensor(OX, I_RC_1, I_RC_2)
-    XX = tensor(XX, I_RC_1, I_RC_2)
+    OO = tensor(OO, I)
+    XO = tensor(XO, I)
+    OX = tensor(OX, I)
+    XX = tensor(XX, I)
     eVals, eVecs = H_dim.eigenstates()
     eVals, eVecs = zip(*sorted(zip(eVals, eVecs))) # sort them
-    dark = tensor(eVecs[1]*eVecs[1].dag(), I_RC_1, I_RC_2)
-    bright = tensor(eVecs[2]*eVecs[2].dag(), I_RC_1, I_RC_2)
-    exciton_coherence = tensor(eVecs[1]*eVecs[2].dag(), I_RC_1, I_RC_2)
-    Phonon_1 = tensor(I_dimer, phonon_num_1, I_RC_2)
-    Phonon_2 = tensor(I_dimer, I_RC_1, phonon_num_2)
-    disp_1 = tensor(I_dimer, x_1, I_RC_2)
-    disp_2 = tensor(I_dimer, I_RC_1, x_2)
+    dark = tensor(eVecs[1]*eVecs[1].dag(), I)
+    bright = tensor(eVecs[2]*eVecs[2].dag(), I)
+    exciton_coherence = tensor(eVecs[1]*eVecs[2].dag(), I)
+    Phonon_1 = tensor(I_dimer, phonon_num_1)
+    Phonon_2 = tensor(I_dimer, phonon_num_2)
+    disp_1 = tensor(I_dimer, x_1)
+    disp_2 = tensor(I_dimer, x_2)
 
-    rho_0 = tensor(initial_sys,thermal_dm(N_1, n_RC_1), thermal_dm(N_2, n_RC_2))
+    rho_0 = tensor(initial_sys, enr_thermal_dm([N_1,N_2], exc, [n_RC_1, n_RC_2]))
     #rho_0 = rho_0/rho_0.tr()
 
 
@@ -85,7 +84,44 @@ if __name__ == "__main__":
     expects +=[dark, bright, exciton_coherence]
     expects +=[Phonon_1, Phonon_2, disp_1, disp_2]
 
-    timelist = np.linspace(0,0.5,6000) # you need lots of points so that coherences are well defined -> spectra
+    timelist = np.linspace(0,0.5,6000)
+
+    #Now we build all of the mapped operators and RC Liouvillian.
+    L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(w_1, w_2, w_xx,
+                                        V, T_1, T_2, w0_1, w0_2, alpha_1, alpha_2,
+                                        wc,  N_1, N_2, exc, mu=mu, num_cpus=num_cpus)
+    # electromagnetic bath liouvillians
+
+    #print sys.getsizeof(L_ns)
+    opts = qt.Options(num_cpus=num_cpus)
+    fig = plt.figure()
+    try:
+        global DATA_ns
+        L_ns = EM.L_nonsecular(H_0, A_EM, eps, alpha_EM, T_EM, J, num_cpus=num_cpus)
+        DATA_ns = mesolve(H_0, rho_0, timelist, [L_RC+L_ns], expects, options=opts,
+                                                            progress_bar=True)
+        ax = fig.add_subplot(211)
+        vis.plot_dynamics(DATA_ns, timelist, ax, title='Non-secular driving\n')
+        print 'Non-secular dynamics calculated and plotted'
+    except e:
+        print "Could not get non-secular-driving dynamics because ",e
+
+    try:
+        L_s = EM.L_secular(H_0, A_EM, eps, alpha_EM, T_EM, J, num_cpus=num_cpus)
+        DATA_s = mesolve(H_0, rho_0, timelist, [L_RC+L_ns], expects, options=opts,
+                                                            progress_bar=True)
+        ax = fig.add_subplot(212)
+        vis.plot_dynamics(DATA_s, timelist, ax, title='Non-secular driving\n')
+        print 'Secular dynamics calculated and plotted'
+    except e:
+        print "Could not get secular-driving dynamics because ",e
+
+
+    #del L_ns
+    #L_s = EM.L_secular(H_0, A_EM, eps, alpha_EM, T_EM, J, num_cpus=num_cpus)
+    #L_naive = EM_lind.electronic_lindblad(w_xx, w_1, eps, V, mu, alpha_EM, T_EM, N_1, N_2, exc)
+    # Set up the initial density matrix
+     # you need lots of points so that coherences are well defined -> spectra
     #nonsec_check(eps, H, A_em, N) # Plots a scatter graph representation of non-secularity. Could use nrwa instead.
     #fig = plt.figure(figsize=(12, 6))
     #ax1 = fig.add_subplot(111)
@@ -93,19 +129,19 @@ if __name__ == "__main__":
 
 
     # Calculate dynamics
-    opts = qt.Options(num_cpus=num_cpus)
-    DATA_ns = mesolve(H_0, rho_0, timelist, [L_RC], expects, options=opts, progress_bar=True)
+
     #DATA_s = mesolve(H_0, rho_0, timelist, [L_RC+L_s], expects, progress_bar=True)
     #DATA_naive = mesolve(H_0, rho_0, timelist, [L_RC+L_naive], expects, progress_bar=True)
-
-    plot_coherences(DATA_ns, title='Non-secular driving\n')
-
-    fig = plt.figure(figsize=(12, 6))
-    ax1 = fig.add_subplot(121)
-    ax2 = fig.add_subplot(122)
-    plot_RC_pop(ax1)
-    plot_RC_disp(ax2)
-
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    vis.plot_dynamics(DATA_ns, timelist, ax, title='Non-secular driving\n')
+    '''
+        fig = plt.figure(figsize=(12, 6))
+        ax1 = fig.add_subplot(121)
+        ax2 = fig.add_subplot(122)
+        plot_RC_pop(DATA_ns, ax1)
+        plot_RC_disp(DATA_ns, ax2)
+    '''
     #SS, nvals = check.SS_convergence_check(eps, T_EM, T_ph, wc, w0, alpha_ph, alpha_EM, start_n=10)
     #plt.plot(nvals, SS)
     #plot_dynamics_spec(DATA_s, timelist)

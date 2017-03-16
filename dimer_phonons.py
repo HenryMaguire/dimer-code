@@ -6,9 +6,47 @@ import numpy as np
 import scipy as sp
 import time
 
+def dimer_ham_RC_full(w_1, w_2, w_xx, V, mu, Omega_1, Omega_2, kap_1, kap_2, N_1, N_2):
+    """
+    Calculates RC operators in full, non-restriced basis
+
+    Input: System splitting, RC freq., system-RC coupling and Hilbert space dimension
+    Output: Hamiltonian, sigma_- and sigma_z in the vibronic Hilbert space
+    """
+    OO = basis(4,0)
+    XO = basis(4,1)
+    OX = basis(4,2)
+    XX = basis(4,3)
+    sigma_1 = OX*XX.dag() + OO*XO.dag()
+    sigma_2 = XO*XX.dag() + OO*OX.dag()
+    assert sigma_1*OX == sigma_2*XO
+    I_RC_1 = qeye(N_1)
+    I_RC_2 = qeye(N_2)
+    I_dim = qeye(4)
+    H_dim = w_1*XO*XO.dag() + w_2*OX*OX.dag() + w_xx*XX*XX.dag() + V*(XO*OX.dag() + OX*XO.dag())
+    print H_dim
+    H_dim = tensor(H_dim, I_RC_1, I_RC_2)
+    A_EM = tensor(sigma_1+mu*sigma_2, I_RC_1, I_RC_2)
+
+    A_1 = destroy(N_1).dag()+ destroy(N_1)
+    A_2 = destroy(N_2).dag()+ destroy(N_2)
+
+    A_1 = tensor(I_dim, A_1, I_RC_2)
+    A_2 = tensor(I_dim, I_RC_1, A_2)
+
+    H_I1 = kap_1*tensor(sigma_1.dag()*sigma_1, I_RC_1, I_RC_2)*A_1
+    H_I2 = kap_2*tensor(sigma_2.dag()*sigma_2, I_RC_1, I_RC_2)*A_2
+
+    H_RC1 = tensor(I_dim, Omega_1*destroy(N_1).dag()*destroy(N_1), I_RC_2)
+    H_RC2 = tensor(I_dim, I_RC_1, Omega_2*destroy(N_2).dag()*destroy(N_2))
+
+    H_S = H_dim + H_RC1 + H_RC2 + H_I1 + H_I2
+
+    return H_S, A_1, A_2, A_EM
+
 def dimer_ham_RC(w_1, w_2, w_xx, V, mu, Omega_1,
                 Omega_2, kap_1, kap_2, N_1, N_2, exc):
-    """ Builds RC Hamiltonian
+    """ Builds RC Hamiltonian in excitation restricted subspace
 
     Input: System splitting, RC freq., system-RC coupling
     and Hilbert space dimension Output: Hamiltonian, all
@@ -33,16 +71,17 @@ def dimer_ham_RC(w_1, w_2, w_xx, V, mu, Omega_1,
 
     atemp = enr_destroy([N_1,N_2], exc)
 
-    A = [tensor(I_dim, aa) for aa in atemp]
+    a_RC_exc = [tensor(I_dim, aa) for aa in atemp] # annhilation ops in exc restr basis
+    A_1 = a_RC_exc[0].dag() + a_RC_exc[0]
+    A_2 = a_RC_exc[1].dag() + a_RC_exc[1]
+    H_I1 = kap_1*tensor(SIGMA_1.dag()*SIGMA_1, I)*A_1
+    H_I2 = kap_2*tensor(SIGMA_2.dag()*SIGMA_2, I)*A_2
 
-    H_I1 = kap_1*tensor(SIGMA_1.dag()*SIGMA_1, I)*A[0]
-    H_I2 = kap_2*tensor(SIGMA_2.dag()*SIGMA_2, I)*A[1]
-
-    H_RC1 = Omega_1*A[0].dag()*A[0]
-    H_RC2 = Omega_2*A[1].dag()*A[1]
+    H_RC1 = Omega_1*a_RC_exc[0].dag()*a_RC_exc[0]
+    H_RC2 = Omega_2*a_RC_exc[1].dag()*a_RC_exc[1]
 
     H_S = H_dim + H_RC1 + H_RC2 + H_I1 + H_I2
-    return H_S, A[0], A[1], A_EM
+    return H_S, A_1, A_2, A_EM
 
 def operator_func(j, k, eVals=[], eVecs=[], A_1=[], A_2=[],
                     gamma_1=1., gamma_2=1., beta_1=0.4, beta_2=0.4):
@@ -92,7 +131,7 @@ def RCME_operators_par(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus
     return H_0, sum(Chi_1), sum(Xi_1), sum(Chi_2), sum(Xi_2)
 
 
-def RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2):
+def RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus=0):
     # This function will be passed a TLS-RC hamiltonian, RC operator, spectral density and beta
     # outputs all of the operators needed for the RCME (underdamped)
     dim_ham = H_0.shape[0]
@@ -150,7 +189,14 @@ def liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2, T_1, T_2, 
         beta_2 = 1./(conversion * T_2)
         #RCnb_2 = (1 / (sp.exp( beta_2 * wRC_2)-1))
     # Now this function has to construct the liouvillian so that it can be passed to mesolve
-    H_0, Chi_1, Xi_1,Chi_2, Xi_2  = RCME_operators_par(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus=1)
+    H_0, Chi_1, Xi_1,Chi_2, Xi_2  = RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus=1)
+    #H_0, Chi_1_, Xi_1_,Chi_2_, Xi_2_  = RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2)
+    '''
+    print np.sum(Chi_1.full() == Chi_1_.full()), Chi_1.shape[0]**2
+    print np.sum(Chi_2.full() == Chi_2_.full()), Chi_1.shape[0]**2
+    print np.sum(Xi_1.full() == Xi_1_.full()), Chi_1.shape[0]**2
+    print np.sum(Xi_2.full() == Xi_2_.full()), Chi_1.shape[0]**2
+    print abs(Chi_1.full()) == abs(Chi_1_.full())'''
     L = 0
     #print beta_1, beta_2
     for A, Chi in zip([A_1, A_2],[Chi_1, Chi_2]):
@@ -180,7 +226,7 @@ def RC_mapping_UD(w_1, w_2, w_xx, V, T_1, T_2, wRC_1, wRC_2, alpha_1, alpha_2, w
     L_RC =  liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2, T_1, T_2, num_cpus=1)
     full_size = (4*N_1*N_1)**2
     print "It is {}by{} and of type {}. The full basis would be {}by{}".format(L_RC.shape[0], L_RC.shape[0], L_RC.type, full_size, full_size)
-    return L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2
+    return L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2
     #H_dim_full = w_1*XO*XO.dag() + w_2*w_1*OX*OX.dag() + w_xx*XX*XX.dag() + V*((SIGMA_m1+SIGMA_m1.dag())*(SIGMA_m2+SIGMA_m2.dag()))
 
 
@@ -209,9 +255,16 @@ if __name__ == "__main__":
     SIGMA_x1 = SIGMA_m1+SIGMA_m1.dag()
     SIGMA_x2 = SIGMA_m2+SIGMA_m2.dag()
 
-    L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2 = RC_mapping_UD(w_1, w_2, w_xx, V, T_1, T_2, wRC_1,
+    L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kap_1, kap_2 = RC_mapping_UD(w_1, w_2, w_xx, V, T_1, T_2, wRC_1,
                                             wRC_2, alpha_1, alpha_2, wc, N_1, N_2,
                                             exc, mu=1, num_cpus=1) # test that it works
+    H_S, A_1, A_2, A_EM = dimer_ham_RC_full(w_1, w_2, w_xx, V, mu, wRC_1, wRC_2, kap_1, kap_2, N_1, N_2)
+    H_S_, A_1_, A_2_, A_EM_ = dimer_ham_RC(w_1, w_2, w_xx, V, mu, wRC_1, wRC_2, kap_1, kap_2, N_1, N_2, exc)
+
+    for i,j in zip([H_S, A_1, A_2, A_EM], [H_S_, A_1_, A_2_, A_EM_]):
+        print i.shape, j.shape, i.dims, j.dims
+        print np.sum(i.full() == j.full()), i.shape[0]**2
+    '''
     I = enr_identity([N_1,N_2], exc)
     try:
         ss = steadystate(to_super(H_0), [L_RC], method='eigen')
@@ -220,4 +273,4 @@ if __name__ == "__main__":
     except ValueError, e:
         print "steady states error:", e
     print "dimer_phonons is finished. It is an {}by{} of type {}.".format(L_RC.shape[0],
-                                                            L_RC.shape[0], L_RC.type)
+                                                            L_RC.shape[0], L_RC.type)'''

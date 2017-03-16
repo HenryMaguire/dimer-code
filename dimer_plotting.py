@@ -10,9 +10,10 @@ import numpy as np
 
 
 
-def plot_dynamics(DATA, title=''):
+
+def plot_dynamics(DATA, timelist, ax, title=''):
     # takes a string saying the plot title
-    plt.figure()
+    '''
     if T_EM>0.0: # No need to plot SS for T=0
         ss_ns = steadystate(H_0, [L_RC+L_ns]).ptrace(0)
         #ss_v = steadystate(H_0, [L_RC+L_s]).ptrace(0)
@@ -21,18 +22,18 @@ def plot_dynamics(DATA, title=''):
         #ss_g_v = ss_v.matrix_element(G.dag(), G)
         #ss_g_n = ss_n.matrix_element(OO.dag(), OO)
         #plt.axhline(1-ss_g_v, color='b', ls='--')
-        plt.axhline(1-ss_g_ns, color='g', ls='--')
-        #plt.axhline(1-ss_g_n, color='r', ls='--')
-    title = title + r"$\omega_0=$""%i"r"$cm^{-1}$, $\alpha_{ph}=$""%f"r"$cm^{-1}$, $T_{EM}=$""%i K" %(w0_1, alpha_1, T_EM)
-    plt.title(title)
+        ax.axhline(1-ss_g_ns, color='g', ls='--')
+        #plt.axhline(1-ss_g_n, color='r', ls='--')'''
+    #title = title + r"$\omega_0=$""%i"r"$cm^{-1}$, $\alpha_{ph}=$""%f"r"$cm^{-1}$, $T_{EM}=$""%i K" %(w0_1, alpha_1, T_EM)
+    #ax.title(title)
     # Want to plot the dynamics for all of the eigenstates
-    plt.plot(timelist, DATA.expect[0].real, label=r'|00>', color='y')
-    plt.plot(timelist, DATA.expect[1].real, label=r'|XO>', color='g')
-    plt.plot(timelist, DATA.expect[2].real, label=r'|OX>', color='b')
-    plt.plot(timelist, DATA.expect[3].real, label=r'|XX>', color='r')
-    plt.ylabel("Site populations")
-    plt.xlabel("Time (ps)")
-    plt.legend()
+    ax.plot(timelist, DATA.expect[0].real, label=r'|00>', color='y')
+    ax.plot(timelist, DATA.expect[1].real, label=r'|XO>', color='g')
+    ax.plot(timelist, DATA.expect[2].real, label=r'|OX>', color='b')
+    ax.plot(timelist, DATA.expect[3].real, label=r'|XX>', color='r')
+    ax.set_ylabel("Site populations")
+    ax.set_xlabel("Time (ps)")
+    ax.legend()
     #p_file_name = "Notes/Images/Dynamics/Pop_a{:d}_Tph{:d}_Tem{:d}_w0{:d}.pdf".format(int(alpha_ph), int(T_ph), int(T_EM), int(w0))
     #plt.savefig(p_file_name)
 
@@ -61,18 +62,16 @@ def plot_eig_dynamics(DATA, title=''):
     plt.legend()
     #p_file_name = "Notes/Images/Dynamics/Pop_a{:d}_Tph{:d}_Tem{:d}_w0{:d}.pdf".format(int(alpha_ph), int(T_ph), int(T_EM), int(w0))
     #plt.savefig(p_file_name)
-def plot_coherences(DATA, title=''):
-
-    plt.figure()
-    plt.title(r"$\alpha_{ph}=$""%i"r"$cm^{-1}$, $T_{EM}=$""%i K" %(alpha_1, T_EM))
+def plot_coherences(DATA, timelist, ax, title=''):
+    #ax.title(r"$\alpha_{ph}=$""%i"r"$cm^{-1}$, $T_{EM}=$""%i K" %(alpha_1, T_EM))
     #plt.plot(timelist, DATA_s.expect[1].real, label='Vib. Lindblad', color='b')
-    plt.plot(timelist, DATA_ns.expect[6].real, label='real', color='g')
-    plt.plot(timelist, DATA_ns.expect[6].imag, label='imaginary', color='r')
+    ax.plot(timelist, DATA.expect[6].real, label='real', color='g')
+    ax.plot(timelist, DATA.expect[6].imag, label='imaginary', color='r')
     #plt.plot(timelist, DATA_naive.expect[1].real, label='Simple Lindblad', color='r',alpha=0.4)
-    plt.legend()
-    plt.ylabel("Eigenstate Coherence")
-    plt.xlabel("Time (cm)")
-    file_name = "Notes/Images/Dynamics/Coh_a{:d}_Tph{:d}_Tem{:d}_w0{:d}.pdf".format(int(alpha_1), int(T_1), int(T_EM), int(w0_1))
+    ax.legend()
+    ax.set_ylabel("Eigenstate Coherence")
+    ax.set_xlabel("Time (cm)")
+    #file_name = "Notes/Images/Dynamics/Coh_a{:d}_Tph{:d}_Tem{:d}_w0{:d}.pdf".format(int(alpha_1), int(T_1), int(T_EM), int(w0_1))
     #plt.savefig(file_name)
     #plt.close()
 

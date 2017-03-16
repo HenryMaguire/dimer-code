@@ -90,7 +90,7 @@ def L_secular(H_vib, A, eps, Gamma, T, J, num_cpus=1):
     kwargs = dict()
     for name in names:
         kwargs[name] = eval(name)
-    l = dim_ham*range(dim_ham) # Perform two loops in one
+    l = dim_ham*range(dim_ham)
     L = np.sum(par.parfor(secular_function, sorted(l), l,
                                             num_cpus=num_cpus, **kwargs))
 
