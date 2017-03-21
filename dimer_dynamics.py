@@ -94,7 +94,7 @@ if __name__ == "__main__":
     expects +=[dark, bright, exciton_coherence]
     expects +=[Phonon_1, Phonon_2, disp_1, disp_2]
 
-    timelist = np.linspace(0,0.5,6000)
+    timelist = np.linspace(0,4.0,6000)*0.188
 
     #Now we build all of the mapped operators and RC Liouvillian.
 
@@ -139,18 +139,22 @@ if __name__ == "__main__":
 
         DATA_ns = mesolve(H_0, rho_0, timelist, [L_full], expects, options=opts,
                                                             progress_bar=True)
+        ss_dm = 0
+        try:
+            ss_dm = qt.steadystate(H_0, rho_0)
+        except:
+            print "Warning: steady state density matrix didn't converge. Probably"
+            print "\t due to some problem with excitation restriction. \n"
         timelist/=0.188 # Convert from cm to picoseconds
         #DATA_ns = load_obj("DATA_N7_exc8")
         fig = plt.figure(figsize=(12,6))
         ax1 = fig.add_subplot(121)
         title = 'Eigenstate population'
         #title = title + r"$\omega_0=$""%i"r"$cm^{-1}$, $\alpha_{ph}=$""%f"r"$cm^{-1}$, $T_{EM}=$""%i K" %(w0_1, alpha_1, T_EM)
-        split_colors = False
-        vis.plot_eig_dynamics(DATA_ns, timelist, ax1, title='', split_colors=split_colors)
-        print 'Non-secular eig dynamics calculated and plotted'
+        vis.plot_dynamics(DATA_ns, timelist, expects, ax1, ss_dm=ss_dm)
         ax2 = fig.add_subplot(122)
-        vis.plot_coherences(DATA_ns, timelist, ax2, title='', split_colors=split_colors)
-        print 'Non-secular eig coherences plotted'
+        vis.plot_coherences(DATA_ns, timelist, expects, ax2, ss_dm=ss_dm)
+        print 'Plotting worked!'
     except Exception as err:
         print "Could not get non-secular-driving dynamics because ",err
 
