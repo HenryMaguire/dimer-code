@@ -145,10 +145,11 @@ if __name__ == "__main__":
         ax1 = fig.add_subplot(121)
         title = 'Eigenstate population'
         #title = title + r"$\omega_0=$""%i"r"$cm^{-1}$, $\alpha_{ph}=$""%f"r"$cm^{-1}$, $T_{EM}=$""%i K" %(w0_1, alpha_1, T_EM)
-        vis.plot_eig_dynamics(DATA_ns, timelist, ax1, title='')
+        split_colors = False
+        vis.plot_eig_dynamics(DATA_ns, timelist, ax1, title='', split_colors=split_colors)
         print 'Non-secular eig dynamics calculated and plotted'
         ax2 = fig.add_subplot(122)
-        vis.plot_coherences(DATA_ns, timelist, ax2, title='')
+        vis.plot_coherences(DATA_ns, timelist, ax2, title='', split_colors=split_colors)
         print 'Non-secular eig coherences plotted'
     except Exception as err:
         print "Could not get non-secular-driving dynamics because ",err
