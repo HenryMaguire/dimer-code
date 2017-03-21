@@ -1,15 +1,50 @@
+import time
+
 
 from qutip import basis, ket, mesolve, qeye, tensor, thermal_dm, destroy, steadystate
 import matplotlib.pyplot as plt
 import numpy as np
-import dimer_UD_liouv as RC
-import dimer_driving_liouv as EM
-import electronic_lindblad as EM_naive
-
+import dimer_phonons as RC
+import dimer_optical as EM
+#import electronic_lindblad as EM_naive
+from dimer_plotting import dataObject
+from utils import *
 reload(RC)
 reload(EM)
 
-
+def bias_dependence(biases, args):
+    name = 'DATA/dm_bias_dependence_alpha{}'.format(int(args['alpha_1']))
+    ss_list = []
+    for eps in biases:
+        w_1 = args['w_1']
+        w_2 = w_1-eps
+        w_xx = w_1 + w_2 + args['V']
+        av_w = (w_1+w_2)*0.5
+        L_RC, H, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(
+                                        w_1, w_2, w_xx, args['V'], args['T_1'],
+                                        args['T_2'], args['w0_1'], args['w0_2'], args['alpha_1'],
+                                        args['alpha_2'], args['wc'], args["N_1"], args['N_2'],
+                                        args['exc'],mu=args['mu'], num_cpus=args['num_cpus'])
+        #print L_RC.shape
+        L_ns = EM.L_nonsecular(H, A_EM, av_w, args['alpha_EM'], args['T_EM'], args['J'],
+                                        num_cpus=args['num_cpus'])
+        ti = time.time()
+        # rather than saving all the massive objects to a list, just calculate steady_states and return them
+        ss_list.append(steadystate(H, [L_RC+L_ns]))
+        print "Calculating the steady state took {} seconds".format(time.time()-ti)
+        print "so far {} steady states".format(len(ss_list))
+    print "file saving at {}".format(name)
+    save_obj(ss_list, name)
+    """
+    obj_list = load_obj(name)
+    s = dataObject(L_RC+L_ns, H)
+    s.add_params(args)
+    obj_list.append(s)
+    print len(obj_list)
+    save_obj(obj_list, name)
+    del obj_list # frees up memory for next iteration
+    print "Loading, creating, saving, deleting the data objects took {} seconds".format(time.time()-ti)
+    """
 def SS_convergence_check(sigma, w_1, w_2, w_xx, V, T_1, T_2, w0_1, w0_2, alpha_1, alpha_2, wc,  alpha_EM, T_EM, mu=0, expect_op='bright', time_units='cm', start_n=2, end_n=5, method='direct'):
 
     """

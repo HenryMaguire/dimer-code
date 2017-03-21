@@ -1,7 +1,16 @@
 import numpy as np
 import scipy as sp
 from qutip import spre, spost, sprepost
+import pickle
 
+
+def load_obj(name ):
+    with open(name + '.pickle', 'rb') as f:
+        return pickle.load(f)
+
+def save_obj(obj, name ):
+    with open(name + '.pickle', 'wb') as f:
+        pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
 
 def Occupation(omega, T, time_units='cm'):
     conversion = 0.695

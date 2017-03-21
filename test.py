@@ -34,3 +34,6 @@ def dimer_ham_RC_full(w_1, w_2, w_xx, V, mu, Omega_1, Omega_2, kap_1, kap_2, N_1
     H_S = H_dim + H_RC1 + H_RC2 + H_I1 + H_I2
 
     return H_S, A_1, A_2, A_EM
+
+
+s = open('DATA/Exactdata.dat', 'r')

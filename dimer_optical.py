@@ -74,6 +74,7 @@ def L_nonsecular(H_vib, A, eps, Gamma, T, J, num_cpus=1):
     X1, X2, X3, X4 = np.sum(X1), np.sum(X2), np.sum(X3), np.sum(X4)
     L = spre(A*X1) -sprepost(X1,A)+spost(X2*A)-sprepost(A,X2)
     L+= spre(A.dag()*X3)-sprepost(X3, A.dag())+spost(X4*A.dag())-sprepost(A.dag(), X4)
+    #print np.sum(X1.full()), np.sum(X2.full()), np.sum(X3.full()), np.sum(X4.full())
     print "It took ", time.time()-ti, " seconds to build the Non-secular RWA Liouvillian"
     return -0.5*L
 
@@ -91,11 +92,11 @@ def L_secular(H_vib, A, eps, Gamma, T, J, num_cpus=1):
     for name in names:
         kwargs[name] = eval(name)
     l = dim_ham*range(dim_ham)
-    L = np.sum(par.parfor(secular_function, sorted(l), l,
-                                            num_cpus=num_cpus, **kwargs))
+    L = par.parfor(secular_function, sorted(l), l,
+                                            num_cpus=num_cpus, **kwargs)
 
     print "It took ", time.time()-ti, " seconds to build the vibronic Lindblad Liouvillian"
-    return -L
+    return -np.sum(L)
 
 
 if __name__ == "__main__":

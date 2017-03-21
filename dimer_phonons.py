@@ -24,7 +24,7 @@ def dimer_ham_RC_full(w_1, w_2, w_xx, V, mu, Omega_1, Omega_2, kap_1, kap_2, N_1
     I_RC_2 = qeye(N_2)
     I_dim = qeye(4)
     H_dim = w_1*XO*XO.dag() + w_2*OX*OX.dag() + w_xx*XX*XX.dag() + V*(XO*OX.dag() + OX*XO.dag())
-    print H_dim
+    print H_dim.full()
     H_dim = tensor(H_dim, I_RC_1, I_RC_2)
     A_EM = tensor(sigma_1+mu*sigma_2, I_RC_1, I_RC_2)
 
@@ -221,6 +221,7 @@ def RC_mapping_UD(w_1, w_2, w_xx, V, T_1, T_2, wRC_1, wRC_2, alpha_1, alpha_2, w
     Gamma_2 = (wRC_2**2)/wc
     gamma_2 = Gamma_2 / (2. * np.pi * wRC_2)
     kappa_2 = np.sqrt(np.pi * alpha_2 * wRC_2 / 2.)
+    print "****************************************************************"
     print "PARAMS:\n splitting ={}, coupling SB cutoff={}\n RC1 oscillator frequency={}, RC2 oscillator frequency={} \n  gamma={}, kappa={}, N={}\n".format(w_1-w_2, wc, wRC_1, wRC_2, gamma_1, kappa_1, N_1)
     H_0, A_1, A_2, A_EM = dimer_ham_RC(w_1, w_2, w_xx, V, mu, wRC_1, wRC_2, kappa_1, kappa_2, N_1, N_2, exc)
     L_RC =  liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2, T_1, T_2, num_cpus=1)
