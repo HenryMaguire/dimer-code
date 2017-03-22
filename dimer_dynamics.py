@@ -5,6 +5,8 @@ from qutip import Qobj, basis, ket, mesolve, qeye, tensor, thermal_dm, destroy, 
 import qutip as qt
 import matplotlib.pyplot as plt
 import matplotlib
+from matplotlib import gridspec
+
 import dimer_phonons as RC
 import dimer_optical as EM
 from utils import *
@@ -48,7 +50,7 @@ if __name__ == "__main__":
     alpha_1, alpha_2 = 400/pi, 400/pi # Ind.-Boson frame coupling
     N_1, N_2 = 5,5  # set Hilbert space sizes
     exc = int((N_1+N_2)*0.5)
-    num_cpus = 4
+    num_cpus = 2
     J = J_minimal
 
     H_dim = w_1*XO*XO.dag() + w_2*OX*OX.dag() + w_xx*XX*XX.dag() + V*(XO*OX.dag() + OX*XO.dag())
@@ -94,7 +96,7 @@ if __name__ == "__main__":
     expects +=[dark, bright, exciton_coherence]
     expects +=[Phonon_1, Phonon_2, disp_1, disp_2]
 
-    timelist = np.linspace(0,4.0,6000)*0.188
+    timelist = np.linspace(0,10.0,10000)*0.188
 
     #Now we build all of the mapped operators and RC Liouvillian.
 
@@ -108,9 +110,9 @@ if __name__ == "__main__":
     #fig = plt.figure(figsize=(12,6))
     alpha_ph = [50/pi]#, 100/pi, 200/pi, 400/pi, 700/pi]
 
-    L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(w_1, w_2, w_xx,
-                                        V, T_1, T_2, w0_1, w0_2, alpha_1, alpha_2,
-                                        wc,  N_1, N_2, exc, mu=mu, num_cpus=num_cpus)
+    #L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(w_1, w_2, w_xx,
+    #                                    V, T_1, T_2, w0_1, w0_2, alpha_1, alpha_2,
+    #                                    wc,  N_1, N_2, exc, mu=mu, num_cpus=num_cpus)
     """
     try:
         biases = np.linspace(0, 1000, 35)
@@ -123,7 +125,8 @@ if __name__ == "__main__":
             print "WE just finished pi*alpha={}".format(int(alpha*pi))
     except Exception as err:
         print "data not calculated fully because", err
-
+    """
+    """
     try:
         alpha_ph = [50/pi, 100/pi, 200/pi, 400/pi, 700/pi]
         fig1 = plt.figure(1)
@@ -132,9 +135,37 @@ if __name__ == "__main__":
         data_list = []
         for i, color in enumerate(plt.rcParams['axes.prop_cycle'][0:len(alpha_ph)]):
             biases = np.linspace(0, 1000, 35)
-            ssdata_for_alpha = vis.plot_bias_dependence(ax1, Phonon_1, biases, alpha_ph[i], color['color'], linestyle='-')
-            ssdata_for_alpha = vis.plot_bias_dependence(ax1, Phonon_2, biases, alpha_ph[i], color['color'], Y_axis='Steady State RC Population', linestyle='--', legend_on=False)
-            data_list.append(ssdata_for_alpha)
+            vis.plot_bias_dependence(ax1, exciton_coherence, biases, alpha_ph[i], color['color'], linestyle='-', xy_flip=False, y_label='Steady State Exciton Coherence Population')
+            #data_list.append(ssdata_for_alpha)
+        print "bias and coupling strength data seems to have been plotted"
+    except Exception as err:
+        print "data not plotted fully because", err"""
+
+    try:
+        alpha_ph = [50/pi, 100/pi, 200/pi, 400/pi, 700/pi]
+        fig = plt.figure(1)
+        gs = gridspec.GridSpec(1, 2, width_ratios=[1, 1.5])
+        ax1 = fig.add_subplot(gs[0])
+        ax2 = fig.add_subplot(gs[1], sharey=ax1)
+        #colors = iter(['C1', 'C2', 'C3', 'C4', 'C5', 'c6', 'c7', 'c8'])
+        for i, color in enumerate(plt.rcParams['axes.prop_cycle'][0:len(alpha_ph)]):
+            biases = np.linspace(0, 1000, 35)
+            col = color['color']
+            coh = vis.plot_bias_dependence(ax1, exciton_coherence, biases, alpha_ph[i], col, linestyle='-', x_label='Steady State Exciton Coherence Population')
+            p1 = vis.plot_bias_dependence(ax2, Phonon_1, biases, alpha_ph[i], col, linestyle='-', y_label=False)
+            p2 = vis.plot_bias_dependence(ax2, Phonon_2, biases, alpha_ph[i], col, x_label='Steady State RC Population', linestyle='-', legend_on=False, y_label=False)
+            ax1.set_xlim(-0.09,0)
+
+            ax2.set_xlim(0.3,0.5)
+            noneq = abs(p1-p2)
+            #ax2.plot(noneq, biases, color=col)
+            max_idx = list(noneq).index(np.max(noneq))
+            bias_at_max, coh_at_bias = biases[max_idx], coh[max_idx].real
+            ax1.plot([coh_at_bias, 0], [bias_at_max,bias_at_max], color=col, linestyle='--')
+            ax2.plot([0.3, p1[max_idx].real], [bias_at_max,bias_at_max], color=col, linestyle='--')
+            plt.setp(ax2.get_yticklabels(), visible=False)
+            #data_list.append(ssdata_for_alpha)
+            fig.subplots_adjust(wspace=0.03)
         print "bias and coupling strength data seems to have been plotted"
     except Exception as err:
         print "data not plotted fully because", err
@@ -143,8 +174,10 @@ if __name__ == "__main__":
         #observable = exciton_coherence
         #alpha = 200/pi
         #ss_values = check.bias_dependence(biases, PARAMS, observable)
+
     """
     try:
+
         L_ns = EM.L_nonsecular(H_0, A_EM, eps, alpha_EM, T_EM, J, num_cpus=num_cpus)
         L_full = L_RC+L_ns
 
@@ -152,11 +185,12 @@ if __name__ == "__main__":
                                                             progress_bar=True)
         ss_dm = 0
         try:
-            ss_dm = qt.steadystate(H_0, rho_0)
-        except:
+            ss_dm = qt.steadystate(H_0, [L_full])
+        except Exception as err:
             print "Warning: steady state density matrix didn't converge. Probably"
             print "\t due to some problem with excitation restriction. \n"
-        timelist=timelist*0.188 # Convert from cm to picoseconds
+            print err
+        timelist=timelist/0.188 # Convert from cm to picoseconds
         #DATA_ns = load_obj("DATA_N7_exc8")
         #fig = plt.figure(figsize=(12,6))
         fig = plt.figure()
@@ -170,7 +204,7 @@ if __name__ == "__main__":
         print 'Plotting worked!'
     except Exception as err:
         print "Could not get non-secular-driving dynamics because ",err
-
+        """
     try:
         """
         L_s = EM.L_secular(H_0, A_EM, eps, alpha_EM, T_EM, J, num_cpus=num_cpus)

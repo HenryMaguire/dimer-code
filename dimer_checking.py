@@ -13,7 +13,7 @@ reload(RC)
 reload(EM)
 
 def bias_dependence(biases, args):
-    name = 'DATA/dm_bias_dependence_alpha{}'.format(int(args['alpha_1']))
+    name = 'DATA/new_bias_dependence_alpha{}'.format(int(args['alpha_1']))
     ss_list = []
     for eps in biases:
         w_1 = args['w_1']

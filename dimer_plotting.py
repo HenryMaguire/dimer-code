@@ -48,33 +48,29 @@ class dataObject(Qobj):
             S_2 = qt.entropy_vn(self.steady_state.ptrace(1))
             #S_s1 =
             return
+def get_bias_dependence(observable, biases, alpha):
+    name = 'DATA/dm_bias_dependence_alpha{}'.format(int(alpha))
+    data = load_obj(name)
+    return np.array([(ss_dm*observable).tr() for ss_dm in data])
 
-def plot_bias_dependence(ax, observable, biases, alpha, color, Y_axis='', linestyle='-', legend_on=True):
+def plot_bias_dependence(ax, observable, biases, alpha, color, x_label='', y_label =True, linestyle='-', legend_on=True, xy_flip=False):
     name = 'DATA/dm_bias_dependence_alpha{}'.format(int(alpha))
     data = load_obj(name)
     ss_values = np.array([(ss_dm*observable).tr() for ss_dm in data])
     label = r'$\pi\alpha=$'+'{}'.format(int(alpha*np.pi))+r'$cm^{-1}$'
     if not legend_on:
         label = None
-    ax.plot(biases, ss_values.real, label=label, color=color, ls=linestyle)
+    if y_label:
+        ax.set_ylabel(r"Bias ($cm^{-1}$)")
+    ax.plot(ss_values.real, biases, label=label, color=color, ls=linestyle)
     #plt.scatter(biases, np.array(data).imag, marker='^', color=color)
     #ax.set_ylim(-0.1, 0.0001)
-    ax.set_xlim(0, 1000.0001)
-    ax.set_ylabel(Y_axis)
-    ax.set_xlabel(r"Bias ($cm^{-1}$)")
+    #ax.set_xlim(0, 1000.0001)
+    ax.set_xlabel(x_label)
     plt.legend(loc='upper right')
-    """
-    ss_values = []
-    for i in range(len(biases)):
-        print "bias = {}".format(biases[i])
-        ti = time.time()
-        s = load_obj(name)
-        obj = s[i]
-        del s
-        ss_dm = obj.get_steady_state()
-        ss_values.append((ss_dm*observable).tr())
-        print "it took {} seconds to calculate and store the steady_state".format(time.time()-ti)"""
     return ss_values
+
+
 
 def plot_dynamics(DATA, timelist, exp_ops, ax, title='', ss_dm = False):
     labels = [r'Ground', r'Site 1', r'Site 2', r'Biexciton']
