@@ -49,18 +49,20 @@ class dataObject(Qobj):
             #S_s1 =
             return
 
-def plot_bias_dependence(ax, observable, biases, alpha, color):
-    name = 'DATA/bias_dependence_alpha{}'.format(int(alpha))
+def plot_bias_dependence(ax, observable, biases, alpha, color, Y_axis='', linestyle='-', legend_on=True):
+    name = 'DATA/dm_bias_dependence_alpha{}'.format(int(alpha))
     data = load_obj(name)
     ss_values = np.array([(ss_dm*observable).tr() for ss_dm in data])
     label = r'$\pi\alpha=$'+'{}'.format(int(alpha*np.pi))+r'$cm^{-1}$'
-    plt.scatter(biases, ss_values.real, label=label, color=color)
-    #plt.scatter(biases, np.array(data).imag, marker='_', color=color)
-    ax.set_ylim(-0.1, 0.0001)
+    if not legend_on:
+        label = None
+    ax.plot(biases, ss_values.real, label=label, color=color, ls=linestyle)
+    #plt.scatter(biases, np.array(data).imag, marker='^', color=color)
+    #ax.set_ylim(-0.1, 0.0001)
     ax.set_xlim(0, 1000.0001)
-    ax.set_ylabel("Exciton coherence")
+    ax.set_ylabel(Y_axis)
     ax.set_xlabel(r"Bias ($cm^{-1}$)")
-    plt.legend(loc='lower left')
+    plt.legend(loc='upper right')
     """
     ss_values = []
     for i in range(len(biases)):
@@ -104,7 +106,7 @@ def plot_eig_dynamics(DATA, timelist, exp_ops, ax, title='', ss_dm = False):
     for i, l, c in info:
         ax.plot(timelist, DATA.expect[i].real, label=l, color=c, linewidth=linewidth, linestyle=linestyle)
         if ss_dm:
-            ax.axhline((ss_dm*exp_ops[i]).tr().real, ls='--')
+            ax.axhline((ss_dm*exp_ops[i]).tr().real, color=c, ls='--')
     ax.set_ylabel("Eigenstate population")
     ax.set_xlabel("Time (ps)")
     ax.legend()
@@ -122,7 +124,7 @@ def plot_coherences(DATA, timelist, exp_ops, ax, title='', ss_dm = False):
     for d, l, c in info:
         ax.plot(timelist, d, label=l, color=c,linewidth=linewidth, linestyle=linestyle)
     #ax.title(title)
-    ax.legend()
+    ax.legend(loc='lower right')
     ax.set_ylabel("Symm./Anti-symm. Eigenstate Coherence")
     ax.set_xlabel("Time (ps)")
     #file_name = "Notes/Images/Dynamics/Coh_a{:d}_Tph{:d}_Tem{:d}_w0{:d}.pdf".format(int(alpha_1), int(T_1), int(T_EM), int(w0_1))

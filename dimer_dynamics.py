@@ -46,8 +46,8 @@ if __name__ == "__main__":
     w0_2, w0_1 = 300., 300. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1 + V
     alpha_1, alpha_2 = 400/pi, 400/pi # Ind.-Boson frame coupling
-    N_1, N_2 = 2,2  # set Hilbert space sizes
-    exc = int((N_1+N_2)*0.75)
+    N_1, N_2 = 5,5  # set Hilbert space sizes
+    exc = int((N_1+N_2)*0.5)
     num_cpus = 4
     J = J_minimal
 
@@ -99,41 +99,52 @@ if __name__ == "__main__":
     #Now we build all of the mapped operators and RC Liouvillian.
 
 
-    L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(w_1, w_2, w_xx,
-                                        V, T_1, T_2, w0_1, w0_2, alpha_1, alpha_2,
-                                        wc,  N_1, N_2, exc, mu=mu, num_cpus=num_cpus)
+
     # electromagnetic bath liouvillians
 
     #print sys.getsizeof(L_ns)
     opts = qt.Options(num_cpus=num_cpus)
     ncolors = len(plt.rcParams['axes.prop_cycle'])
     #fig = plt.figure(figsize=(12,6))
+    alpha_ph = [50/pi]#, 100/pi, 200/pi, 400/pi, 700/pi]
+
+    L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(w_1, w_2, w_xx,
+                                        V, T_1, T_2, w0_1, w0_2, alpha_1, alpha_2,
+                                        wc,  N_1, N_2, exc, mu=mu, num_cpus=num_cpus)
+    """
     try:
-        """
         biases = np.linspace(0, 1000, 35)
         data_list = []
         global DATA_ns
-        alpha_ph = [50/pi, 100/pi, 200/pi, 400/pi, 700/pi]
         observable = Phonon_1
-        for alpha in alpha_ph[1::]:
+        for alpha in alpha_ph[::]:
             PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
             check.bias_dependence(biases, PARAMS)
             print "WE just finished pi*alpha={}".format(int(alpha*pi))
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
+    except Exception as err:
+        print "data not calculated fully because", err
+
+    try:
+        alpha_ph = [50/pi, 100/pi, 200/pi, 400/pi, 700/pi]
+        fig1 = plt.figure(1)
+        ax1 = fig1.add_subplot(111)
         #colors = iter(['C1', 'C2', 'C3', 'C4', 'C5', 'c6', 'c7', 'c8'])
+        data_list = []
         for i, color in enumerate(plt.rcParams['axes.prop_cycle'][0:len(alpha_ph)]):
             biases = np.linspace(0, 1000, 35)
-            ssdata_for_alpha = vis.plot_bias_dependence(ax, biases, alpha_ph[i], color['color'])
+            ssdata_for_alpha = vis.plot_bias_dependence(ax1, Phonon_1, biases, alpha_ph[i], color['color'], linestyle='-')
+            ssdata_for_alpha = vis.plot_bias_dependence(ax1, Phonon_2, biases, alpha_ph[i], color['color'], Y_axis='Steady State RC Population', linestyle='--', legend_on=False)
             data_list.append(ssdata_for_alpha)
-        print "bias and coupling strength data seems to have been collected"
-        """
+        print "bias and coupling strength data seems to have been plotted"
+    except Exception as err:
+        print "data not plotted fully because", err
         #fig = plt.figure()
         #ax = fig.add_subplot(111)
         #observable = exciton_coherence
         #alpha = 200/pi
         #ss_values = check.bias_dependence(biases, PARAMS, observable)
-
+    """
+    try:
         L_ns = EM.L_nonsecular(H_0, A_EM, eps, alpha_EM, T_EM, J, num_cpus=num_cpus)
         L_full = L_RC+L_ns
 
@@ -145,14 +156,16 @@ if __name__ == "__main__":
         except:
             print "Warning: steady state density matrix didn't converge. Probably"
             print "\t due to some problem with excitation restriction. \n"
-        timelist/=0.188 # Convert from cm to picoseconds
+        timelist=timelist*0.188 # Convert from cm to picoseconds
         #DATA_ns = load_obj("DATA_N7_exc8")
-        fig = plt.figure(figsize=(12,6))
-        ax1 = fig.add_subplot(121)
+        #fig = plt.figure(figsize=(12,6))
+        fig = plt.figure()
+        ax1 = fig.add_subplot(111)
         title = 'Eigenstate population'
         #title = title + r"$\omega_0=$""%i"r"$cm^{-1}$, $\alpha_{ph}=$""%f"r"$cm^{-1}$, $T_{EM}=$""%i K" %(w0_1, alpha_1, T_EM)
-        vis.plot_dynamics(DATA_ns, timelist, expects, ax1, ss_dm=ss_dm)
-        ax2 = fig.add_subplot(122)
+        fig = plt.figure()
+        vis.plot_eig_dynamics(DATA_ns, timelist, expects, ax1, ss_dm=ss_dm)
+        ax2 = fig.add_subplot(111)
         vis.plot_coherences(DATA_ns, timelist, expects, ax2, ss_dm=ss_dm)
         print 'Plotting worked!'
     except Exception as err:

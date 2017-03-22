@@ -3,11 +3,13 @@
 
 This repository contains the notes and code for investigating the charge dynamics of a driven molecular dimer in an open-quantum systems treatment. The dimer is modeled as two interacting dipoles each strongly coupled to an independent bath of phonons. At this stage, the ambient, incoherent electromagnetic field couples weakly to the delocalised vibronic states.
 There is:
-- a central reaction coordinate Liouvillian builder called dimer_UD_liouv.py. It creates the master equation for the strongly coupled vibrations.
-- a module which deals with all of the different types of incoherent optical driving called dimer_driving_liouv.py.
-- a module with several different types of checks. Convergence, non-secularity etc.
-- a plotting module which takes in the other two and plots graphs of the dynamics, coherences and spectra. This could be extended into an ipython notebook as well.
-- a directory with all of the accompanying notes and figures for the investigation, read Vibronic_incoherent_notes.pdf to get some more physical insight.
+- a central reaction coordinate Liouvillian builder called `dimer_phonons.py`. It creates the master equation for the strongly coupled vibrations/phonons.
+- a module which deals with all of the different types of incoherent optical driving called `dimer_optical.py`.
+- a module with several different types of checks such as steady state/dynamics convergence. In here there are also functions to generate arrays of steady-state density matrices for looking at dependence on certain parameters. Data structures are saved into the `DATA` directory.
+- a plotting module with all the visualisation functionality in one place - this includes plotting steady state relationships.
+- a directory with all of the accompanying notes and figures for the investigation, read `Vibronic_incoherent_notes.pdf` to get some more physical insight.
+- `dimer_dynamics.py` which defines a physical system and the various baths, calls upon the above modules to calculate dynamics/steady states and plot them.
+- There is also `electronic_lindblad.py` which is a work in progress. This uses a different version of `dimer_optical.py` (ignores system+RC eigenstructure when defining the optical Liouvillian).
 
 # Requirements
 
@@ -16,6 +18,8 @@ All the python files are written in Python 2.7. The modules will need to be at l
 - Numpy
 - Scipy
 - Matplotlib
+
+Building the Liouvillian superoperators and calculating dynamics is parallelised. Change the variable `num_cpus` in the code to as many physical cores your machine can afford.
 
 # Getting started
 - Clone the repo and install the python dependencies
@@ -27,9 +31,7 @@ All the python files are written in Python 2.7. The modules will need to be at l
 
 
 # To do:
-- Incorporate excitation number restriction into the non-secular and secular equations.
 - Test across many parameter regimes.
-- Create a module which loads up datafiles and turns them into good pandas dataframes
 
 # Notes:
 - I have tested the code and it agrees with the TLS where V=0, mu=0 and everything else is the same.
