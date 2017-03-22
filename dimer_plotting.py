@@ -53,7 +53,7 @@ def get_bias_dependence(observable, biases, alpha):
     data = load_obj(name)
     return np.array([(ss_dm*observable).tr() for ss_dm in data])
 
-def plot_bias_dependence(ax, observable, biases, alpha, color, x_label='', y_label =True, linestyle='-', legend_on=True, xy_flip=False):
+def plot_bias_dependence(ax, observable, biases, alpha, color, x_label='', y_label =True, linestyle='-', linewidth=1.0,legend_on=True):
     name = 'DATA/dm_bias_dependence_alpha{}'.format(int(alpha))
     data = load_obj(name)
     ss_values = np.array([(ss_dm*observable).tr() for ss_dm in data])
@@ -62,12 +62,12 @@ def plot_bias_dependence(ax, observable, biases, alpha, color, x_label='', y_lab
         label = None
     if y_label:
         ax.set_ylabel(r"Bias ($cm^{-1}$)")
-    ax.plot(ss_values.real, biases, label=label, color=color, ls=linestyle)
+    ax.plot(ss_values.real, biases, label=label, color=color, ls=linestyle, linewidth=linewidth)
     #plt.scatter(biases, np.array(data).imag, marker='^', color=color)
     #ax.set_ylim(-0.1, 0.0001)
     #ax.set_xlim(0, 1000.0001)
     ax.set_xlabel(x_label)
-    plt.legend(loc='upper right')
+    plt.legend(loc='lower left')
     return ss_values
 
 

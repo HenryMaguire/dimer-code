@@ -143,7 +143,7 @@ if __name__ == "__main__":
 
     try:
         alpha_ph = [50/pi, 100/pi, 200/pi, 400/pi, 700/pi]
-        fig = plt.figure(1)
+        fig = plt.figure(figsize=(12,6))
         gs = gridspec.GridSpec(1, 2, width_ratios=[1, 1.5])
         ax1 = fig.add_subplot(gs[0])
         ax2 = fig.add_subplot(gs[1], sharey=ax1)
@@ -151,21 +151,27 @@ if __name__ == "__main__":
         for i, color in enumerate(plt.rcParams['axes.prop_cycle'][0:len(alpha_ph)]):
             biases = np.linspace(0, 1000, 35)
             col = color['color']
-            coh = vis.plot_bias_dependence(ax1, exciton_coherence, biases, alpha_ph[i], col, linestyle='-', x_label='Steady State Exciton Coherence Population')
-            p1 = vis.plot_bias_dependence(ax2, Phonon_1, biases, alpha_ph[i], col, linestyle='-', y_label=False)
-            p2 = vis.plot_bias_dependence(ax2, Phonon_2, biases, alpha_ph[i], col, x_label='Steady State RC Population', linestyle='-', legend_on=False, y_label=False)
-            ax1.set_xlim(-0.09,0)
-
-            ax2.set_xlim(0.3,0.5)
-            noneq = abs(p1-p2)
-            #ax2.plot(noneq, biases, color=col)
-            max_idx = list(noneq).index(np.max(noneq))
+            #firstly get the data
+            coh = vis.plot_bias_dependence(ax1, exciton_coherence, biases, alpha_ph[i], col, linestyle='-', linewidth=1.5, x_label='Steady State Exciton Coherence')
+            p1 = vis.get_bias_dependence(Phonon_1, biases, alpha_ph[i])
+            p2 = vis.get_bias_dependence(Phonon_2, biases, alpha_ph[i])
+            # then calculate and plot phonon number difference
+            phonon_diff = abs(p1-p2)
+            label = r'$\pi\alpha=$'+'{}'.format(int(alpha_ph[i]*np.pi))+r'$cm^{-1}$'
+            ax2.plot(phonon_diff, biases, color=col, linewidth=1.5, label=label)
+            ax2.legend(loc='lower right')
+            # add joining lines
+            max_idx = list(phonon_diff).index(np.max(phonon_diff))
             bias_at_max, coh_at_bias = biases[max_idx], coh[max_idx].real
             ax1.plot([coh_at_bias, 0], [bias_at_max,bias_at_max], color=col, linestyle='--')
-            ax2.plot([0.3, p1[max_idx].real], [bias_at_max,bias_at_max], color=col, linestyle='--')
+            ax2.plot([0., phonon_diff[max_idx].real], [bias_at_max,bias_at_max], color=col, linestyle='--')
+            # pure formatting and aesthetics
+            ax1.set_xlim(-0.09,0)
+            ax2.set_xlim(0.,0.15)
             plt.setp(ax2.get_yticklabels(), visible=False)
+            ax2.set_xlabel(r"$N_{RC_2}-N_{RC_1}$ at Steady state", weight='medium')
             #data_list.append(ssdata_for_alpha)
-            fig.subplots_adjust(wspace=0.03)
+            fig.subplots_adjust(wspace=0.0)
         print "bias and coupling strength data seems to have been plotted"
     except Exception as err:
         print "data not plotted fully because", err
