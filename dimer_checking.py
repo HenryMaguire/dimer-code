@@ -2,6 +2,7 @@ import time
 
 
 from qutip import basis, ket, mesolve, qeye, tensor, thermal_dm, destroy, steadystate
+import qutip as qt
 import matplotlib.pyplot as plt
 import numpy as np
 import dimer_phonons as RC
@@ -12,30 +13,48 @@ from utils import *
 reload(RC)
 reload(EM)
 
-def bias_dependence(biases, args):
-    name = 'DATA/new_bias_dependence_alpha{}'.format(int(args['alpha_1']))
+def exciton_states(PARS):
+    w_1, w_2, V = PARS['w_1'], PARS['w_2'],PARS['V']
+    print w_1, w_2, V
+    v_p, v_m = 0, 0
+    lam_p = 0.5*(w_1+w_2)+0.5*np.sqrt((w_2-w_1)**2+4*(V**2))
+    lam_m = 0.5*(w_1+w_2)-0.5*np.sqrt((w_2-w_1)**2+4*(V**2))
+    v_p = np.array([0., 1., (w_1-lam_p)/V, 0.])
+    v_p/= np.dot(v_p, v_p)
+    v_m = np.array([0, 1., V/(w_2-lam_m), 0.])
+    v_m /= np.dot(v_m, v_m)
+    #print  np.dot(v_p, v_m) < 1E-15
+    return [lam_m, lam_p], [qt.Qobj(v_m), qt.Qobj(v_p)]
+
+def bias_dependence(biases, args,I):
+    name = 'DATA/crap_bias_dependence_alpha{}'.format(int(args['alpha_1']))
     ss_list = []
+    coh_ops = []
     for eps in biases:
-        w_1 = args['w_1']
-        w_2 = w_1-eps
-        w_xx = w_1 + w_2 + args['V']
-        av_w = (w_1+w_2)*0.5
-        L_RC, H, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(
-                                        w_1, w_2, w_xx, args['V'], args['T_1'],
-                                        args['T_2'], args['w0_1'], args['w0_2'], args['alpha_1'],
-                                        args['alpha_2'], args['wc'], args["N_1"], args['N_2'],
-                                        args['exc'],mu=args['mu'], num_cpus=args['num_cpus'])
+
+        args.update({'w_2': args['w_1']-eps})
+        args.update({'w_xx': args['w_1'] + args['w_2'] + args['V']})
+        args.update({'w_opt': (args['w_1']+args['w_2'])*0.5})
+        #H_dim = qt.Qobj([[0,0,0,0],[0, args['w_1'], args['V'],0 ],[0,args['V'], args['w_2'],0],[0,0,0,args['w_xx']]])
+        L_RC, H, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(args)
         #print L_RC.shape
-        L_ns = EM.L_nonsecular(H, A_EM, av_w, args['alpha_EM'], args['T_EM'], args['J'],
-                                        num_cpus=args['num_cpus'])
+        #L_ns = EM.L_nonsecular(H, A_EM, args)
         ti = time.time()
         # rather than saving all the massive objects to a list, just calculate steady_states and return them
-        ss_list.append(steadystate(H, [L_RC+L_ns]))
+        energies, states = exciton_states(args)
+        coh =  states[0]*states[1].dag()
+        print coh
+        coh = tensor(coh, I)
+        coh_ops.append(coh)
+
+        ss = 0.#steadystate(H, [L_RC+L_ns])
+        ss_list.append(ss)
+        #print (ss*coh).tr()
         print "Calculating the steady state took {} seconds".format(time.time()-ti)
         print "so far {} steady states".format(len(ss_list))
     print "file saving at {}".format(name)
     save_obj(ss_list, name)
-
+    return coh_ops
 def SS_convergence_check(sigma, w_1, w_2, w_xx, V, T_1, T_2, w0_1, w0_2, alpha_1, alpha_2, wc,  alpha_EM, T_EM, mu=0, expect_op='bright', time_units='cm', start_n=2, end_n=5, method='direct'):
 
     """

@@ -53,10 +53,12 @@ def get_bias_dependence(observable, biases, alpha):
     data = load_obj(name)
     return np.array([(ss_dm*observable).tr() for ss_dm in data])
 
-def plot_bias_dependence(ax, observable, biases, alpha, color, x_label='', y_label =True, linestyle='-', linewidth=1.0,legend_on=True):
+def plot_bias_dependence(ax, observables, biases, alpha, color, x_label='', y_label =True, linestyle='-', linewidth=1.0,legend_on=True):
     name = 'DATA/dm_bias_dependence_alpha{}'.format(int(alpha))
     data = load_obj(name)
-    ss_values = np.array([(ss_dm*observable).tr() for ss_dm in data])
+    #for ss_dm, obs in zip(data, observables):
+    #    print ss_dm
+    ss_values = np.array([(ss_dm*obs).tr() for ss_dm, obs in zip(data, observables)])
     label = r'$\pi\alpha=$'+'{}'.format(int(alpha*np.pi))+r'$cm^{-1}$'
     if not legend_on:
         label = None
@@ -112,13 +114,16 @@ def plot_coherences(DATA, timelist, exp_ops, ax, title='', ss_dm = False):
     labels = [r'Real part', 'Imaginary part']
     colors = [i['color'] for i in list(plt.rcParams['axes.prop_cycle'])][0:2]
     coh = DATA.expect[6]
-    info = zip([coh.real, coh.imag], labels, colors)
+    ss = (ss_dm*exp_ops[6]).tr()
+    info = zip([ss.real, ss.imag],[coh.real, coh.imag], labels, colors)
 
     #ax.title(r"$\alpha_{ph}=$""%i"r"$cm^{-1}$, $T_{EM}=$""%i K" %(alpha_1, T_EM))
     linewidth = 1.5
     linestyle = '-'
-    for d, l, c in info:
+    for s, d, l, c in info:
         ax.plot(timelist, d, label=l, color=c,linewidth=linewidth, linestyle=linestyle)
+        if ss_dm:
+            ax.axhline(s, color=c, ls='--')
     #ax.title(title)
     ax.legend(loc='lower right')
     ax.set_ylabel("Symm./Anti-symm. Eigenstate Coherence")

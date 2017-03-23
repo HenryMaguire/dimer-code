@@ -18,7 +18,7 @@ import dimer_phonons as RC
 
 reload(RC)
 
-def nonsecular_function(i,j, eVals=[], eVecs=[], A=0, eps=1000., Gamma=1.,T=0., J=J_minimal):
+def nonsecular_function(i,j, eVals=[], eVecs=[], A=0, w_opt=8000., Gamma=1.,T=0., J=J_minimal):
     X1, X2, X3, X4 = 0, 0, 0, 0
     eps_ij = abs(eVals[i]-eVals[j])
     A_ij = A.matrix_element(eVecs[i].dag(), eVecs[j])
@@ -28,15 +28,15 @@ def nonsecular_function(i,j, eVals=[], eVecs=[], A=0, eps=1000., Gamma=1.,T=0., 
     JI = eVecs[j]*eVecs[i].dag()
     # 0.5*np.pi*alpha*(N+1)
     if abs(A_ij)>0 or abs(A_ji)>0:
-        r_up = 2*pi*J(eps_ij, Gamma, eps)*Occ
-        r_down = 2*pi*J(eps_ij, Gamma, eps)*(Occ+1)
+        r_up = 2*pi*J(eps_ij, Gamma, w_opt)*Occ
+        r_down = 2*pi*J(eps_ij, Gamma, w_opt)*(Occ+1)
         X3= r_down*A_ij*IJ
         X4= r_up*A_ij*IJ
         X1= r_up*A_ji*JI
         X2= r_down*A_ji*JI
     return Qobj(X1), Qobj(X2), Qobj(X3), Qobj(X4)
 
-def secular_function(i,j, eVals=[], eVecs=[], A=0, eps=1000., Gamma=1.,T=0., J=J_minimal):
+def secular_function(i,j, eVals=[], eVecs=[], A=0, w_opt=8000., Gamma=1.,T=0., J=J_minimal):
     L = 0
     lam_ij = A.matrix_element(eVecs[i].dag(), eVecs[j])
     #lam_mn = (A.dag()).matrix_element(eVecs[n].dag(), eVecs[m])
@@ -49,8 +49,8 @@ def secular_function(i,j, eVals=[], eVecs=[], A=0, eps=1000., Gamma=1.,T=0., J=J
         II = eVecs[i]*eVecs[i].dag()
 
         Occ = Occupation(eps_ij, T)
-        r_up = 2*pi*J(eps_ij, Gamma, eps)*Occ
-        r_down = 2*pi*J(eps_ij, Gamma, eps)*(Occ+1)
+        r_up = 2*pi*J(eps_ij, Gamma, w_opt)*Occ
+        r_down = 2*pi*J(eps_ij, Gamma, w_opt)*(Occ+1)
 
         T1 = r_up*spre(II)+r_down*spre(JJ)
         T2 = r_up.conjugate()*spost(II)+r_down.conjugate()*spost(JJ)
@@ -59,13 +59,14 @@ def secular_function(i,j, eVals=[], eVecs=[], A=0, eps=1000., Gamma=1.,T=0., J=J
     return Qobj(L)
 
 
-def L_nonsecular(H_vib, A, eps, Gamma, T, J, num_cpus=1):
+def L_nonsecular(H_vib, A, args):
+    w_opt, Gamma, T, J, num_cpus = args['w_opt'], args['alpha_EM'], args['T_EM'], args['J'], args['num_cpus']
     #Construct non-secular liouvillian
     ti = time.time()
     dim_ham = H_vib.shape[0]
     eVals, eVecs = H_vib.eigenstates()
-    names = ['eVals', 'eVecs', 'A', 'eps', 'Gamma', 'T', 'J']
-    kwargs = dict()
+    names = ['eVals', 'eVecs', 'A', 'w_opt', 'Gamma', 'T', 'J']
+    kwargs = dict() # Hacky way to get parameters to the parallel for loop
     for name in names:
         kwargs[name] = eval(name)
     l = dim_ham*range(dim_ham) # Perform two loops in one
