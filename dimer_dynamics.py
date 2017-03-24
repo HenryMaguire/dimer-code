@@ -22,7 +22,7 @@ reload(check)
 def calculate_dynamics():
     assert PARAMS['w_1'] != PARAMS['w_2']
     try:
-        timelist = np.linspace(0,50.0,11000)*0.188
+        timelist = np.linspace(0,20.0,5000)*0.188
         L_ns = EM.L_nonsecular(H_0, A_EM, PARAMS)
         L_full = L_RC+L_ns
 
@@ -34,6 +34,7 @@ def calculate_dynamics():
             print "Warning: steady state density matrix didn't converge. Probably"
             print "\t due to some problem with excitation restriction. \n"
             print err
+
         timelist=timelist/0.188 # Convert from cm to picoseconds
         #DATA_ns = load_obj("DATA_N7_exc8")
         #fig = plt.figure(figsize=(12,6))
@@ -46,6 +47,7 @@ def calculate_dynamics():
         ax2 = fig.add_subplot(111)
         vis.plot_coherences(DATA_ns, timelist, expects, ax2, ss_dm=ss_dm)
         plt.savefig("Notes/dynamics.png")
+        print (ss_dm*exciton_coherence).tr()
         print 'Plotting worked!'
         return L_full
     except Exception as err:
@@ -63,7 +65,7 @@ if __name__ == "__main__":
     sigma_x2 = sigma_m2+sigma_m2.dag()
 
     w_1 = 1.1*8065.5
-    w_2 = w_1-400
+    w_2 = w_1-400.
     V = 92. #0.1*8065.5
     w_opt = (w_1+w_2)*0.5 # Characteristic freq in optical spec.
 
@@ -112,10 +114,10 @@ if __name__ == "__main__":
     energies, states = check.exciton_states(PARAMS)
     lam_p = 0.5*(w_1+w_2)+0.5*np.sqrt((w_2-w_1)**2+4*(V**2))
     lam_m = 0.5*(w_1+w_2)-0.5*np.sqrt((w_2-w_1)**2+4*(V**2))
-    dark = tensor(states[0]*states[0].dag(), I)/(1+(V/(w_2-lam_m))**2)
-    bright = tensor(states[1]*states[1].dag(), I)/(1+((w_1-lam_p)/V)**2)
-    print (states[1]*states[1].dag()).tr(), bright_old, states[1]*states[1].dag()
-    print (states[0]*states[0].dag()).tr(), dark_old, states[0]*states[0].dag()
+    dark = tensor(states[0]*states[0].dag(), I)
+    bright = tensor(states[1]*states[1].dag(), I)
+    #print  (states[1]*states[1].dag()).tr(), bright_old, states[1]*states[1].dag()
+    #print (states[0]*states[0].dag()).tr(), dark_old, states[0]*states[0].dag()
     exciton_coherence = tensor(states[0]*states[1].dag(), I)
     Phonon_1 = tensor(I_dimer, phonon_num_1)
     Phonon_2 = tensor(I_dimer, phonon_num_2)
@@ -142,12 +144,14 @@ if __name__ == "__main__":
     opts = qt.Options(num_cpus=num_cpus)
     ncolors = len(plt.rcParams['axes.prop_cycle'])
     #fig = plt.figure(figsize=(12,6))
-    alpha_ph = [50/pi]#, 100/pi, 200/pi, 400/pi, 700/pi]
-    """
-    L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(PARAMS)
-    calculate_dynamics()
+    alpha_ph = [50/pi, 100/pi, 200/pi, 400/pi, 700/pi]
 
+    #L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(PARAMS)
+    #print "Steady state is ", qt.steadystate(H_0)
+    #calculate_dynamics()
+    """
     try:
+        PARAMS.update({'w_2':w_1})
         biases = np.linspace(0, 1000, 35)
         coh_ops = []
         global DATA_ns
@@ -156,11 +160,14 @@ if __name__ == "__main__":
             PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
             coh_ops = check.bias_dependence(biases, PARAMS, I)
             print "WE just finished pi*alpha={}".format(int(alpha*pi))
+        save_obj('coherence_ops_N{}'.format(N_1))
     except Exception as err:
         print "data not calculated fully because", err
-
+    """
     try:
-        alpha_ph = [50/pi, 100/pi, 200/pi, 400/pi, 700/pi]
+        #coh_ops = load_obj('coherence_ops_N5')
+        site_ops = [site_coherence]*35
+        #alpha_ph = [50/pi, 100/pi, 200/pi, 400/pi, 700/pi]
         fig = plt.figure(figsize=(12,6))
         gs = gridspec.GridSpec(1, 2, width_ratios=[1, 1.5])
         ax1 = fig.add_subplot(gs[0])
@@ -170,7 +177,7 @@ if __name__ == "__main__":
             biases = np.linspace(0, 1000, 35)
             col = color['color']
             #firstly get the data
-            coh = vis.plot_bias_dependence(ax1, coh_ops, biases, alpha_ph[i], col, linestyle='-', linewidth=1.5, x_label=r'Steady State Exciton Coherence')
+            coh = vis.plot_bias_dependence(ax1, site_ops, biases, alpha_ph[i], col, linestyle='-', linewidth=1.5, x_label=r'Steady State Exciton Coherence')
             p1 = vis.get_bias_dependence(Phonon_1, biases, alpha_ph[i])
             p2 = vis.get_bias_dependence(Phonon_2, biases, alpha_ph[i])
             # then calculate and plot phonon number difference
@@ -181,8 +188,8 @@ if __name__ == "__main__":
             # add joining lines
             max_idx = list(phonon_diff).index(np.max(phonon_diff))
             bias_at_max, coh_at_bias = biases[max_idx], coh[max_idx].real
-            ax1.plot([coh_at_bias, 0], [bias_at_max,bias_at_max], color=col, linestyle='--')
-            ax2.plot([0., phonon_diff[max_idx].real], [bias_at_max,bias_at_max], color=col, linestyle='--')
+            #ax1.plot([coh_at_bias, 0], [bias_at_max,bias_at_max], color=col, linestyle='--')
+            #ax2.plot([0., phonon_diff[max_idx].real], [bias_at_max,bias_at_max], color=col, linestyle='--')
             # pure formatting and aesthetics
             #ax1.set_xlim(-0.09,0)
             ax2.set_xlim(0.,0.15)
@@ -235,5 +242,5 @@ if __name__ == "__main__":
     #plot_dynamics_spec(DATA_s, timelist)
 
     #np.savetxt('DATA/Dynamics/dimer_DATA_ns.txt', np.array([1- DATA_ns.expect[0], timelist]), delimiter = ',', newline= '\n')
-    """
+
     plt.show()

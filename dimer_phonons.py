@@ -178,8 +178,11 @@ def liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2, T_1, T_2, 
 def RC_mapping_UD(args):
 
     # we define all of the RC parameters by the underdamped spectral density
-    w_1, w_2, w_xx, V, T_1, T_2, mu = args['w_1'], args['w_2'], args['w_xx'], args['V'], args['T_1'], args['T_2'], args['mu']
-    wRC_1, wRC_2, alpha_1, alpha_2, wc,  N_1, N_2, exc = args['w0_1'], args['w0_2'], args['alpha_1'], args['alpha_2'], args['wc'], args['N_1'], args['N_2'], args['exc']
+    w_1, w_2, w_xx, V = args['w_1'], args['w_2'], args['w_xx'], args['V']
+    T_1, T_2, mu = args['T_1'], args['T_2'], args['mu']
+    wRC_1, wRC_2, alpha_1, alpha_2, wc = args['w0_1'], args['w0_2'], args['alpha_1'], args['alpha_2'], args['wc']
+    N_1, N_2, exc = args['N_1'], args['N_2'], args['exc']
+
     Gamma_1 = (wRC_1**2)/wc
     gamma_1 = Gamma_1 / (2. * np.pi * wRC_1)  # no longer a free parameter that we normally use to fix wRC to the system splitting
     kappa_1 = np.sqrt(np.pi * alpha_1 * wRC_1 / 2.)  # coupling strength between the TLS and RC
@@ -190,7 +193,7 @@ def RC_mapping_UD(args):
     print "****************************************************************"
     print args
     H_0, A_1, A_2, A_EM = dimer_ham_RC(w_1, w_2, w_xx, V, mu, wRC_1, wRC_2, kappa_1, kappa_2, N_1, N_2, exc)
-    L_RC =  0.#liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2, T_1, T_2, num_cpus=args['num_cpus'])
+    L_RC =  0#liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2, T_1, T_2, num_cpus=args['num_cpus'])
     full_size = (4*N_1*N_1)**2
     #print "It is {}by{} and of type {}. The full basis would be {}by{}".format(L_RC.shape[0], L_RC.shape[0], L_RC.type, full_size, full_size)
     return L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2
