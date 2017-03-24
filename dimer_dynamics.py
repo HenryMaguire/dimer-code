@@ -105,11 +105,17 @@ if __name__ == "__main__":
     XO = tensor(XO, I)
     OX = tensor(OX, I)
     XX = tensor(XX, I)
-    #eVals, eVecs = H_dim.eigenstates()
-    #eVals, eVecs = zip(*sorted(zip(eVals, eVecs))) # sort them
+    eVals, eVecs = H_dim.eigenstates()
+    eVals, eVecs = zip(*sorted(zip(eVals, eVecs))) # sort them
+    dark_old= eVecs[1]*eVecs[1].dag()
+    bright_old= eVecs[2]*eVecs[2].dag()
     energies, states = check.exciton_states(PARAMS)
-    dark = tensor(states[0]*states[0].dag(), I)
-    bright = tensor(states[1]*states[1].dag(), I)
+    lam_p = 0.5*(w_1+w_2)+0.5*np.sqrt((w_2-w_1)**2+4*(V**2))
+    lam_m = 0.5*(w_1+w_2)-0.5*np.sqrt((w_2-w_1)**2+4*(V**2))
+    dark = tensor(states[0]*states[0].dag(), I)/(1+(V/(w_2-lam_m))**2)
+    bright = tensor(states[1]*states[1].dag(), I)/(1+((w_1-lam_p)/V)**2)
+    print (states[1]*states[1].dag()).tr(), bright_old, states[1]*states[1].dag()
+    print (states[0]*states[0].dag()).tr(), dark_old, states[0]*states[0].dag()
     exciton_coherence = tensor(states[0]*states[1].dag(), I)
     Phonon_1 = tensor(I_dimer, phonon_num_1)
     Phonon_2 = tensor(I_dimer, phonon_num_2)
@@ -137,10 +143,10 @@ if __name__ == "__main__":
     ncolors = len(plt.rcParams['axes.prop_cycle'])
     #fig = plt.figure(figsize=(12,6))
     alpha_ph = [50/pi]#, 100/pi, 200/pi, 400/pi, 700/pi]
-
+    """
     L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(PARAMS)
     calculate_dynamics()
-    """
+
     try:
         biases = np.linspace(0, 1000, 35)
         coh_ops = []

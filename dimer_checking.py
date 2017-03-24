@@ -20,9 +20,11 @@ def exciton_states(PARS):
     lam_p = 0.5*(w_1+w_2)+0.5*np.sqrt((w_2-w_1)**2+4*(V**2))
     lam_m = 0.5*(w_1+w_2)-0.5*np.sqrt((w_2-w_1)**2+4*(V**2))
     v_p = np.array([0., 1., (w_1-lam_p)/V, 0.])
-    v_p/= np.dot(v_p, v_p)
+    #v_p/= 
+    #v_p/= np.sqrt(np.dot(v_p, v_p))
     v_m = np.array([0, 1., V/(w_2-lam_m), 0.])
-    v_m /= np.dot(v_m, v_m)
+
+    #v_m /= np.sqrt(np.dot(v_m, v_m))
     #print  np.dot(v_p, v_m) < 1E-15
     return [lam_m, lam_p], [qt.Qobj(v_m), qt.Qobj(v_p)]
 
