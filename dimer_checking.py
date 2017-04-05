@@ -13,6 +13,54 @@ from utils import *
 reload(RC)
 reload(EM)
 
+def steadystate_comparison(H, L):
+    """ Compares all the steadystate solvers and compares trace to direct method
+    It seems iterative-lgmres with a preconditioner is much faster than the full factorisation methods
+    """
+    t0 = time.time()
+    ss_dir = steadystate(H, L, method='direct')
+    t1 = time.time()
+    print "direct method took ", t1-t0, ' seconds'
+
+    #ss_eigen = steadystate(H, L, method='eigen')
+    t2 = time.time()
+    #print "eigen method took ", t2-t1, "seconds and is ", ((ss_dir-ss_eigen)*(ss_dir-ss_eigen)).tr(), " away"
+    #del(ss_eigen)
+
+    ss_power = steadystate(H, L, method='power')
+    t3 = time.time()
+    print "power method took ", t3-t2, "seconds and is ", ss_dir.dims, ss_power.dims, " away"
+    del(ss_power)
+
+    #ss_iter = steadystate(H, L, method= 'iterative-gmres')
+    t4 = time.time()
+    #print "iterative-gmres method took ", t4-t3, "seconds and is ", (ss_dir-ss_iter).tr(), " away"
+    #del(ss_iter)
+    ss_iter = steadystate(H, L, method= 'iterative-gmres', use_precond=True)
+    t5 = time.time()
+    print "iterative-gmres method with preconditioner took ", t5-t4, "seconds and is ", (ss_dir-ss_iter).tr(), " away"
+    ss_iter = steadystate(H, L, method= 'iterative-lgmres', use_precond=True)
+    t6 = time.time()
+    print "iterative-lgmres method with preconditioner took ", t6-t5, "seconds and is ", (ss_dir-ss_iter).tr(), " away"
+    ss_iter = steadystate(H, L, method= 'iterative-bicgstab', use_precond=True)
+    t7 = time.time()
+    print "iterative-bicgstab method with preconditioner took ", t7-t6, "seconds and is ", (ss_dir-ss_iter).tr(), " away"
+
+def get_coh_ops(args, biases, I):
+    """ Just calculates all of the exciton coherence observable operators
+    For bias dependence plots
+    """
+    coh_ops = []
+    for eps in biases:
+        args.update({'w_2': args['w_1']-eps})
+        args.update({'w_xx': args['w_1'] + args['w_2'] + args['V']})
+        args.update({'w_opt': (args['w_1']+args['w_2'])*0.5})
+        energies, states = exciton_states(args)
+        coh =  states[0]*states[1].dag()
+        coh = tensor(coh, I)
+        coh_ops.append(coh)
+    save_obj(coh_ops, 'zoomed_coherence_ops_N{}'.format(args['N_1']))
+
 def exciton_states(PARS):
     w_1, w_2, V = PARS['w_1'], PARS['w_2'],PARS['V']
     print w_1, w_2, V
@@ -29,7 +77,7 @@ def exciton_states(PARS):
     return [lam_m, lam_p], [qt.Qobj(v_m), qt.Qobj(v_p)]
 
 def bias_dependence(biases, args, I):
-    name = 'DATA/bias_dependence_alpha{}'.format(int(args['alpha_1']))
+    name = 'DATA/zoomed_bias_dependence_alpha{}'.format(int(args['alpha_1']))
     ss_list = []
     coh_ops = []
     for eps in biases:
@@ -39,7 +87,7 @@ def bias_dependence(biases, args, I):
         args.update({'w_opt': (args['w_1']+args['w_2'])*0.5})
         H_dim = qt.Qobj([[0,0,0,0],[0, args['w_1'], args['V'],0 ],[0,args['V'], args['w_2'],0],[0,0,0,args['w_xx']]])
         L_RC, H, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(args)
-        L_ns = 0# EM.L_nonsecular(H, A_EM, args)
+        L_ns = EM.L_nonsecular(H, A_EM, args)
         ti = time.time()
         # rather than saving all the massive objects to a list, just calculate steady_states and return them
         energies, states = exciton_states(args)
@@ -47,13 +95,13 @@ def bias_dependence(biases, args, I):
         coh = tensor(coh, I)
         coh_ops.append(coh)
 
-        ss = 0#steadystate(H, [L_RC+L_ns])
+        ss = steadystate(H, [L_RC+L_ns], method='iterative-lgmres', use_precond=True)
         ss_list.append(ss)
         print (ss*coh).tr()
         print "Calculating the steady state took {} seconds".format(time.time()-ti)
         print "so far {} steady states".format(len(ss_list))
     print "file saving at {}".format(name)
-    #save_obj(ss_list, name)
+    save_obj(ss_list, name)
     return coh_ops
 
 def SS_convergence_check(sigma, w_1, w_2, w_xx, V, T_1, T_2, w0_1, w0_2, alpha_1, alpha_2, wc,  alpha_EM, T_EM, mu=0, expect_op='bright', time_units='cm', start_n=2, end_n=5, method='direct'):

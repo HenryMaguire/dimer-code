@@ -1,5 +1,6 @@
 import sys
 from numpy import pi
+import numpy as np
 
 from qutip import Qobj, basis, ket, mesolve, qeye, tensor, thermal_dm, destroy, enr_identity, enr_destroy, enr_thermal_dm
 import qutip as qt
@@ -53,6 +54,70 @@ def calculate_dynamics():
     except Exception as err:
         print "Could not get non-secular-driving dynamics because ",err
 
+def steadystate_coherence_plot(args, alpha_list, biases):
+    coh_ops = load_obj('zoomed_coherence_ops_N{}'.format(args['N_1']))
+    fig = plt.figure(figsize=(12,6))
+    ax = fig.add_subplot(111)
+    max_coh_for_alpha = []
+    bias_at_max_list = []
+    for alpha in alpha_list:
+        ss_dms = load_obj('DATA/zoomed_bias_dependence_alpha{}'.format(int(alpha)))
+        assert len(ss_dms) == len(coh_ops)
+        coh_list = []
+        for i in range(len(ss_dms)):
+            ss_obs = (ss_dms[i]*coh_ops[i]).tr()
+            coh_list.append(ss_obs)
+        ax.plot(biases, np.array(coh_list).real, label=int(alpha))
+        #real_pos = abs(np.array(coh_list).real)
+        #max_coh = max(real_pos)
+        #max_coh_for_alpha.append(-1*max_coh)
+        #bias_at_max = biases[list(real_pos).index(max_coh)]
+        #bias_at_max_list.append(bias_at_max)
+    ax.set_xlabel(r'Bias $cm^{-1}$')
+    ax.set_ylabel('Exciton Coherence')
+    #print max_coh_for_alpha, bias_at_max_list
+    #ax.scatter(np.array(alpha_list)*pi, max_coh_for_alpha)
+    #ax.scatter(np.array(alpha_list)*pi, bias_at_max_list)
+
+def steadystate_coherence_and_RC_plot():
+        try:
+            coh_ops = load_obj('coherence_ops_N5') #[exciton_coherence]*35
+            #site_ops = [site_coherence]*35
+            #alpha_ph = [50/pi, 100/pi, 200/pi, 400/pi, 700/pi]
+            fig = plt.figure(figsize=(12,6))
+            gs = gridspec.GridSpec(1, 2, width_ratios=[1, 1.5])
+            ax1 = fig.add_subplot(gs[0])
+            ax2 = fig.add_subplot(gs[1], sharey=ax1)
+            #colors = iter(['C1', 'C2', 'C3', 'C4', 'C5', 'c6', 'c7', 'c8'])
+            for i, color in enumerate(plt.rcParams['axes.prop_cycle'][0:len(alpha_ph)]):
+                biases = np.linspace(0, 1000, 35)
+                col = color['color']
+                #firstly get the data
+                coh = vis.plot_bias_dependence(ax1, coh_ops, biases, alpha_ph[i], col, linestyle='-', linewidth=1.5, x_label=r'Steady State Exciton Coherence')
+                p1 = vis.get_bias_dependence(Phonon_1, biases, alpha_ph[i])
+                p2 = vis.get_bias_dependence(Phonon_2, biases, alpha_ph[i])
+                # then calculate and plot phonon number difference
+                phonon_diff = abs(p1-p2)
+                label = r'$\pi\alpha=$'+'{}'.format(int(alpha_ph[i]*np.pi))+r'$cm^{-1}$'
+                ax2.plot(phonon_diff, biases, color=col, linewidth=1.5, label=label)
+                ax2.legend(loc='lower right')
+                # add joining lines
+                max_idx = list(phonon_diff).index(np.max(phonon_diff))
+                bias_at_max, coh_at_bias = biases[max_idx], coh[max_idx].real
+                ax1.plot([coh_at_bias, 0], [bias_at_max,bias_at_max], color=col, linestyle='--')
+                ax2.plot([0., phonon_diff[max_idx].real], [bias_at_max,bias_at_max], color=col, linestyle='--')
+                # pure formatting and aesthetics
+                ax1.set_xlim(-0.09,0)
+                ax2.set_xlim(0.,0.15)
+                plt.setp(ax2.get_yticklabels(), visible=False)
+                ax2.set_xlabel(r"$N_{RC_2}-N_{RC_1}$ at Steady state", weight='medium')
+                #data_list.append(ssdata_for_alpha)
+                fig.subplots_adjust(wspace=0.0)
+            print "bias and coupling strength data seems to have been plotted"
+        except Exception as err:
+            print "data not plotted fully because", err
+
+
 if __name__ == "__main__":
 
     OO = basis(4,0)
@@ -65,7 +130,7 @@ if __name__ == "__main__":
     sigma_x2 = sigma_m2+sigma_m2.dag()
 
     w_1 = 1.1*8065.5
-    w_2 = w_1-400.
+    w_2 = w_1
     V = 92. #0.1*8065.5
     w_opt = (w_1+w_2)*0.5 # Characteristic freq in optical spec.
 
@@ -144,62 +209,30 @@ if __name__ == "__main__":
     opts = qt.Options(num_cpus=num_cpus)
     ncolors = len(plt.rcParams['axes.prop_cycle'])
     #fig = plt.figure(figsize=(12,6))
-    alpha_ph = [50/pi, 100/pi, 200/pi, 400/pi, 700/pi]
+    alpha_ph = np.arange(60, 420, 20)/pi
 
     #L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(PARAMS)
+    #L_ns = EM.L_nonsecular(H_0, A_EM, PARAMS)
+    #check.steadystate_comparison(H_0, [L_RC+L_ns])
     #print "Steady state is ", qt.steadystate(H_0)
     #calculate_dynamics()
-    """
+
     try:
         PARAMS.update({'w_2':w_1})
-        biases = np.linspace(0, 1000, 35)
-        coh_ops = []
-        global DATA_ns
+        biases = np.linspace(100, 500, 25)
+        steadystate_coherence_plot(PARAMS, alpha_ph, biases)
         #observable = exciton_coherence
+        #check.get_coh_ops(PARAMS, biases, I)
+        """
         for alpha in alpha_ph:
             PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
             coh_ops = check.bias_dependence(biases, PARAMS, I)
             print "WE just finished pi*alpha={}".format(int(alpha*pi))
-        save_obj('coherence_ops_N{}'.format(N_1))
+        save_obj(coh_ops, 'zoomed_coherence_ops_N{}'.format(N_1))
+        """
     except Exception as err:
         print "data not calculated fully because", err
-    """
-    try:
-        #coh_ops = load_obj('coherence_ops_N5')
-        site_ops = [site_coherence]*35
-        #alpha_ph = [50/pi, 100/pi, 200/pi, 400/pi, 700/pi]
-        fig = plt.figure(figsize=(12,6))
-        gs = gridspec.GridSpec(1, 2, width_ratios=[1, 1.5])
-        ax1 = fig.add_subplot(gs[0])
-        ax2 = fig.add_subplot(gs[1], sharey=ax1)
-        #colors = iter(['C1', 'C2', 'C3', 'C4', 'C5', 'c6', 'c7', 'c8'])
-        for i, color in enumerate(plt.rcParams['axes.prop_cycle'][0:len(alpha_ph)]):
-            biases = np.linspace(0, 1000, 35)
-            col = color['color']
-            #firstly get the data
-            coh = vis.plot_bias_dependence(ax1, site_ops, biases, alpha_ph[i], col, linestyle='-', linewidth=1.5, x_label=r'Steady State Exciton Coherence')
-            p1 = vis.get_bias_dependence(Phonon_1, biases, alpha_ph[i])
-            p2 = vis.get_bias_dependence(Phonon_2, biases, alpha_ph[i])
-            # then calculate and plot phonon number difference
-            phonon_diff = abs(p1-p2)
-            label = r'$\pi\alpha=$'+'{}'.format(int(alpha_ph[i]*np.pi))+r'$cm^{-1}$'
-            ax2.plot(phonon_diff, biases, color=col, linewidth=1.5, label=label)
-            ax2.legend(loc='lower right')
-            # add joining lines
-            max_idx = list(phonon_diff).index(np.max(phonon_diff))
-            bias_at_max, coh_at_bias = biases[max_idx], coh[max_idx].real
-            #ax1.plot([coh_at_bias, 0], [bias_at_max,bias_at_max], color=col, linestyle='--')
-            #ax2.plot([0., phonon_diff[max_idx].real], [bias_at_max,bias_at_max], color=col, linestyle='--')
-            # pure formatting and aesthetics
-            #ax1.set_xlim(-0.09,0)
-            ax2.set_xlim(0.,0.15)
-            plt.setp(ax2.get_yticklabels(), visible=False)
-            ax2.set_xlabel(r"$N_{RC_2}-N_{RC_1}$ at Steady state", weight='medium')
-            #data_list.append(ssdata_for_alpha)
-            fig.subplots_adjust(wspace=0.0)
-        print "bias and coupling strength data seems to have been plotted"
-    except Exception as err:
-        print "data not plotted fully because", err
+
 
     try:
         #L_s = EM.L_secular(H_0, A_EM, eps, alpha_EM, T_EM, J, num_cpus=num_cpus)
@@ -243,4 +276,4 @@ if __name__ == "__main__":
 
     #np.savetxt('DATA/Dynamics/dimer_DATA_ns.txt', np.array([1- DATA_ns.expect[0], timelist]), delimiter = ',', newline= '\n')
 
-    plt.show()
+    #plt.show()
