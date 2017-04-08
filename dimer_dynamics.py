@@ -55,13 +55,14 @@ def calculate_dynamics():
         print "Could not get non-secular-driving dynamics because ",err
 
 def steadystate_coherence_plot(args, alpha_list, biases):
-    coh_ops = load_obj('zoomed_coherence_ops_N{}'.format(args['N_1']))
+    coh_ops = load_obj('zoomed_coherence_ops_N{}_wRC{}_V{}'.format(args['N_1'], int(args['w0_1']), int(args['V'])))
     fig = plt.figure(figsize=(12,6))
+    print len(coh_ops)
     ax = fig.add_subplot(111)
     max_coh_for_alpha = []
     bias_at_max_list = []
     for alpha in alpha_list:
-        ss_dms = load_obj('DATA/zoomed_bias_dependence_alpha{}'.format(int(alpha)))
+        ss_dms = load_obj('DATA/zoomed_bias_dependence_alpha{}_wRC{}_N{}_V{}'.format(int(alpha),int(args['w0_1']), args['N_1'], int(args['V'])))
         assert len(ss_dms) == len(coh_ops)
         coh_list = []
         for i in range(len(ss_dms)):
@@ -144,9 +145,9 @@ if __name__ == "__main__":
     w0_2, w0_1 = 300., 300. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1 + V
     alpha_1, alpha_2 = 400/pi, 400/pi # Ind.-Boson frame coupling
-    N_1, N_2 = 5,5  # set Hilbert space sizes
+    N_1, N_2 = 5, 5 # set Hilbert space sizes
     exc = int((N_1+N_2)*0.5)
-    num_cpus = 2
+    num_cpus = 4
     J = J_minimal
 
     H_dim = w_1*XO*XO.dag() + w_2*OX*OX.dag() + w_xx*XX*XX.dag() + V*(XO*OX.dag() + OX*XO.dag())
@@ -209,27 +210,25 @@ if __name__ == "__main__":
     opts = qt.Options(num_cpus=num_cpus)
     ncolors = len(plt.rcParams['axes.prop_cycle'])
     #fig = plt.figure(figsize=(12,6))
-    alpha_ph = np.arange(60, 420, 20)/pi
+    alpha_ph = np.arange(60, 420, 40)/pi
 
     #L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(PARAMS)
     #L_ns = EM.L_nonsecular(H_0, A_EM, PARAMS)
-    #check.steadystate_comparison(H_0, [L_RC+L_ns])
     #print "Steady state is ", qt.steadystate(H_0)
     #calculate_dynamics()
 
     try:
         PARAMS.update({'w_2':w_1})
         biases = np.linspace(100, 500, 25)
-        steadystate_coherence_plot(PARAMS, alpha_ph, biases)
         #observable = exciton_coherence
         #check.get_coh_ops(PARAMS, biases, I)
-        """
-        for alpha in alpha_ph:
+	for alpha in alpha_ph:
             PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
             coh_ops = check.bias_dependence(biases, PARAMS, I)
             print "WE just finished pi*alpha={}".format(int(alpha*pi))
-        save_obj(coh_ops, 'zoomed_coherence_ops_N{}'.format(N_1))
-        """
+        save_obj(coh_ops, 'zoomed_coherence_ops_N{}_wRC{}_V{}'.format(int(N_1), int(w0_1), int(V)))
+        steadystate_coherence_plot(PARAMS, alpha_ph, biases)
+        plt.show()
     except Exception as err:
         print "data not calculated fully because", err
 

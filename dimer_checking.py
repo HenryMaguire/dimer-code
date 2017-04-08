@@ -1,3 +1,4 @@
+
 import time
 
 
@@ -59,7 +60,7 @@ def get_coh_ops(args, biases, I):
         coh =  states[0]*states[1].dag()
         coh = tensor(coh, I)
         coh_ops.append(coh)
-    save_obj(coh_ops, 'zoomed_coherence_ops_N{}'.format(args['N_1']))
+    save_obj(coh_ops, 'zoomed_coherence_ops_N{}_wRC{}'.format(args['N_1'], int(args['w0_1'])))
 
 def exciton_states(PARS):
     w_1, w_2, V = PARS['w_1'], PARS['w_2'],PARS['V']
@@ -77,11 +78,11 @@ def exciton_states(PARS):
     return [lam_m, lam_p], [qt.Qobj(v_m), qt.Qobj(v_p)]
 
 def bias_dependence(biases, args, I):
-    name = 'DATA/zoomed_bias_dependence_alpha{}'.format(int(args['alpha_1']))
+    name = 'DATA/zoomed_bias_dependence_alpha{}_wRC{}_N{}_V{}'.format(int(args['alpha_1']),  int(args['w0_1']), args['N_1'], int(args['V']))
+    print name
     ss_list = []
     coh_ops = []
     for eps in biases:
-
         args.update({'w_2': args['w_1']-eps})
         args.update({'w_xx': args['w_1'] + args['w_2'] + args['V']})
         args.update({'w_opt': (args['w_1']+args['w_2'])*0.5})
