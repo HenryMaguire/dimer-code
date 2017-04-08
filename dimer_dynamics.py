@@ -76,6 +76,8 @@ def steadystate_coherence_plot(args, alpha_list, biases):
         #bias_at_max_list.append(bias_at_max)
     ax.set_xlabel(r'Bias $cm^{-1}$')
     ax.set_ylabel('Exciton Coherence')
+    ax.set_xlim(biases[0], biases[-1])
+    plt.savefig('zoomed_bias_dependence_alpha{}_wRC{}_N{}_V{}.pdf'.format(int(alpha),int(args['w0_1']), args['N_1'], int(args['V'])))
     #print max_coh_for_alpha, bias_at_max_list
     #ax.scatter(np.array(alpha_list)*pi, max_coh_for_alpha)
     #ax.scatter(np.array(alpha_list)*pi, bias_at_max_list)
@@ -222,7 +224,7 @@ if __name__ == "__main__":
         biases = np.linspace(100, 500, 25)
         #observable = exciton_coherence
         #check.get_coh_ops(PARAMS, biases, I)
-	for alpha in alpha_ph:
+        for alpha in alpha_ph:
             PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
             coh_ops = check.bias_dependence(biases, PARAMS, I)
             print "WE just finished pi*alpha={}".format(int(alpha*pi))
