@@ -120,6 +120,25 @@ def steadystate_coherence_and_RC_plot():
         except Exception as err:
             print "data not plotted fully because", err
 
+def get_steady_state_data():
+    try:
+        ncolors = len(plt.rcParams['axes.prop_cycle'])
+        alpha_ph = np.arange(60, 420, 40)/pi
+        PARAMS.update({'w_2':w_1})
+        biases = np.linspace(100, 500, 25)
+        #observable = exciton_coherence
+        #check.get_coh_ops(PARAMS, biases, I)
+
+        for alpha in alpha_ph:
+            PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
+            coh_ops = check.bias_dependence(biases, PARAMS, I)
+            print "WE just finished pi*alpha={}".format(int(alpha*pi))
+        save_obj(coh_ops, 'DATA/zoomed_coherence_ops_N{}_wRC{}_V{}'.format(int(N_1), int(w0_1), int(V)))
+        steadystate_coherence_plot(PARAMS, alpha_ph, biases)
+        plt.show()
+    except Exception as err:
+        print "data not calculated fully because", err
+
 
 if __name__ == "__main__":
 
@@ -144,7 +163,7 @@ if __name__ == "__main__":
     T_1, T_2 = 300., 300. # Phonon bath temperature
 
     wc = 53. # Ind.-Boson frame phonon cutoff freq
-    w0_2, w0_1 = 700., 700. # underdamped SD parameter omega_0
+    w0_2, w0_1 = 500., 500. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1 + V
     alpha_1, alpha_2 = 400/pi, 400/pi # Ind.-Boson frame coupling
     N_1, N_2 = 5, 5 # set Hilbert space sizes
@@ -210,53 +229,12 @@ if __name__ == "__main__":
 
     #print sys.getsizeof(L_ns)
     opts = qt.Options(num_cpus=num_cpus)
-    ncolors = len(plt.rcParams['axes.prop_cycle'])
-    #fig = plt.figure(figsize=(12,6))
-    alpha_ph = np.arange(60, 420, 40)/pi
 
-    #L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(PARAMS)
-    #L_ns = EM.L_nonsecular(H_0, A_EM, PARAMS)
+
+    L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(PARAMS)
+    L_ns = EM.L_nonsecular(H_0, A_EM, PARAMS)
     #print "Steady state is ", qt.steadystate(H_0)
     #calculate_dynamics()
-
-    try:
-        PARAMS.update({'w_2':w_1})
-        biases = np.linspace(100, 500, 25)
-        #observable = exciton_coherence
-        #check.get_coh_ops(PARAMS, biases, I)
-
-        for alpha in alpha_ph:
-            PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
-            coh_ops = check.bias_dependence(biases, PARAMS, I)
-            print "WE just finished pi*alpha={}".format(int(alpha*pi))
-        save_obj(coh_ops, 'DATA/zoomed_coherence_ops_N{}_wRC{}_V{}'.format(int(N_1), int(w0_1), int(V)))
-
-        steadystate_coherence_plot(PARAMS, alpha_ph, biases)
-        plt.show()
-    except Exception as err:
-        print "data not calculated fully because", err
-
-
-    try:
-        #L_s = EM.L_secular(H_0, A_EM, eps, alpha_EM, T_EM, J, num_cpus=num_cpus)
-        #DATA_s = mesolve(H_0, rho_0, timelist, [L_RC+L_ns], expects, options=opts,
-        #                                                    progress_bar=True)
-        #ax = fig.add_subplot(212)
-        #vis.plot_dynamics(DATA_s, timelist, ax, title='Non-secular driving\n')
-        print 'Secular dynamics skipped'
-    except e:
-        print "Could not get secular-driving dynamics because ",e
-
-    #del L_ns
-    #L_s = EM.L_secular(H_0, A_EM, eps, alpha_EM, T_EM, J, num_cpus=num_cpus)
-    #L_naive = EM_lind.electronic_lindblad(w_xx, w_1, eps, V, mu, alpha_EM, T_EM, N_1, N_2, exc)
-    # Set up the initial density matrix
-     # you need lots of points so that coherences are well defined -> spectra
-    #nonsec_check(eps, H, A_em, N) # Plots a scatter graph representation of non-secularity. Could use nrwa instead.
-    #fig = plt.figure(figsize=(12, 6))
-    #ax1 = fig.add_subplot(111)
-    #energies = plot_manifolds(ax1, H_0)
-
 
     # Calculate dynamics
 
