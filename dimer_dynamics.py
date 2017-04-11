@@ -72,12 +72,11 @@ def steadystate_coherence_plot(args, alpha_list, biases):
         #real_pos = abs(np.array(coh_list).real)
         #max_coh = max(real_pos)
         #max_coh_for_alpha.append(-1*max_coh)
-        #bias_at_max = biases[list(real_pos).index(max_coh)]
-        #bias_at_max_list.append(bias_at_max)
+        #bias_at_max = biases[list(real_pos).index(max_coh)]        #bias_at_max_list.append(bias_at_max)
     ax.set_xlabel(r'Bias $cm^{-1}$')
     ax.set_ylabel('Exciton Coherence')
     ax.set_xlim(biases[0], biases[-1])
-    plt.savefig('zoomed_bias_dependence_wRC{}_N{}_V{}.pdf'.format(int(alpha),int(args['w0_1']), args['N_1'], int(args['V'])))
+    plt.savefig('zoomed_bias_dependence_wRC{}_N{}_V{}.pdf'.format(int(args['w0_1']), args['N_1'], int(args['V'])))
     #print max_coh_for_alpha, bias_at_max_list
     #ax.scatter(np.array(alpha_list)*pi, max_coh_for_alpha)
     #ax.scatter(np.array(alpha_list)*pi, bias_at_max_list)
@@ -144,7 +143,7 @@ if __name__ == "__main__":
     T_1, T_2 = 300., 300. # Phonon bath temperature
 
     wc = 53. # Ind.-Boson frame phonon cutoff freq
-    w0_2, w0_1 = 700., 700. # underdamped SD parameter omega_0
+    w0_2, w0_1 = 1000., 1000. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1 + V
     alpha_1, alpha_2 = 400/pi, 400/pi # Ind.-Boson frame coupling
     N_1, N_2 = 5, 5 # set Hilbert space sizes
@@ -224,13 +223,14 @@ if __name__ == "__main__":
         biases = np.linspace(100, 500, 25)
         #observable = exciton_coherence
         #check.get_coh_ops(PARAMS, biases, I)
+	"""
 
         for alpha in alpha_ph:
             PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
             coh_ops = check.bias_dependence(biases, PARAMS, I)
             print "WE just finished pi*alpha={}".format(int(alpha*pi))
         save_obj(coh_ops, 'DATA/zoomed_coherence_ops_N{}_wRC{}_V{}'.format(int(N_1), int(w0_1), int(V)))
-
+	"""
         steadystate_coherence_plot(PARAMS, alpha_ph, biases)
         plt.show()
     except Exception as err:
