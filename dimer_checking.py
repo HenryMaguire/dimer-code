@@ -60,7 +60,7 @@ def get_coh_ops(args, biases, I):
         coh =  states[0]*states[1].dag()
         coh = tensor(coh, I)
         coh_ops.append(coh)
-    save_obj(coh_ops, 'zoomed_coherence_ops_N{}_wRC{}'.format(args['N_1'], int(args['w0_1'])))
+    save_obj(coh_ops, 'DATA/zoomed_coherence_ops_N{}_wRC{}'.format(args['N_1'], int(args['w0_1'])))
 
 def exciton_states(PARS):
     w_1, w_2, V = PARS['w_1'], PARS['w_2'],PARS['V']
