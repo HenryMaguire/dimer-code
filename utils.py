@@ -14,6 +14,7 @@ def save_obj(obj, name ):
     with open(name + '.pickle', 'wb') as f:
         pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
 
+
 def Occupation(omega, T, time_units='cm'):
     conversion = 0.695
     if time_units == 'ev':

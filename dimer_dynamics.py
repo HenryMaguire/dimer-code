@@ -139,6 +139,11 @@ def get_steady_state_data():
     except Exception as err:
         print "data not calculated fully because", err
 
+def ket_constructor(site_op, fock_1, fock_2, PARAMS):
+    N_1, N_2, exc = PARAMS['N_1'], PARAMS['N_2'], PARAMS['exc']
+    sites = qt.enr_fock([N_1,N_2],exc,[fock_1,fock_2])
+    state = tensor(site_op, sites*sites.dag())
+    return qt.operator_to_vector(state)
 
 if __name__ == "__main__":
 
@@ -233,6 +238,7 @@ if __name__ == "__main__":
 
     L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(PARAMS)
     L_ns = EM.L_nonsecular(H_0, A_EM, PARAMS)
+    L = L_RC + L_ns
     #print "Steady state is ", qt.steadystate(H_0)
     #calculate_dynamics()
 
