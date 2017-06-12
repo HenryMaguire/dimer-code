@@ -9,6 +9,7 @@ The four electromagnetic liouvillians I am studying for the vibronic dimer are:
 import time
 
 import numpy as np
+from numpy import sqrt
 from numpy import pi
 from qutip import Qobj, basis, spost, spre, sprepost, steadystate
 import qutip.parallel as par
@@ -99,7 +100,26 @@ def L_secular(H_vib, A, eps, Gamma, T, J, num_cpus=1):
     print "It took ", time.time()-ti, " seconds to build the vibronic Lindblad Liouvillian"
     return -np.sum(L)
 
-
+def L_phenom(eps, V, states, energies, w_xx, mu, gamma, w_1, J, occupation):
+    n = occupation
+    dark, lm = states[0], energies[0]
+    bright, lp = states[1], energies[1]
+    OO = basis(4,0)
+    XX = basis(4,3)
+    eta = np.sqrt(4*V**2+eps**2)
+    pre_p = (sqrt(eta-eps)+mu*sqrt(eta+eps))/sqrt(2*eta)
+    pre_m = -(sqrt(eta+eps)-mu*sqrt(eta-eps))/sqrt(2*eta)
+    A_lp, A_wxx_lp = pre_p*OO*bright.dag(),  pre_p*bright*XX.dag()
+    A_lm, A_wxx_lm = pre_m*OO*dark.dag(),  pre_m*dark*XX.dag()
+    L = 0.5*rate_up(lp, n, gamma, J, w_1)*lin_construct(A_lp.dag())
+    L += 0.5*rate_up(lm, n, gamma, J, w_1)*lin_construct(A_lm.dag())
+    L += 0.5*rate_down(lp, n, gamma, J, w_1)*lin_construct(A_lp)
+    L += 0.5*rate_down(lm, n, gamma, J, w_1)*lin_construct(A_lm)
+    L += 0.5*rate_up(w_xx-lp, n, gamma, J, w_1)*lin_construct(A_wxx_lp.dag())
+    L += 0.5*rate_up(w_xx-lm, n, gamma, J, w_1)*lin_construct(A_wxx_lm.dag())
+    L += 0.5*rate_up(w_xx-lp, n, gamma, J, w_1)*lin_construct(A_wxx_lp)
+    L += 0.5*rate_up(w_xx-lm, n, gamma, J, w_1)*lin_construct(A_wxx_lm)
+    return L
 if __name__ == "__main__":
     ev_to_inv_cm = 8065.5
     w_1, w_2 = 1.4*ev_to_inv_cm, 1.*ev_to_inv_cm

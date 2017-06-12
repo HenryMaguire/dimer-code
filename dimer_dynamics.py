@@ -221,6 +221,9 @@ if __name__ == "__main__":
     ss_pred = ss_pred/ss_pred.tr()
     print sum((ss-ss_pred).diag())
     print "Steady state is ", (ss*exciton_coherence).tr()
+
+    L_p = L_phenom(eps, V, states, energies, w_xx, mu, gamma, w_1, J, occupation)
+    ss = qt.steadystate(H_dim, [L_RC+L_p], method= 'iterative-lgmres', use_precond=True)
     #print "Steady state is ", qt.steadystate(H_0)
     #calculate_dynamics()
     """
