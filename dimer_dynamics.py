@@ -131,14 +131,15 @@ if __name__ == "__main__":
     sigma_x1 = sigma_m1+sigma_m1.dag()
     sigma_x2 = sigma_m2+sigma_m2.dag()
 
-    w_1 = 1.1*8065.5
-    w_2 = w_1
-    V = 92. #0.1*8065.5
-    w_opt = (w_1+w_2)*0.5 # Characteristic freq in optical spec.
 
+    w_2 = 1.4*ev_to_inv_cm
+    bias = 0.1*ev_to_inv_cm
+    w_1 = w_2 + bias
+    V = 92. #0.1*8065.5
+    dipole_1, dipole_2 = 1., 1.
     T_EM = 6000. # Optical bath temperature
-    alpha_EM = 1.*5.309 # Optical S-bath strength (from inv. ps to inv. cm)(optical)
-    mu = 1.
+    alpha_EM = 1.*inc_ps_to_inv_cm # Optical S-bath strength (from inv. ps to inv. cm)(optical)
+    mu = (w_2*dipole_2/w_1*dipole_1)**2
 
     T_1, T_2 = 300., 300. # Phonon bath temperature
 
@@ -152,7 +153,7 @@ if __name__ == "__main__":
     J = J_minimal
 
     H_dim = w_1*XO*XO.dag() + w_2*OX*OX.dag() + w_xx*XX*XX.dag() + V*(XO*OX.dag() + OX*XO.dag())
-    PARAM_names = ['w_1', 'w_2', 'V', 'w_opt', 'w_xx', 'T_1', 'T_2', 'wc',
+    PARAM_names = ['w_1', 'w_2', 'V', 'w_xx', 'T_1', 'T_2', 'wc',
                     'w0_1', 'w0_2', 'alpha_1', 'alpha_2', 'N_1', 'N_2', 'exc', 'T_EM', 'alpha_EM','mu', 'num_cpus', 'J']
     PARAMS = dict((name, eval(name)) for name in PARAM_names)
 
@@ -213,24 +214,24 @@ if __name__ == "__main__":
     #fig = plt.figure(figsize=(12,6))
     alpha_ph = np.arange(60, 420, 40)/pi
 
-    #L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(PARAMS)
-    #L_ns = EM.L_nonsecular(H_0, A_EM, PARAMS)
+    L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(PARAMS)
+    L_ns = EM.L_nonsecular(H_0, A_EM, PARAMS)
     #print "Steady state is ", qt.steadystate(H_0)
     #calculate_dynamics()
-
+    """
     try:
         PARAMS.update({'w_2':w_1})
         biases = np.linspace(100, 500, 25)
         #observable = exciton_coherence
         #check.get_coh_ops(PARAMS, biases, I)
-	"""
+	'''
 
         for alpha in alpha_ph:
             PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
             coh_ops = check.bias_dependence(biases, PARAMS, I)
             print "WE just finished pi*alpha={}".format(int(alpha*pi))
         save_obj(coh_ops, 'DATA/zoomed_coherence_ops_N{}_wRC{}_V{}'.format(int(N_1), int(w0_1), int(V)))
-	"""
+	'''
         steadystate_coherence_plot(PARAMS, alpha_ph, biases)
         plt.show()
     except Exception as err:
@@ -280,3 +281,4 @@ if __name__ == "__main__":
     #np.savetxt('DATA/Dynamics/dimer_DATA_ns.txt', np.array([1- DATA_ns.expect[0], timelist]), delimiter = ',', newline= '\n')
 
     #plt.show()
+"""
