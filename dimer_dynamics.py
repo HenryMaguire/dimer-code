@@ -146,7 +146,7 @@ if __name__ == "__main__":
     wc = 53. # Ind.-Boson frame phonon cutoff freq
     w0_2, w0_1 = 1000., 1000. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1 + V
-    alpha_1, alpha_2 = 400/pi, 400/pi # Ind.-Boson frame coupling
+    alpha_1, alpha_2 = 4/pi, 4/pi # Ind.-Boson frame coupling
     N_1, N_2 = 5, 5 # set Hilbert space sizes
     exc = int((N_1+N_2)*0.5)
     num_cpus = 4
