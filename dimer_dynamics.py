@@ -131,15 +131,17 @@ if __name__ == "__main__":
     sigma_x1 = sigma_m1+sigma_m1.dag()
     sigma_x2 = sigma_m2+sigma_m2.dag()
 
-    w_1 = 1.1*8065.5
-    delta = 0.1*8065.5
-    w_2 = w_1-delta
+
+    w_2 = 1.4*8065.5
+    bias = 0.1*8065.5
+    w_1 = w_2 + bias
+
     V = 1*92. #(30E-3)*8065.5
     #w_opt = (w_1+w_2)*0.5 # Characteristic freq in optical spec.
 
     T_EM = 6000. # Optical bath temperature
     alpha_EM = 1.*5.309 # Optical S-bath strength (from inv. ps to inv. cm)
-    mu = w_2/w_1
+    mu = w_2*d_2/w_1*d_1
 
     T_1, T_2 = 300., 300. # Phonon bath temperature
 
@@ -156,7 +158,7 @@ if __name__ == "__main__":
     PARAM_names = ['w_1', 'w_2', 'V', 'w_xx', 'T_1', 'T_2', 'wc',
                     'w0_1', 'w0_2', 'alpha_1', 'alpha_2', 'N_1', 'N_2', 'exc', 'T_EM', 'alpha_EM','mu', 'num_cpus', 'J']
     PARAMS = dict((name, eval(name)) for name in PARAM_names)
-    
+
     I_dimer = qeye(4)
     I = enr_identity([N_1,N_2], exc)
     atemp = enr_destroy([N_1,N_2], exc)
