@@ -135,11 +135,11 @@ if __name__ == "__main__":
     w_2 = 1.4*ev_to_inv_cm
     bias = 0.1*ev_to_inv_cm
     w_1 = w_2 + bias
-    V = 92. #0.1*8065.5
+    V = 1*92. #0.1*8065.5
     dipole_1, dipole_2 = 1., 1.
     T_EM = 6000. # Optical bath temperature
     alpha_EM = 1.*inc_ps_to_inv_cm # Optical S-bath strength (from inv. ps to inv. cm)(optical)
-    mu = (w_2*dipole_2/w_1*dipole_1)**2
+    mu = w_2*dipole_2/w_1*dipole_1
 
     T_1, T_2 = 300., 300. # Phonon bath temperature
 
@@ -216,6 +216,11 @@ if __name__ == "__main__":
 
     L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(PARAMS)
     L_ns = EM.L_nonsecular(H_0, A_EM, PARAMS)
+    ss = qt.steadystate(H_0, [L_RC+L_ns], method= 'iterative-lgmres', use_precond=True)
+    ss_pred = ((-1/T_EM*0.695)*H_0).expm()
+    ss_pred = ss_pred/ss_pred.tr()
+    print sum((ss-ss_pred).diag())
+    print "Steady state is ", (ss*exciton_coherence).tr()
     #print "Steady state is ", qt.steadystate(H_0)
     #calculate_dynamics()
     """
