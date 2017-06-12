@@ -152,7 +152,7 @@ if __name__ == "__main__":
     N_1, N_2 = 6, 6 # set Hilbert space sizes
     exc = int((N_1+N_2)*0.5)
     num_cpus = 4
-    J = J_multipolar
+    J = J_minimal
 
     H_dim = w_1*XO*XO.dag() + w_2*OX*OX.dag() + w_xx*XX*XX.dag() + V*(XO*OX.dag() + OX*XO.dag())
     PARAM_names = ['w_1', 'w_2', 'V', 'w_xx', 'T_1', 'T_2', 'wc',
