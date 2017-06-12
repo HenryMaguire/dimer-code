@@ -131,11 +131,11 @@ if __name__ == "__main__":
     sigma_x1 = sigma_m1+sigma_m1.dag()
     sigma_x2 = sigma_m2+sigma_m2.dag()
 
-    w_1 = 1.4*8065.5
-    delta = 0.3*8065.5
+    w_1 = 1.1*8065.5
+    delta = 0.1*8065.5
     w_2 = w_1-delta
-    V = 3*92. #(30E-3)*8065.5
-    w_opt = (w_1+w_2)*0.5 # Characteristic freq in optical spec.
+    V = 1*92. #(30E-3)*8065.5
+    #w_opt = (w_1+w_2)*0.5 # Characteristic freq in optical spec.
 
     T_EM = 6000. # Optical bath temperature
     alpha_EM = 1.*5.309 # Optical S-bath strength (from inv. ps to inv. cm)
@@ -156,7 +156,7 @@ if __name__ == "__main__":
     PARAM_names = ['w_1', 'w_2', 'V', 'w_xx', 'T_1', 'T_2', 'wc',
                     'w0_1', 'w0_2', 'alpha_1', 'alpha_2', 'N_1', 'N_2', 'exc', 'T_EM', 'alpha_EM','mu', 'num_cpus', 'J']
     PARAMS = dict((name, eval(name)) for name in PARAM_names)
-
+    
     I_dimer = qeye(4)
     I = enr_identity([N_1,N_2], exc)
     atemp = enr_destroy([N_1,N_2], exc)
@@ -217,7 +217,11 @@ if __name__ == "__main__":
     L_RC, H_0, A_1, A_2, A_EM_1, A_EM_2, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(PARAMS)
 
     L_ns = EM.L_nonsecular(H_0, A_EM_1, A_EM_2, PARAMS)
-    print "Steady state is ", (qt.steadystate(H_0, [L_RC+L_ns], method= 'iterative-lgmres', use_precond=True)*exciton_coherence).tr()
+    ss = qt.steadystate(H_0, [L_RC+L_ns], method= 'iterative-lgmres', use_precond=True)
+    ss_pred = ((-1/T_EM*0.695)*H_0).expm()
+    ss_pred = ss_pred/ss_pred.tr()
+    print sum((ss-ss_pred).diag())
+    print "Steady state is ", (ss*exciton_coherence).tr()
     #calculate_dynamics()
     """
     try:

@@ -21,7 +21,6 @@ def dimer_ham_RC(w_1, w_2, w_xx, V, mu, Omega_1,
     XX = basis(4,3)
     SIGMA_1 = OX*XX.dag() + OO*XO.dag()
     SIGMA_2 = XO*XX.dag() + OO*OX.dag()
-    assert SIGMA_1*OX == SIGMA_2*XO
     #I_RC_1 = qeye(N_1)
     #I_RC_2 = qeye(N_2)
     I_dim = qeye(4)
