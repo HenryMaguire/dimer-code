@@ -100,7 +100,9 @@ def L_secular(H_vib, A, eps, Gamma, T, J, num_cpus=1):
     print "It took ", time.time()-ti, " seconds to build the vibronic Lindblad Liouvillian"
     return -np.sum(L)
 
-def L_phenom(eps, V, states, energies, w_xx, mu, gamma, w_1, J, T, I):
+def L_phenom(states, energies, I, args):
+    ti = time.time()
+    eps, V, w_xx, mu, gamma, w_1, J, T = args['w_1']-args['w_2'], args['V'], args['w_xx'], args['mu'], args['alpha_EM'], args['w_1'], args['J'], args['T_EM']
     dark, lm = states[1], energies[1]
     bright, lp = states[0], energies[0]
     OO = basis(4,0)
@@ -118,6 +120,7 @@ def L_phenom(eps, V, states, energies, w_xx, mu, gamma, w_1, J, T, I):
     L += 0.5*rate_up(w_xx-lm, T, gamma, J, w_1)*lin_construct(A_wxx_lm.dag())
     L += 0.5*rate_down(w_xx-lp, T, gamma, J, w_1)*lin_construct(A_wxx_lp)
     L += 0.5*rate_down(w_xx-lm, T, gamma, J, w_1)*lin_construct(A_wxx_lm)
+    print "It took {} seconds to build the phenomenological Liouvillian".format(time.time()-ti)
     return L
 
 if __name__ == "__main__":

@@ -158,13 +158,13 @@ if __name__ == "__main__":
     w0_2, w0_1 = 1000., 1000. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1 + V
     alpha_1, alpha_2 = 100/pi, 100/pi # Ind.-Boson frame coupling
-    N_1, N_2 = 4, 4 # set Hilbert space sizes
+    N_1, N_2 = 3, 3 # set Hilbert space sizes
     exc = int((N_1+N_2)*0.5)
     num_cpus = 4
     J = J_minimal
 
     H_dim = w_1*XO*XO.dag() + w_2*OX*OX.dag() + w_xx*XX*XX.dag() + V*(XO*OX.dag() + OX*XO.dag())
-    PARAM_names = ['w_1', 'w_2', 'V', 'w_xx', 'T_1', 'T_2', 'wc',
+    PARAM_names = ['w_1', 'w_2', 'V', 'bias', 'w_xx', 'T_1', 'T_2', 'wc',
                     'w0_1', 'w0_2', 'alpha_1', 'alpha_2', 'N_1', 'N_2', 'exc', 'T_EM', 'alpha_EM','mu', 'num_cpus', 'J']
     PARAMS = dict((name, eval(name)) for name in PARAM_names)
 
@@ -247,7 +247,7 @@ if __name__ == "__main__":
     #ax = fig.add_subplot(212)
     #vis.plot_dynamics(DATA_ns, timelist, expects, ax, title='Non-secular driving\n')
     #print ss_pred.ptrace(0)
-    L_p = EM.L_phenom(bias, V, states, energies, w_xx, mu, alpha_EM, w_1, J, T_EM, I)
+    L_p = EM.L_phenom(states, energies, I, args)
     try:
         ss_p = qt.steadystate(H_0, [L_RC+L_p], method= 'iterative-lgmres', use_precond=True)
     except:
@@ -264,7 +264,7 @@ if __name__ == "__main__":
     try:
         alpha_ph = [100/pi] #np.arange(60, 420, 40)/pi
         PARAMS.update({'w_1':w_2})
-        biases = np.linspace(-0.1, 0.1, 25)*ev_to_inv_cm
+        biases = np.linspace(-0.1, 0.1, 2)*ev_to_inv_cm
         #observable = exciton_coherence
         #check.get_coh_ops(PARAMS, biases, I)
 
