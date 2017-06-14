@@ -149,7 +149,7 @@ if __name__ == "__main__":
     V = 1*92. #0.1*8065.5
     dipole_1, dipole_2 = 1., 1.
     T_EM = 6000. # Optical bath temperature
-    alpha_EM = 3.*inc_ps_to_inv_cm # Optical S-bath strength (from inv. ps to inv. cm)(optical)
+    alpha_EM = 3.*inv_ps_to_inv_cm # Optical S-bath strength (from inv. ps to inv. cm)(larger than a real decay rate because dynamics are more efficient this way)
     mu = w_2*dipole_2/w_1*dipole_1
 
     T_1, T_2 = 300., 300. # Phonon bath temperature
