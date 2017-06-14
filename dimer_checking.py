@@ -80,69 +80,75 @@ def exciton_states(PARS):
 
 
 def bias_dependence(biases, args, I):
+    enc_dir = 'DATA/'
+    main_dir = enc_dir+'bias_dependence_wRC{}_N{}_V{}/'.format(int(args['w0_1']), args['N_1'], int(args['V']))
+    ops_dir = main_dir+'operators/'
+    test_file = main_dir+'phenom/steadystate_DMs_alpha{}.pickle'.format(int(args['alpha_1']))
     ss_p_list = []
     ss_ns_list = []
     coh_ops = []
     bright_ops = []
     dark_ops = []
-    for eps in biases:
-        args.update({'bias': eps})
-        args.update({'w_1': args['w_2']+eps})
-        args.update({'w_xx': args['w_1'] + args['w_2'] + args['V']})
-        #H_dim = qt.Qobj([[0,0,0,0],[0, args['w_1'], args['V'],0 ],[0,args['V'], args['w_2'],0],[0,0,0,args['w_xx']]])
-        energies, states = exciton_states(args)
-        coh =  tensor(states[0]*states[1].dag(), I)
-        bright =  tensor(states[0]*states[0].dag(), I)
-        dark =  tensor(states[1]*states[1].dag(), I)
+    if not os.path.isfile(test_file):
+        for eps in biases:
+            args.update({'bias': eps})
+            args.update({'w_1': args['w_2']+eps})
+            args.update({'w_xx': args['w_1'] + args['w_2'] + args['V']})
+            #H_dim = qt.Qobj([[0,0,0,0],[0, args['w_1'], args['V'],0 ],[0,args['V'], args['w_2'],0],[0,0,0,args['w_xx']]])
+            energies, states = exciton_states(args)
+            coh =  tensor(states[0]*states[1].dag(), I)
+            bright =  tensor(states[0]*states[0].dag(), I)
+            dark =  tensor(states[1]*states[1].dag(), I)
 
-        L_RC, H, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(args)
-        L_ns = EM.L_nonsecular(H, A_EM, args)
-        L_p = EM.L_phenom(states, energies, I, args)
+            L_RC, H, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(args)
+            L_ns = EM.L_nonsecular(H, A_EM, args)
+            L_p = EM.L_phenom(states, energies, I, args)
 
-        # rather than saving all the massive objects to a list, just calculate steady_states and return them
-        energies, states = exciton_states(args)
-        coh =  tensor(states[0]*states[1].dag(), I)
-        bright =  tensor(states[0]*states[0].dag(), I)
-        dark =  tensor(states[1]*states[1].dag(), I)
+            # rather than saving all the massive objects to a list, just calculate steady_states and return them
+            energies, states = exciton_states(args)
+            coh =  tensor(states[0]*states[1].dag(), I)
+            bright =  tensor(states[0]*states[0].dag(), I)
+            dark =  tensor(states[1]*states[1].dag(), I)
 
-        coh_ops.append(coh)
-        bright_ops.append(bright)
-        dark_ops.append(dark)
-        ti = time.time()
-        try:
-            ss_ns = steadystate(H, [L_RC+L_ns], method='iterative-lgmres', use_precond=True)
-            ss_p = steadystate(H, [L_RC+L_p], method='iterative-lgmres', use_precond=True)
-        except:
-            print "Could not build preconditioner, solving steadystate without one"
-            ss_ns = steadystate(H, [L_RC+L_ns], method= 'iterative-lgmres')
-            ss_p = steadystate(H, [L_RC+L_p], method='iterative-lgmres')
+            coh_ops.append(coh)
+            bright_ops.append(bright)
+            dark_ops.append(dark)
+            ti = time.time()
+            try:
+                ss_ns = steadystate(H, [L_RC+L_ns], method='iterative-lgmres', use_precond=True)
+                ss_p = steadystate(H, [L_RC+L_p], method='iterative-lgmres', use_precond=True)
+            except:
+                print "Could not build preconditioner, solving steadystate without one"
+                ss_ns = steadystate(H, [L_RC+L_ns], method= 'iterative-lgmres')
+                ss_p = steadystate(H, [L_RC+L_p], method='iterative-lgmres')
 
-        ss_p_list.append(ss_p)
-        ss_ns_list.append(ss_ns)
-        print (ss_p*coh).tr()
-        print "Calculating the steady state took {} seconds".format(time.time()-ti)
-        print "so far {} steady states".format(len(ss_p_list))
-    enc_dir = 'DATA/'
-    main_dir = enc_dir+'bias_dependence_wRC{}_N{}_V{}/'.format(int(args['w0_1']), args['N_1'], int(args['V']))
-    ops_dir = main_dir+'operators/'
-    if not os.path.exists(main_dir):
-        '''If the data directory doesn't exist:
-        make it, put operators subdir, save inital ss data in dir and ops in subdir once.
-        If it exists, just save the ss data to the directory'''
-        os.makedirs(main_dir)
-        os.makedirs(ops_dir)
-        os.makedirs(main_dir+'nonsecular')
-        os.makedirs(main_dir+'phenom')
-        save_obj(ss_p_list, main_dir+'phenom/steadystate_DMs_alpha{}'.format(int(args['alpha_1'])))
-        save_obj(ss_p_list, main_dir+'nonsecular/steadystate_DMs_alpha{}'.format(int(args['alpha_1'])))
-        save_obj(coh_ops, ops_dir+'eigcoherence_ops')
-        save_obj(dark_ops, ops_dir+'dark_ops')
-        save_obj(bright_ops, ops_dir+'bright_ops')
+            ss_p_list.append(ss_p)
+            ss_ns_list.append(ss_ns)
+            print (ss_p*coh).tr()
+            print "Calculating the steady state took {} seconds".format(time.time()-ti)
+            print "so far {} steady states".format(len(ss_p_list))
+
+
+        if not os.path.exists(main_dir):
+            '''If the data directory doesn't exist:
+            make it, put operators subdir, save inital ss data in dir and ops in subdir once.
+            If it exists, just save the ss data to the directory'''
+            os.makedirs(main_dir)
+            os.makedirs(ops_dir)
+            os.makedirs(main_dir+'nonsecular')
+            os.makedirs(main_dir+'phenom')
+            save_obj(ss_p_list, main_dir+'phenom/steadystate_DMs_alpha{}'.format(int(args['alpha_1'])))
+            save_obj(ss_p_list, main_dir+'nonsecular/steadystate_DMs_alpha{}'.format(int(args['alpha_1'])))
+            save_obj(coh_ops, ops_dir+'eigcoherence_ops')
+            save_obj(dark_ops, ops_dir+'dark_ops')
+            save_obj(bright_ops, ops_dir+'bright_ops')
+        else:
+            save_obj(ss_p_list, main_dir+'phenom/steadystate_DMs_alpha{}'.format(int(args['alpha_1'])))
+            save_obj(ss_p_list, main_dir+'nonsecular/steadystate_DMs_alpha{}'.format(int(args['alpha_1'])))
+        print "file saving at {}".format(main_dir+'steadystate_DMs_alpha{}'.format(int(args['alpha_1'])))
+        print "Data found for pi*alpha = {}".format(int(args['alpha_1'])*pi)
     else:
-        save_obj(ss_p_list, main_dir+'phenom/steadystate_DMs_alpha{}'.format(int(args['alpha_1'])))
-        save_obj(ss_p_list, main_dir+'nonsecular/steadystate_DMs_alpha{}'.format(int(args['alpha_1'])))
-    print "file saving at {}".format(main_dir+'steadystate_DMs_alpha{}'.format(int(args['alpha_1'])))
-    print "Data found for pi*alpha = {}".format(int(args['alpha_1'])*pi)
+        print "Data for this phonon-coupling and Hamiltonian already exists. Skipping..."
 
 def SS_convergence_check(sigma, w_1, w_2, w_xx, V, T_1, T_2, w0_1, w0_2, alpha_1, alpha_2, wc,  alpha_EM, T_EM, mu=0, expect_op='bright', time_units='cm', start_n=2, end_n=5, method='direct'):
 

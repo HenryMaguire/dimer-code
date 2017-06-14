@@ -55,14 +55,17 @@ def calculate_dynamics():
         print "Could not get non-secular-driving dynamics because ",err
 
 def steadystate_coherence_plot(args, alpha_list, biases):
-    coh_ops = load_obj('DATA/zoomed_coherence_ops_N{}_wRC{}_V{}'.format(args['N_1'], int(args['w0_1']), int(args['V'])))
+    main_dir = "DATA/bias_dependence_wRC{}_N{}_V{}/".format(int(args['w0_1']), args['N_1'], int(args['V']))
+    p_dm_dir = main_dir +"phenom/"
+    ns_dm_dir = main_dir +"nonsecular/"
+    ops_dir = main_dir +"operators/"
+    coh_ops = load_obj(ops_dir+'eigcoherence_ops')
     fig = plt.figure(figsize=(12,6))
-    print len(coh_ops)
     ax = fig.add_subplot(111)
     max_coh_for_alpha = []
     bias_at_max_list = []
     for alpha in alpha_list:
-        ss_dms = load_obj('DATA/zoomed_bias_dependence_alpha{}_wRC{}_N{}_V{}'.format(int(alpha),int(args['w0_1']), args['N_1'], int(args['V'])))
+        ss_dms = load_obj(p_dm_dir+'steadystate_DMs_alpha{}'.format(int(alpha)))
         assert len(ss_dms) == len(coh_ops)
         coh_list = []
         for i in range(len(ss_dms)):
@@ -76,7 +79,7 @@ def steadystate_coherence_plot(args, alpha_list, biases):
     ax.set_xlabel(r'Bias $cm^{-1}$')
     ax.set_ylabel('Exciton Coherence')
     ax.set_xlim(biases[0], biases[-1])
-    plt.savefig('zoomed_bias_dependence_wRC{}_N{}_V{}.pdf'.format(int(args['w0_1']), args['N_1'], int(args['V'])))
+    plt.savefig(main_dir+'bias_dependence.pdf')
     #print max_coh_for_alpha, bias_at_max_list
     #ax.scatter(np.array(alpha_list)*pi, max_coh_for_alpha)
     #ax.scatter(np.array(alpha_list)*pi, bias_at_max_list)
@@ -261,23 +264,23 @@ if __name__ == "__main__":
     #print "Steady state is ", qt.steadystate(H_0)
     #calculate_dynamics()
     """
+    alpha_ph = [100/pi, 200/pi]
+    biases = np.linspace(-0.1, 0.1, 2)*ev_to_inv_cm
     try:
-        alpha_ph = [100/pi] #np.arange(60, 420, 40)/pi
+         #np.arange(60, 420, 40)/pi
         PARAMS.update({'w_1':w_2})
-        biases = np.linspace(-0.1, 0.1, 2)*ev_to_inv_cm
         #observable = exciton_coherence
         #check.get_coh_ops(PARAMS, biases, I)
 
         for alpha in alpha_ph:
             PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
             check.bias_dependence(biases, PARAMS, I)
-
-        #steadystate_coherence_plot(PARAMS, alpha_ph, biases)
         #plt.show()
     except Exception as err:
         print "data not calculated fully because", err
 
     try:
+        steadystate_coherence_plot(PARAMS, alpha_ph, biases)
         #L_s = EM.L_secular(H_0, A_EM, eps, alpha_EM, T_EM, J, num_cpus=num_cpus)
         #DATA_s = mesolve(H_0, rho_0, timelist, [L_RC+L_ns], expects, options=opts,
         #                                                    progress_bar=True)

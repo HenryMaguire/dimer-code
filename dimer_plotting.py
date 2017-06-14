@@ -54,11 +54,13 @@ def get_bias_dependence(observable, biases, alpha):
     return np.array([(ss_dm*observable).tr() for ss_dm in data])
 
 def plot_bias_dependence(ax, observables, biases, alpha, color, x_label='', y_label =True, linestyle='-', linewidth=1.0,legend_on=True):
-    name = 'DATA/dm_bias_dependence_alpha{}'.format(int(alpha))
-    data = load_obj(name)
+    p_name = main_dir+'phenom/steadystate_DMs_alpha{}'.format('alpha')
+    #ns_name =
+    p_data = load_obj(p_name)
+    #ns_data = load_obj(ns_name)
     #for ss_dm, obs in zip(data, observables):
     #    print ss_dm
-    ss_values = np.array([(ss_dm*obs).tr() for ss_dm, obs in zip(data, observables)])
+    ss_data = np.array([(ss_dm*obs).tr() for ss_dm, obs in zip(p_data, observables)])
     label = r'$\pi\alpha=$'+'{}'.format(int(alpha*np.pi))+r'$cm^{-1}$'
     if not legend_on:
         label = None
