@@ -64,20 +64,27 @@ def steadystate_coherence_plot(args, alpha_list, biases):
     ax = fig.add_subplot(111)
     max_coh_for_alpha = []
     bias_at_max_list = []
-    for alpha in alpha_list:
-        ss_dms = load_obj(p_dm_dir+'steadystate_DMs_alpha{}'.format(int(alpha)))
-        assert len(ss_dms) == len(coh_ops)
-        coh_list = []
-        for i in range(len(ss_dms)):
-            ss_obs = (ss_dms[i]*coh_ops[i]).tr()
-            coh_list.append(ss_obs)
-        ax.plot(biases, np.array(coh_list).real, label=int(alpha))
+    colors = ['b','r','g']
+    for k, alpha in enumerate(alpha_list):
+        p_ss_dms = load_obj(p_dm_dir+'steadystate_DMs_alpha{}'.format(int(alpha)))
+        ns_ss_dms = load_obj(ns_dm_dir+'steadystate_DMs_alpha{}'.format(int(alpha)))
+        assert len(p_ss_dms) == len(coh_ops)
+        p_coh_list = []
+        ns_coh_list = []
+        for i in range(len(p_ss_dms)):
+            p_ss_obs = (p_ss_dms[i]*coh_ops[i]).tr()
+            ns_ss_obs = (ns_ss_dms[i]*coh_ops[i]).tr()
+            p_coh_list.append(p_ss_obs)
+            ns_coh_list.append(ns_ss_obs)
+        ax.plot(biases, np.array(p_coh_list).real, linestyle='--', linewidth=1.2, color=colors[k])
+        ax.plot(biases, np.array(ns_coh_list).real, label=int(alpha), color=colors[k])
         #real_pos = abs(np.array(coh_list).real)
         #max_coh = max(real_pos)
         #max_coh_for_alpha.append(-1*max_coh)
         #bias_at_max = biases[list(real_pos).index(max_coh)]        #bias_at_max_list.append(bias_at_max)
     ax.set_xlabel(r'Bias $cm^{-1}$')
     ax.set_ylabel('Exciton Coherence')
+    ax.legend()
     ax.set_xlim(biases[0], biases[-1])
     plt.savefig(main_dir+'bias_dependence.pdf')
     #print max_coh_for_alpha, bias_at_max_list
@@ -161,7 +168,7 @@ if __name__ == "__main__":
     w0_2, w0_1 = 1000., 1000. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1 + V
     alpha_1, alpha_2 = 100/pi, 100/pi # Ind.-Boson frame coupling
-    N_1, N_2 = 3, 3 # set Hilbert space sizes
+    N_1, N_2 = 5, 5 # set Hilbert space sizes
     exc = int((N_1+N_2)*0.5)
     num_cpus = 4
     J = J_minimal
@@ -264,8 +271,8 @@ if __name__ == "__main__":
     #print "Steady state is ", qt.steadystate(H_0)
     #calculate_dynamics()
     """
-    alpha_ph = [100/pi, 200/pi]
-    biases = np.linspace(-0.1, 0.1, 2)*ev_to_inv_cm
+    alpha_ph = [30, 100, 200]
+    biases = np.linspace(-0.1, 0.1, 20)*ev_to_inv_cm
     try:
          #np.arange(60, 420, 40)/pi
         PARAMS.update({'w_1':w_2})
@@ -278,9 +285,9 @@ if __name__ == "__main__":
         #plt.show()
     except Exception as err:
         print "data not calculated fully because", err
-
+    steadystate_coherence_plot(PARAMS, alpha_ph, biases)
     try:
-        steadystate_coherence_plot(PARAMS, alpha_ph, biases)
+
         #L_s = EM.L_secular(H_0, A_EM, eps, alpha_EM, T_EM, J, num_cpus=num_cpus)
         #DATA_s = mesolve(H_0, rho_0, timelist, [L_RC+L_ns], expects, options=opts,
         #                                                    progress_bar=True)

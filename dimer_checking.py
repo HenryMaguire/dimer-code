@@ -138,7 +138,7 @@ def bias_dependence(biases, args, I):
             os.makedirs(main_dir+'nonsecular')
             os.makedirs(main_dir+'phenom')
             save_obj(ss_p_list, main_dir+'phenom/steadystate_DMs_alpha{}'.format(int(args['alpha_1'])))
-            save_obj(ss_p_list, main_dir+'nonsecular/steadystate_DMs_alpha{}'.format(int(args['alpha_1'])))
+            save_obj(ss_ns_list, main_dir+'nonsecular/steadystate_DMs_alpha{}'.format(int(args['alpha_1'])))
             save_obj(coh_ops, ops_dir+'eigcoherence_ops')
             save_obj(dark_ops, ops_dir+'dark_ops')
             save_obj(bright_ops, ops_dir+'bright_ops')
