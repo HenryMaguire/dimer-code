@@ -119,6 +119,17 @@ def steadystate_coherence_and_RC_plot():
         except Exception as err:
             print "data not plotted fully because", err
 
+def get_dimer_info(rho):
+    e1e2 = tensor(basis(4,1)*basis(4,2).dag(), I)
+    e2e1 = tensor(basis(4,2)*basis(4,1).dag(), I)
+    g = (rho*OO).tr()
+    e1 = (rho*XO).tr()
+    e2 = (rho*OX).tr()
+
+    e1e2 = (rho*e1e2).tr()
+    e2e1 = (rho*e2e1).tr()
+    xx = (rho*XX).tr()
+    return Qobj([[g.real, 0,0,0], [0, e1.real,e1e2.real,0],[0, e2e1.real,e2.real,0],[0, 0,0,xx.real]])#/(g+e1+e2+xx)
 
 if __name__ == "__main__":
 
@@ -138,7 +149,7 @@ if __name__ == "__main__":
     V = 1*92. #0.1*8065.5
     dipole_1, dipole_2 = 1., 1.
     T_EM = 6000. # Optical bath temperature
-    alpha_EM = 1.*inc_ps_to_inv_cm # Optical S-bath strength (from inv. ps to inv. cm)(optical)
+    alpha_EM = 3.*inc_ps_to_inv_cm # Optical S-bath strength (from inv. ps to inv. cm)(optical)
     mu = w_2*dipole_2/w_1*dipole_1
 
     T_1, T_2 = 300., 300. # Phonon bath temperature
@@ -146,8 +157,8 @@ if __name__ == "__main__":
     wc = 53. # Ind.-Boson frame phonon cutoff freq
     w0_2, w0_1 = 1000., 1000. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1 + V
-    alpha_1, alpha_2 = 400/pi, 400/pi # Ind.-Boson frame coupling
-    N_1, N_2 = 5, 5 # set Hilbert space sizes
+    alpha_1, alpha_2 = 100/pi, 100/pi # Ind.-Boson frame coupling
+    N_1, N_2 = 6, 6 # set Hilbert space sizes
     exc = int((N_1+N_2)*0.5)
     num_cpus = 4
     J = J_minimal
@@ -168,13 +179,13 @@ if __name__ == "__main__":
     x_1 = (atemp[0].dag()+atemp[0])
     x_2 = (atemp[1].dag()+atemp[1])
 
-    initial_sys = OO*OO.dag()
+    #initial_sys = OO*OO.dag()
     #initial_sys = 0.5*(XO+OX)*(XO+OX).dag()
 
-    OO = tensor(OO, I)
-    XO = tensor(XO, I)
-    OX = tensor(OX, I)
-    XX = tensor(XX, I)
+    OO = tensor(OO*OO.dag(), I)
+    XO = tensor(XO*XO.dag(), I)
+    OX = tensor(OX*OX.dag(), I)
+    XX = tensor(XX*XX.dag(), I)
     eVals, eVecs = H_dim.eigenstates()
     eVals, eVecs = zip(*sorted(zip(eVals, eVecs))) # sort them
     dark_old= eVecs[1]*eVecs[1].dag()
@@ -182,17 +193,20 @@ if __name__ == "__main__":
     energies, states = check.exciton_states(PARAMS)
     lam_p = 0.5*(w_1+w_2)+0.5*np.sqrt((w_2-w_1)**2+4*(V**2))
     lam_m = 0.5*(w_1+w_2)-0.5*np.sqrt((w_2-w_1)**2+4*(V**2))
-    dark = tensor(states[0]*states[0].dag(), I)
-    bright = tensor(states[1]*states[1].dag(), I)
+    bright_vec = states[0]
+    dark_vec = states[1]
+    dark = tensor(dark_vec*dark_vec.dag(), I)
+    bright = tensor(bright_vec*bright_vec.dag(), I)
     #print  (states[1]*states[1].dag()).tr(), bright_old, states[1]*states[1].dag()
     #print (states[0]*states[0].dag()).tr(), dark_old, states[0]*states[0].dag()
-    exciton_coherence = tensor(states[0]*states[1].dag(), I)
+    exciton_coherence = tensor(dark_vec*bright_vec.dag(), I)
     Phonon_1 = tensor(I_dimer, phonon_num_1)
     Phonon_2 = tensor(I_dimer, phonon_num_2)
     disp_1 = tensor(I_dimer, x_1)
     disp_2 = tensor(I_dimer, x_2)
 
-    rho_0 = tensor(initial_sys, enr_thermal_dm([N_1,N_2], exc, [n_RC_1, n_RC_2]))
+    #rho_0 = tensor(initial_sys, enr_thermal_dm([N_1,N_2], exc, [n_RC_1, n_RC_2]))
+
     #rho_0 = rho_0/rho_0.tr()
 
 
@@ -211,19 +225,41 @@ if __name__ == "__main__":
     #print sys.getsizeof(L_ns)
     opts = qt.Options(num_cpus=num_cpus)
     ncolors = len(plt.rcParams['axes.prop_cycle'])
-    #fig = plt.figure(figsize=(12,6))
+
     alpha_ph = np.arange(60, 420, 40)/pi
 
     L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(PARAMS)
+
     L_ns = EM.L_nonsecular(H_0, A_EM, PARAMS)
-    ss = qt.steadystate(H_0, [L_RC+L_ns], method= 'iterative-lgmres', use_precond=True)
+    ss_ns = qt.steadystate(H_0, [L_RC+L_ns], method= 'iterative-lgmres', use_precond=True)
+
+    #print sum((ss-ss_pred).diag())
+    print "Steady state is ", get_dimer_info(ss_ns)
+    print "Exciton coherence is ", (ss_ns*exciton_coherence).tr()
+    print "Dark population is ", (ss_ns*dark).tr()
+    print "Bright population is ", (ss_ns*bright).tr()
     ss_pred = ((-1/T_EM*0.695)*H_0).expm()
     ss_pred = ss_pred/ss_pred.tr()
-    print sum((ss-ss_pred).diag())
-    print "Steady state is ", (ss*exciton_coherence).tr()
 
-    L_p = L_phenom(eps, V, states, energies, w_xx, mu, gamma, w_1, J, occupation)
-    ss = qt.steadystate(H_dim, [L_RC+L_p], method= 'iterative-lgmres', use_precond=True)
+    #rho_0 = ((-1/T_1*0.695)*H_0).expm()
+    #rho_0 = rho_0/rho_0.tr()
+    #fig = plt.figure(figsize=(12,6))
+    #timelist = np.linspace(0,2,500)*0.188
+    #DATA_ns = mesolve(H_0, rho_0, timelist, [L_RC+L_ns], expects, options=opts, progress_bar=True)
+    #ax = fig.add_subplot(212)
+    #vis.plot_dynamics(DATA_ns, timelist, expects, ax, title='Non-secular driving\n')
+    #print ss_pred.ptrace(0)
+    L_p = EM.L_phenom(bias, V, states, energies, w_xx, mu, alpha_EM, w_1, J, T_EM, I)
+    try:
+        ss_p = qt.steadystate(H_0, [L_RC+L_p], method= 'iterative-lgmres', use_precond=True)
+    except:
+        ss_p = qt.steadystate(H_0, [L_RC+L_p], method= 'iterative-lgmres')
+    #print sum((ss-ss_pred).diag())
+    print "DM is ", get_dimer_info(ss_p)
+
+    print "Exciton coherence is ", (ss_p*exciton_coherence).tr()
+    print "Dark population is ", (ss_p*dark).tr()
+    print "Bright population is ", (ss_p*bright).tr()
     #print "Steady state is ", qt.steadystate(H_0)
     #calculate_dynamics()
     """

@@ -1,4 +1,5 @@
 import numpy as np
+from numpy import pi
 import scipy as sp
 from qutip import spre, spost, sprepost
 import qutip as qt
@@ -14,14 +15,16 @@ def save_obj(obj, name ):
     with open(name + '.pickle', 'wb') as f:
         pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
 
-def Occupation(omega, T, time_units='cm'):
+def Occupation(omega, T):
     conversion = 0.695
+    """
     if time_units == 'ev':
         conversion == 8.617E-5
     if time_units == 'ps':
         conversion == 0.131
     else:
         pass
+    """
     n =0.
     beta = 0.
     if T ==0.: # First calculate beta
@@ -46,11 +49,13 @@ def J_minimal(omega, Gamma, omega_0):
 def J_flat(omega, Gamma, omega_0):
     return Gamma
 
-def rate_up(w, n, gamma, J, w_0):
+def rate_up(w, T, gamma, J, w_0):
+    n = Occupation(w, T)
     rate = 0.5 * pi * n * J(w, gamma, w_0)
     return rate
 
-def rate_down(w, n, gamma, J, w_0):
+def rate_down(w, T, gamma, J, w_0):
+    n = Occupation(w, T)
     rate = 0.5 * pi * (n + 1. ) * J(w, gamma, w_0)
     return rate
 
