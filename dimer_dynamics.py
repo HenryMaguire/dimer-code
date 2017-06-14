@@ -158,7 +158,7 @@ if __name__ == "__main__":
     w0_2, w0_1 = 1000., 1000. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1 + V
     alpha_1, alpha_2 = 100/pi, 100/pi # Ind.-Boson frame coupling
-    N_1, N_2 = 3, 3 # set Hilbert space sizes
+    N_1, N_2 = 5, 5 # set Hilbert space sizes
     exc = int((N_1+N_2)*0.5)
     num_cpus = 4
     J = J_minimal
@@ -262,9 +262,9 @@ if __name__ == "__main__":
     #calculate_dynamics()
     """
     try:
-        alpha_ph = [100/pi] #np.arange(60, 420, 40)/pi
+        alpha_ph = [10, 50, 100, 200] #np.arange(60, 420, 40)/pi
         PARAMS.update({'w_1':w_2})
-        biases = np.linspace(-0.1, 0.1, 2)*ev_to_inv_cm
+        biases = np.linspace(-0.1, 0.1, 20)*ev_to_inv_cm
         #observable = exciton_coherence
         #check.get_coh_ops(PARAMS, biases, I)
 
@@ -276,7 +276,6 @@ if __name__ == "__main__":
         #plt.show()
     except Exception as err:
         print "data not calculated fully because", err
-
     try:
         #L_s = EM.L_secular(H_0, A_EM, eps, alpha_EM, T_EM, J, num_cpus=num_cpus)
         #DATA_s = mesolve(H_0, rho_0, timelist, [L_RC+L_ns], expects, options=opts,
