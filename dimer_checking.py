@@ -1,13 +1,14 @@
 
 import time
-
-
+import os
 from qutip import basis, ket, mesolve, qeye, tensor, thermal_dm, destroy, steadystate
 import qutip as qt
 import matplotlib.pyplot as plt
 import numpy as np
+from numpy import pi
 import dimer_phonons as RC
 import dimer_optical as EM
+
 #import electronic_lindblad as EM_naive
 from dimer_plotting import dataObject
 from utils import *
@@ -72,38 +73,61 @@ def exciton_states(PARS):
     #v_p/= /(1+(V/(w_2-lam_m))**2)
     v_p/= np.sqrt(np.dot(v_p, v_p))
     v_m = np.array([0, 1., V/(w_2-lam_m), 0.])
-    
+
     v_m /= np.sqrt(np.dot(v_m, v_m))
     #print  np.dot(v_p, v_m) < 1E-15
     return [lam_m, lam_p], [qt.Qobj(v_m), qt.Qobj(v_p)]
 
+
 def bias_dependence(biases, args, I):
-    name = 'DATA/zoomed_bias_dependence_alpha{}_wRC{}_N{}_V{}'.format(int(args['alpha_1']),  int(args['w0_1']), args['N_1'], int(args['V']))
-    print name
+
     ss_list = []
     coh_ops = []
+    bright_ops = []
+    dark_ops = []
     for eps in biases:
-        args.update({'w_2': args['w_1']-eps})
+        args.update({'w_1': args['w_2']+eps})
         args.update({'w_xx': args['w_1'] + args['w_2'] + args['V']})
-        args.update({'w_opt': (args['w_1']+args['w_2'])*0.5})
-        H_dim = qt.Qobj([[0,0,0,0],[0, args['w_1'], args['V'],0 ],[0,args['V'], args['w_2'],0],[0,0,0,args['w_xx']]])
+        #H_dim = qt.Qobj([[0,0,0,0],[0, args['w_1'], args['V'],0 ],[0,args['V'], args['w_2'],0],[0,0,0,args['w_xx']]])
         L_RC, H, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(args)
         L_ns = EM.L_nonsecular(H, A_EM, args)
         ti = time.time()
         # rather than saving all the massive objects to a list, just calculate steady_states and return them
         energies, states = exciton_states(args)
-        coh =  states[0]*states[1].dag()
-        coh = tensor(coh, I)
-        coh_ops.append(coh)
+        coh =  tensor(states[0]*states[1].dag(), I)
+        bright =  tensor(states[0]*states[0].dag(), I)
+        dark =  tensor(states[1]*states[1].dag(), I)
 
-        ss = steadystate(H, [L_RC+L_ns], method='iterative-lgmres', use_precond=True)
+        coh_ops.append(coh)
+        bright_ops.append(bright)
+        dark_ops.append(dark)
+        try:
+            ss = steadystate(H, [L_RC+L_ns], method='iterative-lgmres', use_precond=True)
+        except:
+            print "Could not build preconditioner" 
+            ss = qt.steadystate(H_0, [L_RC+L_p], method= 'iterative-lgmres')
+
         ss_list.append(ss)
         print (ss*coh).tr()
         print "Calculating the steady state took {} seconds".format(time.time()-ti)
         print "so far {} steady states".format(len(ss_list))
     print "file saving at {}".format(name)
-    save_obj(ss_list, name)
-    return coh_ops
+    enc_dir = 'DATA/'
+    main_dir = enc_dir+'bias_dependence_wRC{}_N{}_V{}'.format(int(args['w0_1']), args['N_1'], int(args['V']))
+    ops_dir = enc_dir+'directory/'
+    if not os.path.exists(directory):
+        '''If the data directory doesn't exist:
+        make it, put operators subdir, save inital ss data in dir and ops in subdir once.
+        If it exists, just save the ss data to the directory'''
+        os.makedirs(main_dir)
+        os.makedirs(ops_dir)
+        save_obj(ss_list, main_dir+'steadystate_bias_dependence_alpha{}'.format(int(args['alpha_1']), args))
+        save_obj(coh_ops, ops_dir+'eigcoherence_ops_bias_dependence')
+        save_obj(dark_ops, ops_dir+'dark_ops_bias_dependence')
+        save_obj(bright_ops, ops_dir+'bright_ops_bias_dependence')
+    else:
+        save_obj(ss_list, main_dir+'steadystate_bias_dependence_alpha{}'.format(int(args['alpha_1']), args))
+    print "Data found for pi*alpha = {}".format(int(args['alpha_1'])*pi)
 
 def SS_convergence_check(sigma, w_1, w_2, w_xx, V, T_1, T_2, w0_1, w0_2, alpha_1, alpha_2, wc,  alpha_EM, T_EM, mu=0, expect_op='bright', time_units='cm', start_n=2, end_n=5, method='direct'):
 

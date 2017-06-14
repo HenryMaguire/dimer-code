@@ -158,7 +158,7 @@ if __name__ == "__main__":
     w0_2, w0_1 = 1000., 1000. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1 + V
     alpha_1, alpha_2 = 100/pi, 100/pi # Ind.-Boson frame coupling
-    N_1, N_2 = 6, 6 # set Hilbert space sizes
+    N_1, N_2 = 4, 4 # set Hilbert space sizes
     exc = int((N_1+N_2)*0.5)
     num_cpus = 4
     J = J_minimal
@@ -225,9 +225,7 @@ if __name__ == "__main__":
     #print sys.getsizeof(L_ns)
     opts = qt.Options(num_cpus=num_cpus)
     ncolors = len(plt.rcParams['axes.prop_cycle'])
-
-    alpha_ph = np.arange(60, 420, 40)/pi
-
+    """
     L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(PARAMS)
 
     L_ns = EM.L_nonsecular(H_0, A_EM, PARAMS)
@@ -264,23 +262,20 @@ if __name__ == "__main__":
     #calculate_dynamics()
     """
     try:
-        PARAMS.update({'w_2':w_1})
-        biases = np.linspace(100, 500, 25)
+        alpha_ph = [100/pi] #np.arange(60, 420, 40)/pi
+        PARAMS.update({'w_1':w_2})
+        biases = np.linspace(-0.1, 0.1, 25)*ev_to_inv_cm
         #observable = exciton_coherence
         #check.get_coh_ops(PARAMS, biases, I)
-	'''
 
         for alpha in alpha_ph:
             PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
-            coh_ops = check.bias_dependence(biases, PARAMS, I)
-            print "WE just finished pi*alpha={}".format(int(alpha*pi))
-        save_obj(coh_ops, 'DATA/zoomed_coherence_ops_N{}_wRC{}_V{}'.format(int(N_1), int(w0_1), int(V)))
-	'''
-        steadystate_coherence_plot(PARAMS, alpha_ph, biases)
-        plt.show()
+            check.bias_dependence(biases, PARAMS, I)
+
+        #steadystate_coherence_plot(PARAMS, alpha_ph, biases)
+        #plt.show()
     except Exception as err:
         print "data not calculated fully because", err
-
 
     try:
         #L_s = EM.L_secular(H_0, A_EM, eps, alpha_EM, T_EM, J, num_cpus=num_cpus)
@@ -325,4 +320,3 @@ if __name__ == "__main__":
     #np.savetxt('DATA/Dynamics/dimer_DATA_ns.txt', np.array([1- DATA_ns.expect[0], timelist]), delimiter = ',', newline= '\n')
 
     #plt.show()
-"""
