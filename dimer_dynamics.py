@@ -60,8 +60,10 @@ def steadystate_coherence_plot(args, alpha_list, biases):
     ns_dm_dir = main_dir +"nonsecular/"
     ops_dir = main_dir +"operators/"
     coh_ops = load_obj(ops_dir+'eigcoherence_ops')
+    print 'still works'
     fig = plt.figure(figsize=(12,6))
     ax = fig.add_subplot(111)
+    print 'still works'
     max_coh_for_alpha = []
     bias_at_max_list = []
     colors = ['b','r','g']
@@ -282,10 +284,11 @@ if __name__ == "__main__":
         for alpha in alpha_ph:
             PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
             check.bias_dependence(biases, PARAMS, I)
-        #plt.show()
+
     except Exception as err:
         print "data not calculated fully because", err
-    steadystate_coherence_plot(PARAMS, alpha_ph, biases)
+    print 'now to plot things'
+    #steadystate_coherence_plot(PARAMS, alpha_ph, biases)
     try:
 
         #L_s = EM.L_secular(H_0, A_EM, eps, alpha_EM, T_EM, J, num_cpus=num_cpus)
