@@ -114,6 +114,35 @@ def steadystate_dark_plot(args, alpha_list, biases):
     ax.set_xlim(biases[0], biases[-1])
     plt.savefig(main_dir+'dark_bias_dependence.pdf')
 
+def steadystate_bright_plot(args, alpha_list, biases):
+    main_dir = "DATA/bias_dependence_wRC{}_N{}_V{}_wc{}/".format(int(args['w0_1']), args['N_1'], int(args['V']), int(args['wc']))
+    p_dm_dir = main_dir +"phenom/"
+    ns_dm_dir = main_dir +"nonsecular/"
+    ops_dir = main_dir +"operators/"
+    bright_ops = load_obj(ops_dir+'bright_ops')
+    fig = plt.figure(figsize=(12,6))
+    ax = fig.add_subplot(111)
+    max_coh_for_alpha = []
+    bias_at_max_list = []
+    colors = ['b','r','g', 'k', 'y']
+    for k, alpha in enumerate(alpha_list):
+        p_ss_dms = load_obj(p_dm_dir+'steadystate_DMs_alpha{}'.format(int(alpha)))
+        ns_ss_dms = load_obj(ns_dm_dir+'steadystate_DMs_alpha{}'.format(int(alpha)))
+        assert len(p_ss_dms) == len(bright_ops)
+        p_coh_list = []
+        ns_coh_list = []
+        for i in range(len(p_ss_dms)):
+            p_ss_obs = (p_ss_dms[i]*bright_ops[i]).tr()
+            ns_ss_obs = (ns_ss_dms[i]*bright_ops[i]).tr()
+            p_coh_list.append(p_ss_obs)
+            ns_coh_list.append(ns_ss_obs)
+        ax.plot(biases, np.array(p_coh_list).real, linestyle='--', linewidth=1.2, color=colors[k])
+        ax.plot(biases, np.array(ns_coh_list).real, label="pi*alpha={}".format(int(pi*alpha)), color=colors[k])
+    ax.set_xlabel(r'Bias $cm^{-1}$')
+    ax.set_ylabel('Bright Eigenstate Population')
+    ax.legend()
+    ax.set_xlim(biases[0], biases[-1])
+    plt.savefig(main_dir+'bright_bias_dependence.pdf')
 
 def steadystate_coherence_and_RC_plot():
         try:
@@ -295,8 +324,8 @@ if __name__ == "__main__":
     #print "Steady state is ", qt.steadystate(H_0)
     #calculate_dynamics()
     """
-    alpha_ph = np.array([10, 100, 300, 500])/pi
-    biases = np.linspace(-0.1, 0.1, 30)*ev_to_inv_cm
+    alpha_ph = np.array([1, 10, 100, 300, 500])/pi
+    biases = np.concatenate((np.linspace(-1.5, -0.4, 15), np.linspace(-0.4, 0.4, 51),np.linspace(0.4, 1.5, 15)))*ev_to_inv_cm
     #try:
     #     #np.arange(60, 420, 40)/pi
     PARAMS.update({'w_1':w_2})
@@ -310,9 +339,10 @@ if __name__ == "__main__":
     #except Exception as err:
     #    print "data not calculated fully because", err
     #print 'now to plot things'
+    """
     steadystate_coherence_plot(PARAMS, alpha_ph, biases)
     steadystate_dark_plot(PARAMS, alpha_ph, biases)
-
+    steadystate_bright_plot(PARAMS, alpha_ph, biases)"""
     #del L_ns
     #L_s = EM.L_secular(H_0, A_EM, eps, alpha_EM, T_EM, J, num_cpus=num_cpus)
     #L_naive = EM_lind.electronic_lindblad(w_xx, w_1, eps, V, mu, alpha_EM, T_EM, N_1, N_2, exc)
