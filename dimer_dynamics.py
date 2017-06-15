@@ -273,7 +273,7 @@ if __name__ == "__main__":
     #print "Steady state is ", qt.steadystate(H_0)
     #calculate_dynamics()
     """
-    alpha_ph = [30, 100, 200]
+    alpha_ph = [30, 100, 200]/pi
     biases = np.linspace(-0.1, 0.1, 20)*ev_to_inv_cm
     #try:
     #     #np.arange(60, 420, 40)/pi
@@ -288,7 +288,7 @@ if __name__ == "__main__":
     #except Exception as err:
     #    print "data not calculated fully because", err
     #print 'now to plot things'
-    #steadystate_coherence_plot(PARAMS, alpha_ph, biases)
+    steadystate_coherence_plot(PARAMS, alpha_ph, biases)
 
     #del L_ns
     #L_s = EM.L_secular(H_0, A_EM, eps, alpha_EM, T_EM, J, num_cpus=num_cpus)
