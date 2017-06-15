@@ -55,18 +55,16 @@ def calculate_dynamics():
         print "Could not get non-secular-driving dynamics because ",err
 
 def steadystate_coherence_plot(args, alpha_list, biases):
-    main_dir = "DATA/bias_dependence_wRC{}_N{}_V{}/".format(int(args['w0_1']), args['N_1'], int(args['V']))
+    main_dir = "DATA/bias_dependence_wRC{}_N{}_V{}_wc{}/".format(int(args['w0_1']), args['N_1'], int(args['V']), int(args['wc']))
     p_dm_dir = main_dir +"phenom/"
     ns_dm_dir = main_dir +"nonsecular/"
     ops_dir = main_dir +"operators/"
     coh_ops = load_obj(ops_dir+'eigcoherence_ops')
-    print 'still works'
     fig = plt.figure(figsize=(12,6))
     ax = fig.add_subplot(111)
-    print 'still works'
     max_coh_for_alpha = []
     bias_at_max_list = []
-    colors = ['b','r','g']
+    colors = ['b','r','g', 'k']
     for k, alpha in enumerate(alpha_list):
         p_ss_dms = load_obj(p_dm_dir+'steadystate_DMs_alpha{}'.format(int(alpha)))
         ns_ss_dms = load_obj(ns_dm_dir+'steadystate_DMs_alpha{}'.format(int(alpha)))
@@ -79,19 +77,43 @@ def steadystate_coherence_plot(args, alpha_list, biases):
             p_coh_list.append(p_ss_obs)
             ns_coh_list.append(ns_ss_obs)
         ax.plot(biases, np.array(p_coh_list).real, linestyle='--', linewidth=1.2, color=colors[k])
-        ax.plot(biases, np.array(ns_coh_list).real, label=int(alpha), color=colors[k])
-        #real_pos = abs(np.array(coh_list).real)
-        #max_coh = max(real_pos)
-        #max_coh_for_alpha.append(-1*max_coh)
-        #bias_at_max = biases[list(real_pos).index(max_coh)]        #bias_at_max_list.append(bias_at_max)
+        ax.plot(biases, np.array(ns_coh_list).real, label="pi*alpha={}".format(int(pi*alpha)), color=colors[k])
     ax.set_xlabel(r'Bias $cm^{-1}$')
     ax.set_ylabel('Exciton Coherence')
     ax.legend()
     ax.set_xlim(biases[0], biases[-1])
     plt.savefig(main_dir+'bias_dependence.pdf')
-    #print max_coh_for_alpha, bias_at_max_list
-    #ax.scatter(np.array(alpha_list)*pi, max_coh_for_alpha)
-    #ax.scatter(np.array(alpha_list)*pi, bias_at_max_list)
+
+def steadystate_dark_plot(args, alpha_list, biases):
+    main_dir = "DATA/bias_dependence_wRC{}_N{}_V{}_wc{}/".format(int(args['w0_1']), args['N_1'], int(args['V']), int(args['wc']))
+    p_dm_dir = main_dir +"phenom/"
+    ns_dm_dir = main_dir +"nonsecular/"
+    ops_dir = main_dir +"operators/"
+    dark_ops = load_obj(ops_dir+'dark_ops')
+    fig = plt.figure(figsize=(12,6))
+    ax = fig.add_subplot(111)
+    max_coh_for_alpha = []
+    bias_at_max_list = []
+    colors = ['b','r','g', 'k']
+    for k, alpha in enumerate(alpha_list):
+        p_ss_dms = load_obj(p_dm_dir+'steadystate_DMs_alpha{}'.format(int(alpha)))
+        ns_ss_dms = load_obj(ns_dm_dir+'steadystate_DMs_alpha{}'.format(int(alpha)))
+        assert len(p_ss_dms) == len(dark_ops)
+        p_coh_list = []
+        ns_coh_list = []
+        for i in range(len(p_ss_dms)):
+            p_ss_obs = (p_ss_dms[i]*dark_ops[i]).tr()
+            ns_ss_obs = (ns_ss_dms[i]*dark_ops[i]).tr()
+            p_coh_list.append(p_ss_obs)
+            ns_coh_list.append(ns_ss_obs)
+        ax.plot(biases, np.array(p_coh_list).real, linestyle='--', linewidth=1.2, color=colors[k])
+        ax.plot(biases, np.array(ns_coh_list).real, label="pi*alpha={}".format(int(pi*alpha)), color=colors[k])
+    ax.set_xlabel(r'Bias $cm^{-1}$')
+    ax.set_ylabel('Dark Eigenstate Population')
+    ax.legend()
+    ax.set_xlim(biases[0], biases[-1])
+    plt.savefig(main_dir+'dark_bias_dependence.pdf')
+
 
 def steadystate_coherence_and_RC_plot():
         try:
@@ -166,11 +188,11 @@ if __name__ == "__main__":
 
     T_1, T_2 = 300., 300. # Phonon bath temperature
 
-    wc = 53. # Ind.-Boson frame phonon cutoff freq
+    wc = 1*53. # Ind.-Boson frame phonon cutoff freq
     w0_2, w0_1 = 1000., 1000. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1 + V
     alpha_1, alpha_2 = 100/pi, 100/pi # Ind.-Boson frame coupling
-    N_1, N_2 = 5, 5 # set Hilbert space sizes
+    N_1, N_2 = 6, 6 # set Hilbert space sizes
     exc = int((N_1+N_2)*0.5)
     num_cpus = 4
     J = J_minimal
@@ -273,8 +295,8 @@ if __name__ == "__main__":
     #print "Steady state is ", qt.steadystate(H_0)
     #calculate_dynamics()
     """
-    alpha_ph = [30, 100, 200]/pi
-    biases = np.linspace(-0.1, 0.1, 20)*ev_to_inv_cm
+    alpha_ph = np.array([10, 100, 300, 500])/pi
+    biases = np.linspace(-0.1, 0.1, 30)*ev_to_inv_cm
     #try:
     #     #np.arange(60, 420, 40)/pi
     PARAMS.update({'w_1':w_2})
@@ -289,6 +311,7 @@ if __name__ == "__main__":
     #    print "data not calculated fully because", err
     #print 'now to plot things'
     steadystate_coherence_plot(PARAMS, alpha_ph, biases)
+    steadystate_dark_plot(PARAMS, alpha_ph, biases)
 
     #del L_ns
     #L_s = EM.L_secular(H_0, A_EM, eps, alpha_EM, T_EM, J, num_cpus=num_cpus)

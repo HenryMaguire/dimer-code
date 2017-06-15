@@ -81,7 +81,7 @@ def exciton_states(PARS):
 
 def bias_dependence(biases, args, I):
     enc_dir = 'DATA/'
-    main_dir = enc_dir+'bias_dependence_wRC{}_N{}_V{}/'.format(int(args['w0_1']), args['N_1'], int(args['V']))
+    main_dir = enc_dir+'bias_dependence_wRC{}_N{}_V{}_wc{}/'.format(int(args['w0_1']), args['N_1'], int(args['V']), int(args['wc']))
     ops_dir = main_dir+'operators/'
     test_file = main_dir+'phenom/steadystate_DMs_alpha{}.pickle'.format(int(args['alpha_1']))
     ss_p_list = []
@@ -145,7 +145,7 @@ def bias_dependence(biases, args, I):
             save_obj(bright_ops, ops_dir+'bright_ops')
         else:
             save_obj(ss_p_list, main_dir+'phenom/steadystate_DMs_alpha{}'.format(int(args['alpha_1'])))
-            save_obj(ss_p_list, main_dir+'nonsecular/steadystate_DMs_alpha{}'.format(int(args['alpha_1'])))
+            save_obj(ss_ns_list, main_dir+'nonsecular/steadystate_DMs_alpha{}'.format(int(args['alpha_1'])))
         print "file saving at {}".format(main_dir+'steadystate_DMs_alpha{}'.format(int(args['alpha_1'])))
         print "Data found for pi*alpha = {}".format(int(args['alpha_1'])*pi)
     else:
