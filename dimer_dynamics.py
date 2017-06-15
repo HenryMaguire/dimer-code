@@ -170,7 +170,7 @@ if __name__ == "__main__":
     w0_2, w0_1 = 1000., 1000. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1 + V
     alpha_1, alpha_2 = 100/pi, 100/pi # Ind.-Boson frame coupling
-    N_1, N_2 = 5, 5 # set Hilbert space sizes
+    N_1, N_2 = 6, 6 # set Hilbert space sizes
     exc = int((N_1+N_2)*0.5)
     num_cpus = 4
     J = J_minimal
@@ -273,7 +273,7 @@ if __name__ == "__main__":
     #print "Steady state is ", qt.steadystate(H_0)
     #calculate_dynamics()
     """
-    alpha_ph = [30, 100, 200]
+    alpha_ph = np.array([30, 100, 200, 500])/pi
     biases = np.linspace(-0.1, 0.1, 20)*ev_to_inv_cm
     #try:
     #     #np.arange(60, 420, 40)/pi
