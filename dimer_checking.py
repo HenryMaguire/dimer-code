@@ -124,7 +124,8 @@ def bias_dependence(biases, args, I):
 
             ss_p_list.append(ss_p)
             ss_ns_list.append(ss_ns)
-            print (ss_p*coh).tr()
+            print "Phenom: coh={}, dark={}, bright={}".format((ss_p*coh).tr(), (ss_p*dark).tr(), (ss_p*bright).tr())
+            print "Redfield: coh={}, dark={}, bright={}".format((ss_ns*coh).tr(), (ss_ns*dark).tr(), (ss_ns*bright).tr())
             print "Calculating the steady state took {} seconds".format(time.time()-ti)
             print "so far {} steady states".format(len(ss_p_list))
 

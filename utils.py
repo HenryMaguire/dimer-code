@@ -16,13 +16,15 @@ def save_obj(obj, name ):
         pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
 
 
-def beta(T):
+def beta_f(T):
     conversion = 0.695
+    beta = 0
     if T ==0.: # First calculate beta
         beta = np.infty
     else:
         # no occupation yet, make sure it converges
         beta = 1. / (conversion*T)
+    return beta
 
 def Occupation(omega, T):
     conversion = 0.695

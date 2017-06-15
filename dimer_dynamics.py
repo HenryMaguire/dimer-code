@@ -275,19 +275,19 @@ if __name__ == "__main__":
     """
     alpha_ph = [30, 100, 200]
     biases = np.linspace(-0.1, 0.1, 20)*ev_to_inv_cm
-    try:
-         #np.arange(60, 420, 40)/pi
-        PARAMS.update({'w_1':w_2})
-        #observable = exciton_coherence
-        #check.get_coh_ops(PARAMS, biases, I)
-
-        for alpha in alpha_ph:
-            PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
-            check.bias_dependence(biases, PARAMS, I)
-
-    except Exception as err:
-        print "data not calculated fully because", err
-    print 'now to plot things'
+    #try:
+    #     #np.arange(60, 420, 40)/pi
+    PARAMS.update({'w_1':w_2})
+    #observable = exciton_coherence
+    #check.get_coh_ops(PARAMS, biases, I)
+    #
+    for alpha in alpha_ph:
+        PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
+        check.bias_dependence(biases, PARAMS, I)
+    #
+    #except Exception as err:
+    #    print "data not calculated fully because", err
+    #print 'now to plot things'
     #steadystate_coherence_plot(PARAMS, alpha_ph, biases)
 
     #del L_ns

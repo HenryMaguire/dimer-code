@@ -29,8 +29,15 @@ def nonsecular_function(i,j, eVals=[], eVecs=[], w_1=8000., A=0,  Gamma=1.,T=0.,
     JI = eVecs[j]*eVecs[i].dag()
     # 0.5*np.pi*alpha*(N+1)
     if abs(A_ij)>0 or abs(A_ji)>0:
-        r_up = 2*pi*J(eps_ij, Gamma, w_1)*Occ
-        r_down = 2*pi*J(eps_ij, Gamma, w_1)*(Occ+1)
+        r_up = 0
+        r_down = 0
+        if eps_ij == 0:
+            JN = Gamma/(2*pi*w_1*beta_f(T))
+            r_up = 2*pi*JN
+            r_down = 2*pi*(J(eps_ij, Gamma, w_1)+JN)
+        else:
+            r_up = 2*pi*J(eps_ij, Gamma, w_1)*Occ
+            r_down = 2*pi*J(eps_ij, Gamma, w_1)*(Occ+1)
         X3= r_down*A_ij*IJ
         X4= r_up*A_ij*IJ
         X1= r_up*A_ji*JI
