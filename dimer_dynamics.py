@@ -289,16 +289,6 @@ if __name__ == "__main__":
         print "data not calculated fully because", err
     print 'now to plot things'
     #steadystate_coherence_plot(PARAMS, alpha_ph, biases)
-    try:
-
-        #L_s = EM.L_secular(H_0, A_EM, eps, alpha_EM, T_EM, J, num_cpus=num_cpus)
-        #DATA_s = mesolve(H_0, rho_0, timelist, [L_RC+L_ns], expects, options=opts,
-        #                                                    progress_bar=True)
-        #ax = fig.add_subplot(212)
-        #vis.plot_dynamics(DATA_s, timelist, ax, title='Non-secular driving\n')
-        print 'Secular dynamics skipped'
-    except e:
-        print "Could not get secular-driving dynamics because ",e
 
     #del L_ns
     #L_s = EM.L_secular(H_0, A_EM, eps, alpha_EM, T_EM, J, num_cpus=num_cpus)

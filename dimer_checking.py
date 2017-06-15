@@ -149,7 +149,6 @@ def bias_dependence(biases, args, I):
         print "Data found for pi*alpha = {}".format(int(args['alpha_1'])*pi)
     else:
         print "Data for this phonon-coupling and Hamiltonian already exists. Skipping..."
-    print "done "
     return
 
 def SS_convergence_check(sigma, w_1, w_2, w_xx, V, T_1, T_2, w0_1, w0_2, alpha_1, alpha_2, wc,  alpha_EM, T_EM, mu=0, expect_op='bright', time_units='cm', start_n=2, end_n=5, method='direct'):
