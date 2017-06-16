@@ -64,7 +64,7 @@ def steadystate_coherence_plot(args, alpha_list, biases):
     ax = fig.add_subplot(111)
     max_coh_for_alpha = []
     bias_at_max_list = []
-    colors = ['b','r','g', 'k']
+    colors = ['b','r','g', 'k', 'y']
     for k, alpha in enumerate(alpha_list):
         p_ss_dms = load_obj(p_dm_dir+'steadystate_DMs_alpha{}'.format(int(alpha)))
         ns_ss_dms = load_obj(ns_dm_dir+'steadystate_DMs_alpha{}'.format(int(alpha)))
@@ -94,7 +94,7 @@ def steadystate_dark_plot(args, alpha_list, biases):
     ax = fig.add_subplot(111)
     max_coh_for_alpha = []
     bias_at_max_list = []
-    colors = ['b','r','g', 'k']
+    colors = ['b','r','g', 'k', 'y']
     for k, alpha in enumerate(alpha_list):
         p_ss_dms = load_obj(p_dm_dir+'steadystate_DMs_alpha{}'.format(int(alpha)))
         ns_ss_dms = load_obj(ns_dm_dir+'steadystate_DMs_alpha{}'.format(int(alpha)))
@@ -325,7 +325,7 @@ if __name__ == "__main__":
     #calculate_dynamics()
     """
     alpha_ph = np.array([1, 10, 100, 300, 500])/pi
-    biases = np.concatenate((np.linspace(-1.5, -0.4, 15), np.linspace(-0.4, 0.4, 51),np.linspace(0.4, 1.5, 15)))*ev_to_inv_cm
+    biases = np.concatenate((np.linspace(-0.5, -0.05, 15), np.linspace(-0.05, 0.05, 41)[1:-1],np.linspace(0.05, 0.5, 15)))*ev_to_inv_cm
     #try:
     #     #np.arange(60, 420, 40)/pi
     PARAMS.update({'w_1':w_2})
@@ -339,10 +339,10 @@ if __name__ == "__main__":
     #except Exception as err:
     #    print "data not calculated fully because", err
     #print 'now to plot things'
-    """
+
     steadystate_coherence_plot(PARAMS, alpha_ph, biases)
     steadystate_dark_plot(PARAMS, alpha_ph, biases)
-    steadystate_bright_plot(PARAMS, alpha_ph, biases)"""
+    steadystate_bright_plot(PARAMS, alpha_ph, biases)
     #del L_ns
     #L_s = EM.L_secular(H_0, A_EM, eps, alpha_EM, T_EM, J, num_cpus=num_cpus)
     #L_naive = EM_lind.electronic_lindblad(w_xx, w_1, eps, V, mu, alpha_EM, T_EM, N_1, N_2, exc)
