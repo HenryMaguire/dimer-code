@@ -97,8 +97,8 @@ def bias_dependence(biases, args, I):
             #H_dim = qt.Qobj([[0,0,0,0],[0, args['w_1'], args['V'],0 ],[0,args['V'], args['w_2'],0],[0,0,0,args['w_xx']]])
             energies, states = exciton_states(args)
             coh =  tensor(states[0]*states[1].dag(), I)
-            bright =  tensor(states[0]*states[0].dag(), I)
-            dark =  tensor(states[1]*states[1].dag(), I)
+            bright =  tensor(states[1]*states[1].dag(), I)
+            dark =  tensor(states[0]*states[0].dag(), I)
 
             L_RC, H, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(args)
             L_ns = EM.L_nonsecular(H, A_EM, args)

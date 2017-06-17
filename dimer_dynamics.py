@@ -72,16 +72,16 @@ def steadystate_coherence_plot(args, alpha_list, biases):
         p_coh_list = []
         ns_coh_list = []
         for i in range(len(p_ss_dms)):
-            p_ss_obs = (p_ss_dms[i]*coh_ops[i]).tr()
-            ns_ss_obs = (ns_ss_dms[i]*coh_ops[i]).tr()
+            p_ss_obs = ((p_ss_dms[i]*coh_ops[i]).tr()).imag
+            ns_ss_obs = ((ns_ss_dms[i]*coh_ops[i]).tr()).imag
             p_coh_list.append(p_ss_obs)
             ns_coh_list.append(ns_ss_obs)
-        ax.plot(biases, np.array(p_coh_list).real, linestyle='--', linewidth=1.2, color=colors[k])
+        #ax.plot(biases, np.array(p_coh_list).real, linestyle='--', linewidth=1.2, color=colors[k])
         ax.plot(biases, np.array(ns_coh_list).real, label="pi*alpha={}".format(int(pi*alpha)), color=colors[k])
     ax.set_xlabel(r'Bias $cm^{-1}$')
     ax.set_ylabel('Exciton Coherence')
     ax.legend()
-    ax.set_xlim(biases[0], biases[-1])
+    ax.set_xlim(-2000, 2000)
     plt.savefig(main_dir+'bias_dependence.pdf')
 
 def steadystate_dark_plot(args, alpha_list, biases):
@@ -106,16 +106,17 @@ def steadystate_dark_plot(args, alpha_list, biases):
             ns_ss_obs = (ns_ss_dms[i]*dark_ops[i]).tr()
             p_coh_list.append(p_ss_obs)
             ns_coh_list.append(ns_ss_obs)
-        ax.plot(biases, np.array(p_coh_list).real, linestyle='--', linewidth=1.2, color=colors[k])
+        #ax.plot(biases, np.array(p_coh_list).real, linestyle='--', linewidth=1.2, color=colors[k])
         ax.plot(biases, np.array(ns_coh_list).real, label="pi*alpha={}".format(int(pi*alpha)), color=colors[k])
     ax.set_xlabel(r'Bias $cm^{-1}$')
     ax.set_ylabel('Dark Eigenstate Population')
     ax.legend()
-    ax.set_xlim(biases[0], biases[-1])
+    ax.set_xlim(-2000, 2000)
     plt.savefig(main_dir+'dark_bias_dependence.pdf')
 
 def steadystate_bright_plot(args, alpha_list, biases):
     main_dir = "DATA/bias_dependence_wRC{}_N{}_V{}_wc{}/".format(int(args['w0_1']), args['N_1'], int(args['V']), int(args['wc']))
+    energy_differences = 2*np.sqrt(4*float(args['V'])**2 + biases**2)
     p_dm_dir = main_dir +"phenom/"
     ns_dm_dir = main_dir +"nonsecular/"
     ops_dir = main_dir +"operators/"
@@ -136,13 +137,48 @@ def steadystate_bright_plot(args, alpha_list, biases):
             ns_ss_obs = (ns_ss_dms[i]*bright_ops[i]).tr()
             p_coh_list.append(p_ss_obs)
             ns_coh_list.append(ns_ss_obs)
-        ax.plot(biases, np.array(p_coh_list).real, linestyle='--', linewidth=1.2, color=colors[k])
-        ax.plot(biases, np.array(ns_coh_list).real, label="pi*alpha={}".format(int(pi*alpha)), color=colors[k])
+        #ax.plot(biases, np.array(p_coh_list).real, linestyle='--', linewidth=1.2, color=colors[k])
+        ax.plot(energy_differences[int(len(energy_differences)/2)::], np.array(ns_coh_list)[int(len(energy_differences)/2)::].real, label="pi*alpha={}".format(int(pi*alpha)), color=colors[k])
+    print energy_differences
     ax.set_xlabel(r'Bias $cm^{-1}$')
     ax.set_ylabel('Bright Eigenstate Population')
     ax.legend()
-    ax.set_xlim(biases[0], biases[-1])
+    #ax.set_xlim(-2000, 2000)
     plt.savefig(main_dir+'bright_bias_dependence.pdf')
+
+def steadystate_darkbright_plot(args, alpha_list, biases):
+    main_dir = "DATA/bias_dependence_wRC{}_N{}_V{}_wc{}/".format(int(args['w0_1']), args['N_1'], int(args['V']), int(args['wc']))
+    energy_differences = 2*np.sqrt(4*float(args['V'])**2 + biases**2)
+    p_dm_dir = main_dir +"phenom/"
+    ns_dm_dir = main_dir +"nonsecular/"
+    ops_dir = main_dir +"operators/"
+    bright_ops = load_obj(ops_dir+'bright_ops')
+    dark_ops = load_obj(ops_dir+'dark_ops')
+    fig = plt.figure(figsize=(12,6))
+    ax = fig.add_subplot(111)
+    max_coh_for_alpha = []
+    bias_at_max_list = []
+    colors = ['b','r','g', 'k', 'y']
+    for k, alpha in enumerate(alpha_list):
+        #p_ss_dms = load_obj(p_dm_dir+'steadystate_DMs_alpha{}'.format(int(alpha)))
+        ns_ss_dms = load_obj(ns_dm_dir+'steadystate_DMs_alpha{}'.format(int(alpha)))
+        assert len(ns_ss_dms) == len(bright_ops)
+        dark_list = []
+        bright_list = []
+        for i in range(len(ns_ss_dms)):
+            d_obs = (ns_ss_dms[i]*dark_ops[i]).tr()
+            b_obs = (ns_ss_dms[i]*bright_ops[i]).tr()
+            dark_list.append(d_obs)
+            bright_list.append(b_obs)
+        #ax.plot(biases, np.array(p_coh_list).real, linestyle='--', linewidth=1.2, color=colors[k])
+        ax.plot(energy_differences[int(len(energy_differences)/2)::], -1*(np.array(bright_list)-np.array(dark_list))[int(len(energy_differences)/2)::].real, label="pi*alpha={}".format(int(pi*alpha)), color=colors[k])
+    print energy_differences[int(len(energy_differences)/2)::]
+    print -1*(np.array(bright_list)-np.array(dark_list))[int(len(energy_differences)/2)::]
+    ax.set_xlabel(r'Bias $cm^{-1}$')
+    ax.set_ylabel('Bright Eigenstate Population')
+    ax.legend()
+    #ax.set_xlim(-2000, 2000)
+    plt.savefig(main_dir+'darkbrightdiff_bias_dependence.pdf')
 
 def steadystate_coherence_and_RC_plot():
         try:
@@ -207,7 +243,7 @@ if __name__ == "__main__":
 
 
     w_2 = 1.4*ev_to_inv_cm
-    bias = 0.1*ev_to_inv_cm
+    bias = 0.*ev_to_inv_cm
     w_1 = w_2 + bias
     V = 1*92. #0.1*8065.5
     dipole_1, dipole_2 = 1., 1.
@@ -220,7 +256,7 @@ if __name__ == "__main__":
     wc = 1*53. # Ind.-Boson frame phonon cutoff freq
     w0_2, w0_1 = 1000., 1000. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1 + V
-    alpha_1, alpha_2 = 100/pi, 100/pi # Ind.-Boson frame coupling
+    alpha_1, alpha_2 = 0.0, 0.0 # Ind.-Boson frame coupling
     N_1, N_2 = 6, 6 # set Hilbert space sizes
     exc = int((N_1+N_2)*0.5)
     num_cpus = 4
@@ -288,7 +324,7 @@ if __name__ == "__main__":
     #print sys.getsizeof(L_ns)
     opts = qt.Options(num_cpus=num_cpus)
     ncolors = len(plt.rcParams['axes.prop_cycle'])
-    """
+
     L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(PARAMS)
 
     L_ns = EM.L_nonsecular(H_0, A_EM, PARAMS)
@@ -302,14 +338,15 @@ if __name__ == "__main__":
     ss_pred = ((-1/T_EM*0.695)*H_0).expm()
     ss_pred = ss_pred/ss_pred.tr()
 
-    #rho_0 = ((-1/T_1*0.695)*H_0).expm()
-    #rho_0 = rho_0/rho_0.tr()
-    #fig = plt.figure(figsize=(12,6))
-    #timelist = np.linspace(0,2,500)*0.188
-    #DATA_ns = mesolve(H_0, rho_0, timelist, [L_RC+L_ns], expects, options=opts, progress_bar=True)
-    #ax = fig.add_subplot(212)
-    #vis.plot_dynamics(DATA_ns, timelist, expects, ax, title='Non-secular driving\n')
+    rho_0 = ((-1/T_1*0.695)*H_0).expm()
+    rho_0 = rho_0/rho_0.tr()
+    fig = plt.figure(figsize=(12,6))
+    timelist = np.linspace(0,2,500)*0.188
+    DATA_ns = mesolve(H_0, rho_0, timelist, [L_RC+L_ns], expects, options=opts, progress_bar=True)
+    ax = fig.add_subplot(212)
+    vis.plot_dynamics(DATA_ns, timelist, expects, ax, title='Non-secular driving\n')
     #print ss_pred.ptrace(0)
+    """
     L_p = EM.L_phenom(states, energies, I, args)
     try:
         ss_p = qt.steadystate(H_0, [L_RC+L_p], method= 'iterative-lgmres', use_precond=True)
@@ -323,6 +360,7 @@ if __name__ == "__main__":
     print "Bright population is ", (ss_p*bright).tr()
     #print "Steady state is ", qt.steadystate(H_0)
     #calculate_dynamics()
+    """
     """
     alpha_ph = np.array([1, 10, 100, 300, 500])/pi
     biases = np.concatenate((np.linspace(-0.5, -0.05, 15), np.linspace(-0.05, 0.05, 41)[1:-1],np.linspace(0.05, 0.5, 15)))*ev_to_inv_cm
@@ -340,9 +378,9 @@ if __name__ == "__main__":
     #    print "data not calculated fully because", err
     #print 'now to plot things'
 
-    steadystate_coherence_plot(PARAMS, alpha_ph, biases)
-    steadystate_dark_plot(PARAMS, alpha_ph, biases)
-    steadystate_bright_plot(PARAMS, alpha_ph, biases)
+    #steadystate_coherence_plot(PARAMS, alpha_ph, biases)
+    #steadystate_dark_plot(PARAMS, alpha_ph, biases)
+    steadystate_darkbright_plot(PARAMS, alpha_ph, biases)
     #del L_ns
     #L_s = EM.L_secular(H_0, A_EM, eps, alpha_EM, T_EM, J, num_cpus=num_cpus)
     #L_naive = EM_lind.electronic_lindblad(w_xx, w_1, eps, V, mu, alpha_EM, T_EM, N_1, N_2, exc)
@@ -376,3 +414,4 @@ if __name__ == "__main__":
     #np.savetxt('DATA/Dynamics/dimer_DATA_ns.txt', np.array([1- DATA_ns.expect[0], timelist]), delimiter = ',', newline= '\n')
 
     #plt.show()
+    """
