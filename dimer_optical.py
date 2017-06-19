@@ -19,14 +19,11 @@ import dimer_phonons as RC
 
 reload(RC)
 
-
-def nonsecular_function(i,j, eVals=[], eVecs=[], A_1=0, A_2=0, w_1=8000, w_2=8000, Gamma=1.,T=0., J=J_minimal):
-    """ This function passes the parallel for-loop function the operators it needs.
-    Parfor creates a long list of all the elements of the sum, then sums them up separately.
-    I just wrote out all the operators as lists to make is neater.
-    """
-    X1, X2, X3, X4 = 0,0,0,0
+def nonsecular_function(i,j, eVals=[], eVecs=[], w_1=8000., A=0,  Gamma=1.,T=0., J=J_minimal):
+    X1, X2, X3, X4 = 0, 0, 0, 0
     eps_ij = abs(eVals[i]-eVals[j])
+    A_ij = A.matrix_element(eVecs[i].dag(), eVecs[j])
+    A_ji = (A.dag()).matrix_element(eVecs[j].dag(), eVecs[i])
     Occ = Occupation(eps_ij, T)
     IJ = eVecs[i]*eVecs[j].dag()
     JI = eVecs[j]*eVecs[i].dag()
@@ -46,7 +43,6 @@ def nonsecular_function(i,j, eVals=[], eVecs=[], A_1=0, A_2=0, w_1=8000, w_2=800
         X1= r_up*A_ji*JI
         X2= r_down*A_ji*JI
     return Qobj(X1), Qobj(X2), Qobj(X3), Qobj(X4)
-
 
 def secular_function(i,j, eVals=[], eVecs=[], A=0, w_opt=8000., Gamma=1.,T=0., J=J_minimal):
     L = 0
@@ -69,7 +65,6 @@ def secular_function(i,j, eVals=[], eVecs=[], A=0, w_opt=8000., Gamma=1.,T=0., J
         T3 = (r_up*sprepost(JI, IJ)+r_down*sprepost(IJ,JI))
         L = lam_ij_sq*(0.5*(T1 + T2) - T3)
     return Qobj(L)
-
 
 
 def L_nonsecular(H_vib, A, args):
