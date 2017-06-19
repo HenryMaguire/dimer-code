@@ -209,10 +209,10 @@ if __name__ == "__main__":
     w_2 = 1.4*ev_to_inv_cm
     bias = 0.1*ev_to_inv_cm
     w_1 = w_2 + bias
-    V = 0.5*92. #0.1*8065.5
+    V = 2*92. #0.1*8065.5
     dipole_1, dipole_2 = 1., 1.
     T_EM = 6000. # Optical bath temperature
-    alpha_EM = 0.3*inv_ps_to_inv_cm # Optical S-bath strength (from inv. ps to inv. cm)(larger than a real decay rate because dynamics are more efficient this way)
+    alpha_EM = 0.03*inv_ps_to_inv_cm # Optical S-bath strength (from inv. ps to inv. cm)(larger than a real decay rate because dynamics are more efficient this way)
     mu = w_2*dipole_2/w_1*dipole_1
 
     T_1, T_2 = 300., 300. # Phonon bath temperature
@@ -324,8 +324,8 @@ if __name__ == "__main__":
     #print "Steady state is ", qt.steadystate(H_0)
     #calculate_dynamics()
     """
-    alpha_ph = np.array([1, 10, 100, 300, 500])/pi
-    biases = np.linspace(-0.25, 0.25, 61)*ev_to_inv_cm
+    alpha_ph = np.array([0, 1, 10, 100, 300, 500])/pi
+    biases = np.linspace(-0.25, 0.25, 81)*ev_to_inv_cm
     #try:
     #     #np.arange(60, 420, 40)/pi
     PARAMS.update({'w_1':w_2})
