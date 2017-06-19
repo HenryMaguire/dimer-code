@@ -19,17 +19,13 @@ import dimer_phonons as RC
 
 reload(RC)
 
-<<<<<<< HEAD
-def nonsecular_function(i,j, eVals=[], eVecs=[], w_1=8000., A=0,  Gamma=1.,T=0., J=J_minimal):
-    X1, X2, X3, X4 = 0, 0, 0, 0
-=======
+
 def nonsecular_function(i,j, eVals=[], eVecs=[], A_1=0, A_2=0, w_1=8000, w_2=8000, Gamma=1.,T=0., J=J_minimal):
     """ This function passes the parallel for-loop function the operators it needs.
     Parfor creates a long list of all the elements of the sum, then sums them up separately.
     I just wrote out all the operators as lists to make is neater.
     """
-    X1, X2, X3, X4 = [0, 0], [0, 0], [0, 0], [0, 0]
-    w = [w_1, w_2]
+    X1, X2, X3, X4 = 0,0,0,0
     eps_ij = abs(eVals[i]-eVals[j])
     Occ = Occupation(eps_ij, T)
     IJ = eVecs[i]*eVecs[j].dag()
@@ -51,20 +47,6 @@ def nonsecular_function(i,j, eVals=[], eVecs=[], A_1=0, A_2=0, w_1=8000, w_2=800
         X2= r_down*A_ji*JI
     return Qobj(X1), Qobj(X2), Qobj(X3), Qobj(X4)
 
-    A = [A_1, A_2]
-    for i in [0,1]: # Iterate over operator lists
-        A_ij = A[i].matrix_element(eVecs[i].dag(), eVecs[j])
-        A_ji = (A[i].dag()).matrix_element(eVecs[j].dag(), eVecs[i])
-        # 0.5*np.pi*alpha*(N+1)
-        if abs(A_ij)>0 or abs(A_ji)>0:
-            r_up = 2*pi*J(eps_ij, Gamma, w[i])*Occ
-            r_down = 2*pi*J(eps_ij, Gamma, w[i])*(Occ+1)
-            X3[i]= r_down*A_ij*IJ
-            X4[i]= r_up*A_ij*IJ
-            X1[i]= r_up*A_ji*JI
-            X2[i]= r_down*A_ji*JI
-    return Qobj(X1[0]), Qobj(X2[0]), Qobj(X3[0]), Qobj(X4[0]), Qobj(X1[1]), Qobj(X2[1]), Qobj(X3[1]), Qobj(X4[1])
->>>>>>> a6aef53f74cfbde6a4324ef30846af0d18c6080b
 
 def secular_function(i,j, eVals=[], eVecs=[], A=0, w_opt=8000., Gamma=1.,T=0., J=J_minimal):
     L = 0
@@ -89,37 +71,23 @@ def secular_function(i,j, eVals=[], eVecs=[], A=0, w_opt=8000., Gamma=1.,T=0., J
     return Qobj(L)
 
 
-<<<<<<< HEAD
+
 def L_nonsecular(H_vib, A, args):
     Gamma, T, w_1, J, num_cpus = args['alpha_EM'], args['T_EM'], args['w_1'],args['J'], args['num_cpus']
-=======
-def L_nonsecular(H_vib, A_1, A_2, args):
-    w_1, w_2, Gamma, T, J, num_cpus = args['w_1'], args['w_2'], args['alpha_EM'], args['T_EM'], args['J'], args['num_cpus']
->>>>>>> a6aef53f74cfbde6a4324ef30846af0d18c6080b
     #Construct non-secular liouvillian
     ti = time.time()
     dim_ham = H_vib.shape[0]
     eVals, eVecs = H_vib.eigenstates()
-<<<<<<< HEAD
     names = ['eVals', 'eVecs', 'A', 'w_1', 'Gamma', 'T', 'J']
-=======
-    names = ['eVals', 'eVecs', 'A_1', 'A_2', 'w_1', 'w_2', 'Gamma', 'T', 'J']
->>>>>>> a6aef53f74cfbde6a4324ef30846af0d18c6080b
     kwargs = dict() # Hacky way to get parameters to the parallel for loop
     for name in names:
         kwargs[name] = eval(name)
     l = dim_ham*range(dim_ham) # Perform two loops in one
-    X1_1, X2_1, X3_1, X4_1, X1_2, X2_2, X3_2, X4_2 = par.parfor(nonsecular_function, sorted(l), l,
+    X1, X2, X3, X4 = par.parfor(nonsecular_function, sorted(l), l,
                                             num_cpus=num_cpus, **kwargs)
-    print "YES"
-    X1_1, X2_1, X3_1, X4_1 = np.sum(X1_1), np.sum(X2_1), np.sum(X3_1), np.sum(X4_1)
-    X1_2, X2_2, X3_2, X4_2 = np.sum(X1_2), np.sum(X2_2), np.sum(X3_2), np.sum(X4_2)
-
-    L = spre(A_1*X1_1) -sprepost(X1_1,A_1)+spost(X2_1*A_1)-sprepost(A_1,X2_1)
-    L+= spre(A_1.dag()*X3_1)-sprepost(X3_1, A_1.dag())+spost(X4_1*A_1.dag())-sprepost(A_1.dag(), X4_1)
-
-    L = spre(A_2*X1_2) -sprepost(X1_2, A_2)+spost(X2_2*A_2)-sprepost(A_2,X2_2)
-    L+= spre(A_2.dag()*X3_2)-sprepost(X3_2, A_2.dag())+spost(X4_2*A_2.dag())-sprepost(A_2.dag(), X4_2)
+    X1, X2, X3, X4 = np.sum(X1), np.sum(X2), np.sum(X3), np.sum(X4)
+    L = spre(A*X1) -sprepost(X1,A)+spost(X2*A)-sprepost(A,X2)
+    L+= spre(A.dag()*X3)-sprepost(X3, A.dag())+spost(X4*A.dag())-sprepost(A.dag(), X4)
     #print np.sum(X1.full()), np.sum(X2.full()), np.sum(X3.full()), np.sum(X4.full())
     print "It took ", time.time()-ti, " seconds to build the Non-secular RWA Liouvillian"
     return -0.5*L
