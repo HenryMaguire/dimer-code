@@ -30,12 +30,10 @@ def nonsecular_function(i,j, eVals=[], eVecs=[], A_1=0, A_2=0, w_1=8000, w_2=800
     """
     X1, X2, X3, X4 = [0, 0], [0, 0], [0, 0], [0, 0]
     w = [w_1, w_2]
->>>>>>> a6aef53f74cfbde6a4324ef30846af0d18c6080b
     eps_ij = abs(eVals[i]-eVals[j])
     Occ = Occupation(eps_ij, T)
     IJ = eVecs[i]*eVecs[j].dag()
     JI = eVecs[j]*eVecs[i].dag()
-<<<<<<< HEAD
     # 0.5*np.pi*alpha*(N+1)
     if abs(A_ij)>0 or abs(A_ji)>0:
         r_up = 0
@@ -52,7 +50,7 @@ def nonsecular_function(i,j, eVals=[], eVecs=[], A_1=0, A_2=0, w_1=8000, w_2=800
         X1= r_up*A_ji*JI
         X2= r_down*A_ji*JI
     return Qobj(X1), Qobj(X2), Qobj(X3), Qobj(X4)
-=======
+
     A = [A_1, A_2]
     for i in [0,1]: # Iterate over operator lists
         A_ij = A[i].matrix_element(eVecs[i].dag(), eVecs[j])
