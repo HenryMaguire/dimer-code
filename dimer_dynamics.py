@@ -182,10 +182,10 @@ if __name__ == "__main__":
     #    print "data not calculated fully because", err
     #print 'now to plot things'
 
-    steadystate_coherence_plot(PARAMS, alpha_ph, biases)
-    steadystate_dark_plot(PARAMS, alpha_ph, biases)
-    steadystate_bright_plot(PARAMS, alpha_ph, biases)
-    steadystate_darkbright_plot(PARAMS, alpha_ph, biases)
+    vis.steadystate_coherence_plot(PARAMS, alpha_ph, biases)
+    vis.steadystate_dark_plot(PARAMS, alpha_ph, biases)
+    vis.steadystate_bright_plot(PARAMS, alpha_ph, biases)
+    vis.steadystate_darkbright_plot(PARAMS, alpha_ph, biases)
     """
     #del L_ns
     #L_s = EM.L_secular(H_0, A_EM, eps, alpha_EM, T_EM, J, num_cpus=num_cpus)
