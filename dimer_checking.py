@@ -24,6 +24,7 @@ def steadystate_comparison(H, L, O):
     t1 = time.time()
     print "direct method took ", t1-t0, ' seconds'
     print "State population is: ", (O*ss_dir).tr()
+    print "trace is: ", ss_dir.tr()
 
     #ss_eigen = steadystate(H, L, method='eigen')
     t2 = time.time()

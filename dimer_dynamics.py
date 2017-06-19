@@ -149,7 +149,7 @@ if __name__ == "__main__":
     ax = fig.add_subplot(212)
     vis.plot_eig_dynamics(DATA_ns, timelist, expects, ax, title='Non-secular driving\n')"""
     #print ss_pred.ptrace(0)
-    check.steadystate_comparison(H_0, [L_RC+L_ns], dark)
+    check.steadystate_comparison(H_0, [L_RC+L_ns], bright)
     """
     L_p = EM.L_phenom(states, energies, I, PARAMS)
     try:
