@@ -46,7 +46,7 @@ if __name__ == "__main__":
 
 
     w_2 = 1.0*ev_to_inv_cm
-    bias = 0.001*ev_to_inv_cm
+    bias = 0.0001*ev_to_inv_cm
     w_1 = w_2 + bias
     V = 4*92. #0.1*8065.5
     dipole_1, dipole_2 = 1., 1.
