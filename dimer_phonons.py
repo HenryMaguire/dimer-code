@@ -21,6 +21,7 @@ def dimer_ham_RC(w_1, w_2, w_xx, V, mu, Omega_1,
     XX = basis(4,3)
     SIGMA_1 = OX*XX.dag() + OO*XO.dag()
     SIGMA_2 = XO*XX.dag() + OO*OX.dag()
+    assert SIGMA_1*OX == SIGMA_2*XO
     #I_RC_1 = qeye(N_1)
     #I_RC_2 = qeye(N_2)
     I_dim = qeye(4)
@@ -29,8 +30,8 @@ def dimer_ham_RC(w_1, w_2, w_xx, V, mu, Omega_1,
     H_dim_sub += V*(XO*OX.dag() + OX*XO.dag())
     print H_dim_sub
     H_dim = tensor(H_dim_sub, I)
-    A_EM_1 = tensor(SIGMA_1, I)
-    A_EM_2 = tensor(SIGMA_2, I)
+    A_EM = tensor(SIGMA_1+mu*SIGMA_2, I)
+
     atemp = enr_destroy([N_1,N_2], exc)
 
     a_RC_exc = [tensor(I_dim, aa) for aa in atemp] # annhilation ops in exc restr basis
@@ -43,7 +44,7 @@ def dimer_ham_RC(w_1, w_2, w_xx, V, mu, Omega_1,
     H_RC2 = Omega_2*a_RC_exc[1].dag()*a_RC_exc[1]
 
     H_S = H_dim + H_RC1 + H_RC2 + H_I1 + H_I2
-    return H_S, A_1, A_2, A_EM_1, A_EM_2
+    return H_S, A_1, A_2, A_EM
 
 def operator_func(j, k, eVals=[], eVecs=[], A_1=[], A_2=[],
                     gamma_1=1., gamma_2=1., beta_1=0.4, beta_2=0.4):
@@ -191,11 +192,11 @@ def RC_mapping_UD(args):
     kappa_2 = np.sqrt(np.pi * alpha_2 * wRC_2 / 2.)
     print "****************************************************************"
     print args
-    H_0, A_1, A_2, A_EM_1, A_EM_2 = dimer_ham_RC(w_1, w_2, w_xx, V, mu, wRC_1, wRC_2, kappa_1, kappa_2, N_1, N_2, exc)
+    H_0, A_1, A_2, A_EM = dimer_ham_RC(w_1, w_2, w_xx, V, mu, wRC_1, wRC_2, kappa_1, kappa_2, N_1, N_2, exc)
     L_RC =  liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2, T_1, T_2, num_cpus=args['num_cpus'])
     full_size = (4*N_1*N_1)**2
     #print "It is {}by{} and of type {}. The full basis would be {}by{}".format(L_RC.shape[0], L_RC.shape[0], L_RC.type, full_size, full_size)
-    return L_RC, H_0, A_1, A_2, A_EM_1, A_EM_2, wRC_1, wRC_2, kappa_1, kappa_2
+    return L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2
     #H_dim_full = w_1*XO*XO.dag() + w_2*w_1*OX*OX.dag() + w_xx*XX*XX.dag() + V*((SIGMA_m1+SIGMA_m1.dag())*(SIGMA_m2+SIGMA_m2.dag()))
 
 
@@ -227,8 +228,8 @@ if __name__ == "__main__":
     L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kap_1, kap_2 = RC_mapping_UD(w_1, w_2, w_xx, V, T_1, T_2, wRC_1,
                                             wRC_2, alpha_1, alpha_2, wc, N_1, N_2,
                                             exc, mu=1, num_cpus=1) # test that it works
-    H_S, A_1, A_2, A_EM_1, A_EM_2 = dimer_ham_RC_full(w_1, w_2, w_xx, V, mu, wRC_1, wRC_2, kap_1, kap_2, N_1, N_2)
-    H_S_, A_1_, A_2_, A_EM_1_, A_EM_2_ = dimer_ham_RC(w_1, w_2, w_xx, V, mu, wRC_1, wRC_2, kap_1, kap_2, N_1, N_2, exc)
+    H_S, A_1, A_2, A_EM = dimer_ham_RC_full(w_1, w_2, w_xx, V, mu, wRC_1, wRC_2, kap_1, kap_2, N_1, N_2)
+    H_S_, A_1_, A_2_, A_EM_ = dimer_ham_RC(w_1, w_2, w_xx, V, mu, wRC_1, wRC_2, kap_1, kap_2, N_1, N_2, exc)
 
     for i,j in zip([H_S, A_1, A_2, A_EM], [H_S_, A_1_, A_2_, A_EM_]):
         print i.shape, j.shape, i.dims, j.dims
