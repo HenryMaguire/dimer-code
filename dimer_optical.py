@@ -33,8 +33,8 @@ def nonsecular_function(i,j, eVals=[], eVecs=[], w_1=8000., A=0,  Gamma=1.,T=0.,
         r_down = 0
         if eps_ij == 0:
             JN = Gamma/(2*pi*w_1*beta_f(T))
-            r_up = 2*pi*JN
-            r_down = 2*pi*JN
+            r_up = 0. #2*pi*JN
+            r_down = 0 #2*pi*JN
         else:
             r_up = 2*pi*J(eps_ij, Gamma, w_1)*Occ
             r_down = 2*pi*J(eps_ij, Gamma, w_1)*(Occ+1)
