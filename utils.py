@@ -59,6 +59,8 @@ def J_minimal(omega, Gamma, omega_0):
 
 def J_flat(omega, Gamma, omega_0):
     return Gamma
+def J_overdamped(omega, alpha, Gamma, omega_0):
+    return alpha*Gamma*pow(omega_0,2)*omega/(pow(pow(omega_0,2)-pow(omega,2),2)+(Gamma**2 *omega**2))
 
 def rate_up(w, T, gamma, J, w_0):
     n = Occupation(w, T)
