@@ -20,104 +20,18 @@ reload(vis)
 reload(check)
 
 
-def calculate_dynamics():
-    assert PARAMS['w_1'] != PARAMS['w_2']
-    try:
-        timelist = np.linspace(0,20.0,5000)*0.188
-        L_ns = EM.L_nonsecular(H_0, A_EM, PARAMS)
-        L_full = L_RC+L_ns
 
-        DATA_ns = mesolve(H_0, rho_0, timelist, [L_full], expects, options=opts, progress_bar=True)
-        ss_dm = 0
-        try:
-            ss_dm = qt.steadystate(H_0, [L_full])
-        except Exception as err:
-            print "Warning: steady state density matrix didn't converge. Probably"
-            print "\t due to some problem with excitation restriction. \n"
-            print err
+def get_dimer_info(rho):
+    e1e2 = tensor(basis(4,1)*basis(4,2).dag(), I)
+    e2e1 = tensor(basis(4,2)*basis(4,1).dag(), I)
+    g = (rho*OO).tr()
+    e1 = (rho*XO).tr()
+    e2 = (rho*OX).tr()
 
-        timelist=timelist/0.188 # Convert from cm to picoseconds
-        #DATA_ns = load_obj("DATA_N7_exc8")
-        #fig = plt.figure(figsize=(12,6))
-        fig = plt.figure()
-        ax1 = fig.add_subplot(111)
-        title = 'Eigenstate population'
-        #title = title + r"$\omega_0=$""%i"r"$cm^{-1}$, $\alpha_{ph}=$""%f"r"$cm^{-1}$, $T_{EM}=$""%i K" %(w0_1, alpha_1, T_EM)
-        fig = plt.figure()
-        vis.plot_eig_dynamics(DATA_ns, timelist, expects, ax1, ss_dm=ss_dm)
-        ax2 = fig.add_subplot(111)
-        vis.plot_coherences(DATA_ns, timelist, expects, ax2, ss_dm=ss_dm)
-        plt.savefig("Notes/dynamics.png")
-        print (ss_dm*exciton_coherence).tr()
-        print 'Plotting worked!'
-        return L_full
-    except Exception as err:
-        print "Could not get non-secular-driving dynamics because ",err
-
-def steadystate_coherence_plot(args, alpha_list, biases):
-    coh_ops = load_obj('zoomed_coherence_ops_N{}_wRC{}_V{}'.format(args['N_1'], int(args['w0_1']), int(args['V'])))
-    fig = plt.figure(figsize=(12,6))
-    print len(coh_ops)
-    ax = fig.add_subplot(111)
-    max_coh_for_alpha = []
-    bias_at_max_list = []
-    for alpha in alpha_list:
-        ss_dms = load_obj('DATA/zoomed_bias_dependence_alpha{}_wRC{}_N{}_V{}'.format(int(alpha),int(args['w0_1']), args['N_1'], int(args['V'])))
-        assert len(ss_dms) == len(coh_ops)
-        coh_list = []
-        for i in range(len(ss_dms)):
-            ss_obs = (ss_dms[i]*coh_ops[i]).tr()
-            coh_list.append(ss_obs)
-        ax.plot(biases, np.array(coh_list).real, label=int(alpha))
-        #real_pos = abs(np.array(coh_list).real)
-        #max_coh = max(real_pos)
-        #max_coh_for_alpha.append(-1*max_coh)
-        #bias_at_max = biases[list(real_pos).index(max_coh)]
-        #bias_at_max_list.append(bias_at_max)
-    ax.set_xlabel(r'Bias $cm^{-1}$')
-    ax.set_ylabel('Exciton Coherence')
-    #print max_coh_for_alpha, bias_at_max_list
-    #ax.scatter(np.array(alpha_list)*pi, max_coh_for_alpha)
-    #ax.scatter(np.array(alpha_list)*pi, bias_at_max_list)
-
-def steadystate_coherence_and_RC_plot():
-        try:
-            coh_ops = load_obj('coherence_ops_N5') #[exciton_coherence]*35
-            #site_ops = [site_coherence]*35
-            #alpha_ph = [50/pi, 100/pi, 200/pi, 400/pi, 700/pi]
-            fig = plt.figure(figsize=(12,6))
-            gs = gridspec.GridSpec(1, 2, width_ratios=[1, 1.5])
-            ax1 = fig.add_subplot(gs[0])
-            ax2 = fig.add_subplot(gs[1], sharey=ax1)
-            #colors = iter(['C1', 'C2', 'C3', 'C4', 'C5', 'c6', 'c7', 'c8'])
-            for i, color in enumerate(plt.rcParams['axes.prop_cycle'][0:len(alpha_ph)]):
-                biases = np.linspace(0, 1000, 35)
-                col = color['color']
-                #firstly get the data
-                coh = vis.plot_bias_dependence(ax1, coh_ops, biases, alpha_ph[i], col, linestyle='-', linewidth=1.5, x_label=r'Steady State Exciton Coherence')
-                p1 = vis.get_bias_dependence(Phonon_1, biases, alpha_ph[i])
-                p2 = vis.get_bias_dependence(Phonon_2, biases, alpha_ph[i])
-                # then calculate and plot phonon number difference
-                phonon_diff = abs(p1-p2)
-                label = r'$\pi\alpha=$'+'{}'.format(int(alpha_ph[i]*np.pi))+r'$cm^{-1}$'
-                ax2.plot(phonon_diff, biases, color=col, linewidth=1.5, label=label)
-                ax2.legend(loc='lower right')
-                # add joining lines
-                max_idx = list(phonon_diff).index(np.max(phonon_diff))
-                bias_at_max, coh_at_bias = biases[max_idx], coh[max_idx].real
-                ax1.plot([coh_at_bias, 0], [bias_at_max,bias_at_max], color=col, linestyle='--')
-                ax2.plot([0., phonon_diff[max_idx].real], [bias_at_max,bias_at_max], color=col, linestyle='--')
-                # pure formatting and aesthetics
-                ax1.set_xlim(-0.09,0)
-                ax2.set_xlim(0.,0.15)
-                plt.setp(ax2.get_yticklabels(), visible=False)
-                ax2.set_xlabel(r"$N_{RC_2}-N_{RC_1}$ at Steady state", weight='medium')
-                #data_list.append(ssdata_for_alpha)
-                fig.subplots_adjust(wspace=0.0)
-            print "bias and coupling strength data seems to have been plotted"
-        except Exception as err:
-            print "data not plotted fully because", err
-
+    e1e2 = (rho*e1e2).tr()
+    e2e1 = (rho*e2e1).tr()
+    xx = (rho*XX).tr()
+    return Qobj([[g.real, 0,0,0], [0, e1.real,e1e2.real,0],[0, e2e1.real,e2.real,0],[0, 0,0,xx.real]])#/(g+e1+e2+xx)
 
 if __name__ == "__main__":
 
@@ -130,28 +44,29 @@ if __name__ == "__main__":
     sigma_x1 = sigma_m1+sigma_m1.dag()
     sigma_x2 = sigma_m2+sigma_m2.dag()
 
-    w_1 = 1.1*8065.5
-    w_2 = w_1
-    V = 92. #0.1*8065.5
-    w_opt = (w_1+w_2)*0.5 # Characteristic freq in optical spec.
 
+    w_2 = 1.4*ev_to_inv_cm
+    bias = 0.*ev_to_inv_cm
+    w_1 = w_2 + bias
+    V = 0.25*92. #0.1*8065.5
+    dipole_1, dipole_2 = 1., 1.
     T_EM = 6000. # Optical bath temperature
-    alpha_EM = 1.*5.309 # Optical S-bath strength (from inv. ps to inv. cm)(optical)
-    mu = 1.
+    alpha_EM = 3*inv_ps_to_inv_cm # Optical S-bath strength (from inv. ps to inv. cm)(larger than a real decay rate because dynamics are more efficient this way)
+    mu = w_2*dipole_2/w_1*dipole_1
 
     T_1, T_2 = 300., 300. # Phonon bath temperature
 
-    wc = 53. # Ind.-Boson frame phonon cutoff freq
-    w0_2, w0_1 = 300., 300. # underdamped SD parameter omega_0
+    wc = 1*53. # Ind.-Boson frame phonon cutoff freq
+    w0_2, w0_1 = 1000., 1000. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1 + V
-    alpha_1, alpha_2 = 400/pi, 400/pi # Ind.-Boson frame coupling
-    N_1, N_2 = 5, 5 # set Hilbert space sizes
-    exc = int((N_1+N_2)*0.5)
+    alpha_1, alpha_2 = 0.0001, 0.0001 # Ind.-Boson frame coupling
+    N_1, N_2 = 7, 7 # set Hilbert space sizes
+    exc = int((N_1+N_2)*1)
     num_cpus = 4
     J = J_minimal
 
     H_dim = w_1*XO*XO.dag() + w_2*OX*OX.dag() + w_xx*XX*XX.dag() + V*(XO*OX.dag() + OX*XO.dag())
-    PARAM_names = ['w_1', 'w_2', 'V', 'w_opt', 'w_xx', 'T_1', 'T_2', 'wc',
+    PARAM_names = ['w_1', 'w_2', 'V', 'bias', 'w_xx', 'T_1', 'T_2', 'wc',
                     'w0_1', 'w0_2', 'alpha_1', 'alpha_2', 'N_1', 'N_2', 'exc', 'T_EM', 'alpha_EM','mu', 'num_cpus', 'J']
     PARAMS = dict((name, eval(name)) for name in PARAM_names)
 
@@ -166,13 +81,13 @@ if __name__ == "__main__":
     x_1 = (atemp[0].dag()+atemp[0])
     x_2 = (atemp[1].dag()+atemp[1])
 
-    initial_sys = OO*OO.dag()
+    #initial_sys = OO*OO.dag()
     #initial_sys = 0.5*(XO+OX)*(XO+OX).dag()
 
-    OO = tensor(OO, I)
-    XO = tensor(XO, I)
-    OX = tensor(OX, I)
-    XX = tensor(XX, I)
+    OO = tensor(OO*OO.dag(), I)
+    XO = tensor(XO*XO.dag(), I)
+    OX = tensor(OX*OX.dag(), I)
+    XX = tensor(XX*XX.dag(), I)
     eVals, eVecs = H_dim.eigenstates()
     eVals, eVecs = zip(*sorted(zip(eVals, eVecs))) # sort them
     dark_old= eVecs[1]*eVecs[1].dag()
@@ -180,17 +95,20 @@ if __name__ == "__main__":
     energies, states = check.exciton_states(PARAMS)
     lam_p = 0.5*(w_1+w_2)+0.5*np.sqrt((w_2-w_1)**2+4*(V**2))
     lam_m = 0.5*(w_1+w_2)-0.5*np.sqrt((w_2-w_1)**2+4*(V**2))
-    dark = tensor(states[0]*states[0].dag(), I)
-    bright = tensor(states[1]*states[1].dag(), I)
+    bright_vec = states[0]
+    dark_vec = states[1]
+    dark = tensor(dark_vec*dark_vec.dag(), I)
+    bright = tensor(bright_vec*bright_vec.dag(), I)
     #print  (states[1]*states[1].dag()).tr(), bright_old, states[1]*states[1].dag()
     #print (states[0]*states[0].dag()).tr(), dark_old, states[0]*states[0].dag()
-    exciton_coherence = tensor(states[0]*states[1].dag(), I)
+    exciton_coherence = tensor(dark_vec*bright_vec.dag(), I)
     Phonon_1 = tensor(I_dimer, phonon_num_1)
     Phonon_2 = tensor(I_dimer, phonon_num_2)
     disp_1 = tensor(I_dimer, x_1)
     disp_2 = tensor(I_dimer, x_2)
 
-    rho_0 = tensor(initial_sys, enr_thermal_dm([N_1,N_2], exc, [n_RC_1, n_RC_2]))
+    #rho_0 = tensor(initial_sys, enr_thermal_dm([N_1,N_2], exc, [n_RC_1, n_RC_2]))
+
     #rho_0 = rho_0/rho_0.tr()
 
 
@@ -202,47 +120,73 @@ if __name__ == "__main__":
 
     #Now we build all of the mapped operators and RC Liouvillian.
 
-
-
     # electromagnetic bath liouvillians
 
     #print sys.getsizeof(L_ns)
     opts = qt.Options(num_cpus=num_cpus)
     ncolors = len(plt.rcParams['axes.prop_cycle'])
-    #fig = plt.figure(figsize=(12,6))
-    alpha_ph = np.arange(60, 420, 40)/pi
 
-    #L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(PARAMS)
-    #L_ns = EM.L_nonsecular(H_0, A_EM, PARAMS)
+    L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(PARAMS)
+
+    L_ns = EM.L_nonsecular(H_0, A_EM, PARAMS)
+    ss_ns = qt.steadystate(H_0, [L_RC+L_ns], method= 'iterative-lgmres', use_precond=True)
+
+    #print sum((ss-ss_pred).diag())
+    print "Steady state is ", get_dimer_info(ss_ns)
+    print "Exciton coherence is ", (ss_ns*exciton_coherence).tr()
+    print "Dark population is ", (ss_ns*dark).tr()
+    print "Bright population is ", (ss_ns*bright).tr()
+    #ss_pred = ((-1/T_EM*0.695)*H_0).expm()
+    #ss_pred = ss_pred/ss_pred.tr()
+
+    #rho_0 = ((-1/T_1*0.695)*H_0).expm()
+    rho_0 = OO*tensor(I_dimer,enr_thermal_dm([N_1,N_2], exc, [n_RC_1, n_RC_2]))
+    #rho_0 = rho_0/rho_0.tr()
+    """
+    timelist = np.linspace(0,2,500)*0.188
+    DATA_ns = mesolve(H_0, rho_0, timelist, [L_RC+L_ns], expects, options=opts, progress_bar=True)
+    fig = plt.figure(figsize=(12,6))
+    ax = fig.add_subplot(212)
+    vis.plot_eig_dynamics(DATA_ns, timelist, expects, ax, title='Non-secular driving\n')"""
+    #print ss_pred.ptrace(0)
+    check.steadystate_comparison(H_0, [L_RC+L_ns], dark)
+    """
+    L_p = EM.L_phenom(states, energies, I, PARAMS)
+    try:
+        ss_p = qt.steadystate(H_0, [L_RC+L_p], method= 'iterative-lgmres', use_precond=True)
+    except:
+        ss_p = qt.steadystate(H_0, [L_RC+L_p], method= 'iterative-lgmres')
+    #print sum((ss-ss_pred).diag())
+    print "DM is ", get_dimer_info(ss_p)
+
+    print "Exciton coherence is ", (ss_p*exciton_coherence).tr()
+    print "Dark population is ", (ss_p*dark).tr()
+    print "Bright population is ", (ss_p*bright).tr()
     #print "Steady state is ", qt.steadystate(H_0)
-    #calculate_dynamics()
+    calculate_dynamics()
+    alpha_ph = np.array([0, 10, 100, 300, 500])/pi
+    biases = np.linspace(-0.25, 0.25, 81)*ev_to_inv_cm
+    #try:
+    #     #np.arange(60, 420, 40)/pi
+    PARAMS.update({'w_1':w_2})
+    #observable = exciton_coherence
+    #check.get_coh_ops(PARAMS, biases, I)
+    #
+    """
+    """
+    for alpha in alpha_ph:
+        PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
+        check.bias_dependence(biases, PARAMS, I)
+    #
+    #except Exception as err:
+    #    print "data not calculated fully because", err
+    #print 'now to plot things'
 
-    try:
-        PARAMS.update({'w_2':w_1})
-        biases = np.linspace(100, 500, 25)
-        #observable = exciton_coherence
-        #check.get_coh_ops(PARAMS, biases, I)
-	for alpha in alpha_ph:
-            PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
-            coh_ops = check.bias_dependence(biases, PARAMS, I)
-            print "WE just finished pi*alpha={}".format(int(alpha*pi))
-        save_obj(coh_ops, 'zoomed_coherence_ops_N{}_wRC{}_V{}'.format(int(N_1), int(w0_1), int(V)))
-        steadystate_coherence_plot(PARAMS, alpha_ph, biases)
-        plt.show()
-    except Exception as err:
-        print "data not calculated fully because", err
-
-
-    try:
-        #L_s = EM.L_secular(H_0, A_EM, eps, alpha_EM, T_EM, J, num_cpus=num_cpus)
-        #DATA_s = mesolve(H_0, rho_0, timelist, [L_RC+L_ns], expects, options=opts,
-        #                                                    progress_bar=True)
-        #ax = fig.add_subplot(212)
-        #vis.plot_dynamics(DATA_s, timelist, ax, title='Non-secular driving\n')
-        print 'Secular dynamics skipped'
-    except e:
-        print "Could not get secular-driving dynamics because ",e
-
+    steadystate_coherence_plot(PARAMS, alpha_ph, biases)
+    steadystate_dark_plot(PARAMS, alpha_ph, biases)
+    steadystate_bright_plot(PARAMS, alpha_ph, biases)
+    steadystate_darkbright_plot(PARAMS, alpha_ph, biases)
+    """
     #del L_ns
     #L_s = EM.L_secular(H_0, A_EM, eps, alpha_EM, T_EM, J, num_cpus=num_cpus)
     #L_naive = EM_lind.electronic_lindblad(w_xx, w_1, eps, V, mu, alpha_EM, T_EM, N_1, N_2, exc)
@@ -275,4 +219,4 @@ if __name__ == "__main__":
 
     #np.savetxt('DATA/Dynamics/dimer_DATA_ns.txt', np.array([1- DATA_ns.expect[0], timelist]), delimiter = ',', newline= '\n')
 
-    #plt.show()
+    #plt.show()x
