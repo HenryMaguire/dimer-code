@@ -46,7 +46,7 @@ if __name__ == "__main__":
 
 
     w_2 = 1.0*ev_to_inv_cm
-    bias = 0.*ev_to_inv_cm
+    bias = 0.001*ev_to_inv_cm
     w_1 = w_2 + bias
     V = 4*92. #0.1*8065.5
     dipole_1, dipole_2 = 1., 1.
@@ -149,7 +149,7 @@ if __name__ == "__main__":
     ax = fig.add_subplot(212)
     vis.plot_eig_dynamics(DATA_ns, timelist, expects, ax, title='Non-secular driving\n')"""
     #print ss_pred.ptrace(0)
-    check.steadystate_comparison(H_0, [L_RC+L_ns], bright)
+    check.steadystate_comparison(H_0, [L_RC+L_ns], dark)
     """
     L_p = EM.L_phenom(states, energies, I, PARAMS)
     try:
