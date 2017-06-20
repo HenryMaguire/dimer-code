@@ -128,7 +128,7 @@ if __name__ == "__main__":
     #print sys.getsizeof(L_ns)
     opts = qt.Options(num_cpus=num_cpus)
     ncolors = len(plt.rcParams['axes.prop_cycle'])
-
+    """
     L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(PARAMS)
 
     L_ns = EM.L_nonsecular(H_0, A_EM, PARAMS)
@@ -150,7 +150,7 @@ if __name__ == "__main__":
     rho_T = get_dimer_info(rho_T/rho_T.tr())
     print "Thermal state is :", rho_T
     rho_0 = tensor(rho_T,enr_thermal_dm([N_1,N_2], exc, [n_RC_1, n_RC_2]))
-    
+
     timelist = np.linspace(0,100,2000)*0.188
     DATA_ns = mesolve(H_0, rho_0, timelist, [p*L_RC+L_ns], expects, options=opts, progress_bar=True)
     ss_dyn = check.ss_from_dynamics(DATA_ns)
@@ -161,9 +161,9 @@ if __name__ == "__main__":
     fig = plt.figure(figsize=(12,6))
     ax = fig.add_subplot(111)
     vis.plot_eig_dynamics(DATA_ns, timelist, expects, ax, title='Non-secular driving\n')
-
     plt.show()
     #print ss_pred.ptrace(0)
+    """
     #check.steadystate_comparison(H_0, [L_RC+L_ns], bright)
     """
     L_p = EM.L_phenom(states, energies, I, PARAMS)
@@ -179,8 +179,7 @@ if __name__ == "__main__":
     print "Bright population is ", (ss_p*bright).tr()
     #print "Steady state is ", qt.steadystate(H_0)
     calculate_dynamics()
-    alpha_ph = np.array([0, 10, 100, 300, 500])/pi
-    biases = np.linspace(-0.25, 0.25, 81)*ev_to_inv_cm
+
     #try:
     #     #np.arange(60, 420, 40)/pi
     PARAMS.update({'w_1':w_2})
@@ -188,7 +187,8 @@ if __name__ == "__main__":
     #check.get_coh_ops(PARAMS, biases, I)
     #
     """
-    """
+    alpha_ph = np.array([0, 10, 100, 300, 500])/pi
+    biases = np.linspace(-0.05, 0.05, 21)*ev_to_inv_cm
     for alpha in alpha_ph:
         PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
         check.bias_dependence(biases, PARAMS, I)
@@ -201,7 +201,7 @@ if __name__ == "__main__":
     vis.steadystate_dark_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_bright_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_darkbright_plot(PARAMS, alpha_ph, biases)
-    """
+
     #del L_ns
     #L_s = EM.L_secular(H_0, A_EM, eps, alpha_EM, T_EM, J, num_cpus=num_cpus)
     #L_naive = EM_lind.electronic_lindblad(w_xx, w_1, eps, V, mu, alpha_EM, T_EM, N_1, N_2, exc)
