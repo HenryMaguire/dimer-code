@@ -142,14 +142,15 @@ if __name__ == "__main__":
     #rho_0 = ((-1/T_1*0.695)*H_0).expm()
     rho_0 = OO*tensor(I_dimer,enr_thermal_dm([N_1,N_2], exc, [n_RC_1, n_RC_2]))
     #rho_0 = rho_0/rho_0.tr()
+    """
 
     timelist = np.linspace(0,3,1000)*0.188
     DATA_ns = mesolve(H_0, rho_0, timelist, [L_RC+L_ns], expects, options=opts, progress_bar=True)
     fig = plt.figure(figsize=(12,6))
     ax = fig.add_subplot(111)
-    vis.plot_eig_dynamics(DATA_ns, timelist, expects, ax, title='Non-secular driving\n')
+    vis.plot_eig_dynamics(DATA_ns, timelist, expects, ax, title='Non-secular driving\n')"""
     #print ss_pred.ptrace(0)
-    #check.steadystate_comparison(H_0, [L_RC+L_ns], dark)
+    check.steadystate_comparison(H_0, [L_RC+L_ns], dark)
     """
     L_p = EM.L_phenom(states, energies, I, PARAMS)
     try:
