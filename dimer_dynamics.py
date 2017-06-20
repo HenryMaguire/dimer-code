@@ -33,16 +33,7 @@ def get_dimer_info(rho):
     xx = (rho*XX).tr()
     return Qobj([[g.real, 0,0,0], [0, e1.real,e1e2.real,0],[0, e2e1.real,e2.real,0],[0, 0,0,xx.real]])#/(g+e1+e2+xx)
 
-def ss_from_dynamics(DATA):
-    g = DATA.expect[0][-1]
-    e1 = DATA.expect[1][-1]
-    e2 = DATA.expect[2][-1]
-    xx = DATA.expect[3][-1]
-    e1e2 = DATA.expect[11][-1]
-    e2e1 = DATA.expect[12][-1]
-    print e1e2
-    print e2e1
-    return Qobj([[g.real, 0,0,0], [0, e1.real,e1e2.real,0],[0, e2e1.real,e2.real,0],[0, 0,0,xx.real]])
+
 
 if __name__ == "__main__":
 
@@ -57,12 +48,12 @@ if __name__ == "__main__":
 
 
     w_2 = 1.0*ev_to_inv_cm
-    bias = 0.*ev_to_inv_cm
+    bias = 0.0*ev_to_inv_cm
     w_1 = w_2 + bias
     V = 4*92. #0.1*8065.5
     dipole_1, dipole_2 = 1., 1.
     T_EM = 6000. # Optical bath temperature
-    alpha_EM = 0.6*inv_ps_to_inv_cm # Optical S-bath strength (from inv. ps to inv. cm)(larger than a real decay rate because dynamics are more efficient this way)
+    alpha_EM = 0.9*inv_ps_to_inv_cm # Optical S-bath strength (from inv. ps to inv. cm)(larger than a real decay rate because dynamics are more efficient this way)
     mu = w_2*dipole_2/w_1*dipole_1
 
     T_1, T_2 = 300., 300. # Phonon bath temperature
@@ -71,8 +62,8 @@ if __name__ == "__main__":
     w0_2, w0_1 = 400., 400. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1 + V
     alpha_1, alpha_2 = 0, 0 # Ind.-Boson frame coupling
-    N_1, N_2 = 2,2 # set Hilbert space sizes
-    exc = int((N_1+N_2)*0.6)
+    N_1, N_2 = 3,3 # set Hilbert space sizes
+    exc = int((N_1+N_2)*1)
     num_cpus = 4
     J = J_minimal
 
@@ -141,8 +132,11 @@ if __name__ == "__main__":
     L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(PARAMS)
 
     L_ns = EM.L_nonsecular(H_0, A_EM, PARAMS)
+    p = 1
+    if (alpha_1 == 0 and alpha_2 == 0):
+        p = 0
     method= 'direct' #'iterative-lgmres'
-    ss_ns = qt.steadystate(H_0, [L_ns], method= method, use_precond=True)
+    ss_ns = qt.steadystate(H_0, [p*L_RC+L_ns], method= method, use_precond=True)
 
     #print sum((ss-ss_pred).diag())
     print "Steady state is ", get_dimer_info(ss_ns)
@@ -152,17 +146,18 @@ if __name__ == "__main__":
     #ss_pred = ((-1/T_EM*0.695)*H_0).expm()
     #ss_pred = ss_pred/ss_pred.tr()
 
-    rho_T = ((-1/T_EM*0.695)*H_0).expm()
-    rho_T = rho_T/rho_T.tr()
-    print "Thermal state is :", get_dimer_info(rho_T)
-    rho_0 = OO*tensor(I_dimer,enr_thermal_dm([N_1,N_2], exc, [n_RC_1, n_RC_2]))
-
-
-
-    timelist = np.linspace(0,10,1000)*0.188
-    DATA_ns = mesolve(H_0, rho_0, timelist, [L_ns], expects, options=opts, progress_bar=True)
-    ss_dyn = ss_from_dynamics(DATA_ns)
+    rho_T = Qobj((-1/(T_EM*0.695))*H_0).expm()
+    rho_T = get_dimer_info(rho_T/rho_T.tr())
+    print "Thermal state is :", rho_T
+    rho_0 = tensor(rho_T,enr_thermal_dm([N_1,N_2], exc, [n_RC_1, n_RC_2]))
+    
+    timelist = np.linspace(0,100,2000)*0.188
+    DATA_ns = mesolve(H_0, rho_0, timelist, [p*L_RC+L_ns], expects, options=opts, progress_bar=True)
+    ss_dyn = check.ss_from_dynamics(DATA_ns)
     print "SS from dynamics = ", ss_dyn
+    print "Exciton coherence is ", (ss_dyn*dark_vec*bright_vec.dag()).tr()
+    print "Dark population is ", (ss_dyn*dark_vec*dark_vec.dag()).tr()
+    print "Bright population is ", (ss_dyn*bright_vec*bright_vec.dag()).tr()
     fig = plt.figure(figsize=(12,6))
     ax = fig.add_subplot(111)
     vis.plot_eig_dynamics(DATA_ns, timelist, expects, ax, title='Non-secular driving\n')
@@ -239,4 +234,4 @@ if __name__ == "__main__":
 
     #np.savetxt('DATA/Dynamics/dimer_DATA_ns.txt', np.array([1- DATA_ns.expect[0], timelist]), delimiter = ',', newline= '\n')
 
-    #plt.show()x
+    #plt.show()x    ""

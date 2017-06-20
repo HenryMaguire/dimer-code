@@ -1,7 +1,7 @@
 
 import time
 import os
-from qutip import basis, ket, mesolve, qeye, tensor, thermal_dm, destroy, steadystate
+from qutip import basis, ket, mesolve, qeye, tensor, thermal_dm, destroy, steadystate, Qobj
 import qutip as qt
 import matplotlib.pyplot as plt
 import numpy as np
@@ -86,6 +86,14 @@ def exciton_states(PARS):
     #print  np.dot(v_p, v_m) < 1E-15
     return [lam_m, lam_p], [qt.Qobj(v_m), qt.Qobj(v_p)]
 
+def ss_from_dynamics(DATA):
+    g = DATA.expect[0][-1]
+    e1 = DATA.expect[1][-1]
+    e2 = DATA.expect[2][-1]
+    xx = DATA.expect[3][-1]
+    e1e2 = DATA.expect[11][-1]
+    e2e1 = DATA.expect[12][-1]
+    return Qobj([[g.real, 0,0,0], [0, e1.real,e1e2.real,0],[0, e2e1.real,e2.real,0],[0, 0,0,xx.real]])
 
 def bias_dependence(biases, args, I):
     enc_dir = 'DATA/'
@@ -122,13 +130,30 @@ def bias_dependence(biases, args, I):
             bright_ops.append(bright)
             dark_ops.append(dark)
             ti = time.time()
+            p = 1
+            if (args['alpha_1'] == 0 and args['alpha_2'] == 0):
+                p = 0
+
+            method = 'iterative-lgmres'
             try:
-                ss_ns = steadystate(H, [L_RC+L_ns], method='iterative-lgmres', use_precond=True)
-                ss_p = steadystate(H, [L_RC+L_p], method='iterative-lgmres', use_precond=True)
+                ss_ns = steadystate(H, [p*L_RC+L_ns], method=method, use_precond=True)
+                ss_p = steadystate(H, [p*L_RC+L_p], method=method, use_precond=True)
             except:
                 print "Could not build preconditioner, solving steadystate without one"
-                ss_ns = steadystate(H, [L_RC+L_ns], method= 'iterative-lgmres')
-                ss_p = steadystate(H, [L_RC+L_p], method='iterative-lgmres')
+                ss_ns = steadystate(H, [p*L_RC+L_ns], method= method)
+                ss_p = steadystate(H, [p*L_RC+L_p], method=method)
+
+            if (args['alpha_1'] == 0 and args['alpha_2'] == 0):
+                ss_ns = Qobj((-1/(args['T_EM']*0.695))*H).expm()
+                ss_ns = rho_T/rho_T.tr()
+                ss_p = Qobj((-1/(args['T_EM']*0.695))*H).expm()
+                ss_p = rho_T/rho_T.tr()
+            ns_b = ss_ns.diag() <0
+            p_b = ss_p.diag() <0
+            if True in ns_b:
+                print "There were negative populations in ns."
+            if True in p_b:
+                print "There were negative populations in phenom."
 
             ss_p_list.append(ss_p)
             ss_ns_list.append(ss_ns)

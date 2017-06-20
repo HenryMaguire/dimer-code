@@ -55,7 +55,7 @@ def J_multipolar(omega, Gamma, omega_0):
     return Gamma*(omega**3)/(2*np.pi*(omega_0**3))
 
 def J_minimal(omega, Gamma, omega_0):
-    return Gamma*omega_0/(2*np.pi*omega_0)
+    return Gamma*omega/(2*np.pi*omega_0)
 
 def J_flat(omega, Gamma, omega_0):
     return Gamma
