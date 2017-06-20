@@ -33,6 +33,17 @@ def get_dimer_info(rho):
     xx = (rho*XX).tr()
     return Qobj([[g.real, 0,0,0], [0, e1.real,e1e2.real,0],[0, e2e1.real,e2.real,0],[0, 0,0,xx.real]])#/(g+e1+e2+xx)
 
+def ss_from_dynamics(DATA):
+    g = DATA.expect[0][-1]
+    e1 = DATA.expect[1][-1]
+    e2 = DATA.expect[2][-1]
+    xx = DATA.expect[3][-1]
+    e1e2 = DATA.expect[11][-1]
+    e2e1 = DATA.expect[12][-1]
+    print e1e2
+    print e2e1
+    return Qobj([[g.real, 0,0,0], [0, e1.real,e1e2.real,0],[0, e2e1.real,e2.real,0],[0, 0,0,xx.real]])
+
 if __name__ == "__main__":
 
     OO = basis(4,0)
@@ -51,13 +62,13 @@ if __name__ == "__main__":
     V = 4*92. #0.1*8065.5
     dipole_1, dipole_2 = 1., 1.
     T_EM = 6000. # Optical bath temperature
-    alpha_EM = 3*inv_ps_to_inv_cm # Optical S-bath strength (from inv. ps to inv. cm)(larger than a real decay rate because dynamics are more efficient this way)
+    alpha_EM = 0.3*inv_ps_to_inv_cm # Optical S-bath strength (from inv. ps to inv. cm)(larger than a real decay rate because dynamics are more efficient this way)
     mu = w_2*dipole_2/w_1*dipole_1
 
     T_1, T_2 = 300., 300. # Phonon bath temperature
 
     wc = 1*53. # Ind.-Boson frame phonon cutoff freq
-    w0_2, w0_1 = 1000., 1000. # underdamped SD parameter omega_0
+    w0_2, w0_1 = 400., 400. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1 + V
     alpha_1, alpha_2 = 0, 0 # Ind.-Boson frame coupling
     N_1, N_2 = 2,2 # set Hilbert space sizes
@@ -117,6 +128,7 @@ if __name__ == "__main__":
     expects = [OO*OO.dag(), XO*XO.dag(), OX*OX.dag(), XX*XX.dag()]
     expects +=[dark, bright, exciton_coherence]
     expects +=[Phonon_1, Phonon_2, disp_1, disp_2]
+    expects += [site_coherence, site_coherence.dag()]
 
     #Now we build all of the mapped operators and RC Liouvillian.
 
@@ -129,7 +141,8 @@ if __name__ == "__main__":
     L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(PARAMS)
 
     L_ns = EM.L_nonsecular(H_0, A_EM, PARAMS)
-    ss_ns = qt.steadystate(H_0, [L_RC+L_ns], method= 'iterative-lgmres', use_precond=True)
+    method= 'direct' #'iterative-lgmres'
+    ss_ns = qt.steadystate(H_0, [L_ns], method= method, use_precond=True)
 
     #print sum((ss-ss_pred).diag())
     print "Steady state is ", get_dimer_info(ss_ns)
@@ -139,18 +152,24 @@ if __name__ == "__main__":
     #ss_pred = ((-1/T_EM*0.695)*H_0).expm()
     #ss_pred = ss_pred/ss_pred.tr()
 
-    #rho_0 = ((-1/T_1*0.695)*H_0).expm()
+    rho_T = ((-1/T_EM*0.695)*H_0).expm()
+    rho_T = rho_T/rho_T.tr()
+    print "Thermal state is :", get_dimer_info(rho_T)
     rho_0 = OO*tensor(I_dimer,enr_thermal_dm([N_1,N_2], exc, [n_RC_1, n_RC_2]))
-    #rho_0 = rho_0/rho_0.tr()
-    """
+
+
 
     timelist = np.linspace(0,3,1000)*0.188
-    DATA_ns = mesolve(H_0, rho_0, timelist, [L_RC+L_ns], expects, options=opts, progress_bar=True)
+    DATA_ns = mesolve(H_0, rho_T, timelist, [L_ns], expects, options=opts, progress_bar=True)
+    ss_dyn = ss_from_dynamics(DATA_ns)
+    print "SS from dynamics = ", ss_dyn
     fig = plt.figure(figsize=(12,6))
     ax = fig.add_subplot(111)
-    vis.plot_eig_dynamics(DATA_ns, timelist, expects, ax, title='Non-secular driving\n')"""
+    vis.plot_coherences(DATA_ns, timelist, expects, ax, title='Non-secular driving\n')
+
+    plt.show()
     #print ss_pred.ptrace(0)
-    check.steadystate_comparison(H_0, [L_RC+L_ns], dark)
+    #check.steadystate_comparison(H_0, [L_RC+L_ns], bright)
     """
     L_p = EM.L_phenom(states, energies, I, PARAMS)
     try:
