@@ -60,7 +60,7 @@ if __name__ == "__main__":
     w0_2, w0_1 = 1000., 1000. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1 + V
     alpha_1, alpha_2 = 0, 0 # Ind.-Boson frame coupling
-    N_1, N_2 = 7,7 # set Hilbert space sizes
+    N_1, N_2 = 8,8 # set Hilbert space sizes
     exc = int((N_1+N_2)*1)
     num_cpus = 4
     J = J_minimal
