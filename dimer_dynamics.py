@@ -46,7 +46,7 @@ if __name__ == "__main__":
 
 
     w_2 = 1.0*ev_to_inv_cm
-    bias = 0.00001*ev_to_inv_cm
+    bias = 0.*ev_to_inv_cm
     w_1 = w_2 + bias
     V = 4*92. #0.1*8065.5
     dipole_1, dipole_2 = 1., 1.
@@ -60,7 +60,7 @@ if __name__ == "__main__":
     w0_2, w0_1 = 1000., 1000. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1 + V
     alpha_1, alpha_2 = 0, 0 # Ind.-Boson frame coupling
-    N_1, N_2 = 6, 6 # set Hilbert space sizes
+    N_1, N_2 = 5, 5 # set Hilbert space sizes
     exc = int((N_1+N_2)*1)
     num_cpus = 4
     J = J_minimal
@@ -142,14 +142,14 @@ if __name__ == "__main__":
     #rho_0 = ((-1/T_1*0.695)*H_0).expm()
     rho_0 = OO*tensor(I_dimer,enr_thermal_dm([N_1,N_2], exc, [n_RC_1, n_RC_2]))
     #rho_0 = rho_0/rho_0.tr()
-    """
-    timelist = np.linspace(0,2,500)*0.188
+
+    timelist = np.linspace(0,3,1000)*0.188
     DATA_ns = mesolve(H_0, rho_0, timelist, [L_RC+L_ns], expects, options=opts, progress_bar=True)
     fig = plt.figure(figsize=(12,6))
-    ax = fig.add_subplot(212)
-    vis.plot_eig_dynamics(DATA_ns, timelist, expects, ax, title='Non-secular driving\n')"""
+    ax = fig.add_subplot(111)
+    vis.plot_eig_dynamics(DATA_ns, timelist, expects, ax, title='Non-secular driving\n')
     #print ss_pred.ptrace(0)
-    check.steadystate_comparison(H_0, [L_RC+L_ns], dark)
+    #check.steadystate_comparison(H_0, [L_RC+L_ns], dark)
     """
     L_p = EM.L_phenom(states, energies, I, PARAMS)
     try:
