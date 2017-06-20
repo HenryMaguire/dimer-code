@@ -50,7 +50,7 @@ if __name__ == "__main__":
     w_2 = 1.0*ev_to_inv_cm
     bias = 0.0*ev_to_inv_cm
     w_1 = w_2 + bias
-    V = 4*92. #0.1*8065.5
+    V = 0.25*92. #0.1*8065.5
     dipole_1, dipole_2 = 1., 1.
     T_EM = 6000. # Optical bath temperature
     alpha_EM = 0.9*inv_ps_to_inv_cm # Optical S-bath strength (from inv. ps to inv. cm)(larger than a real decay rate because dynamics are more efficient this way)
@@ -114,13 +114,12 @@ if __name__ == "__main__":
     #rho_0 = tensor(initial_sys, enr_thermal_dm([N_1,N_2], exc, [n_RC_1, n_RC_2]))
 
     #rho_0 = rho_0/rho_0.tr()
-
+    ops = [OO, XO, OX, XX, site_coherence]
     # Expectation values and time increments needed to calculate the dynamics
-    expects = [OO, XO, OX, XX]
+    expects = [OO, XO, OX, XX, site_coherence]
     expects +=[dark, bright, exciton_coherence]
     expects +=[Phonon_1, Phonon_2, disp_1, disp_2]
-    expects += [site_coherence, site_coherence.dag()]
-
+    thermal_RC = enr_thermal_dm([N_1,N_2], exc, [n_RC_1, n_RC_2])
     #Now we build all of the mapped operators and RC Liouvillian.
 
     # electromagnetic bath liouvillians
@@ -139,7 +138,7 @@ if __name__ == "__main__":
     ss_ns = qt.steadystate(H_0, [p*L_RC+L_ns], method= method, use_precond=True)
 
     #print sum((ss-ss_pred).diag())
-    print "Steady state is ", get_dimer_info(ss_ns)
+    print "Steady state is ", check.get_dimer_info(ss_ns)
     print "Exciton coherence is ", (ss_ns*exciton_coherence).tr()
     print "Dark population is ", (ss_ns*dark).tr()
     print "Bright population is ", (ss_ns*bright).tr()
@@ -147,7 +146,7 @@ if __name__ == "__main__":
     #ss_pred = ss_pred/ss_pred.tr()
 
     rho_T = Qobj((-1/(T_EM*0.695))*H_0).expm()
-    rho_T = get_dimer_info(rho_T/rho_T.tr())
+    rho_T = check.get_dimer_info(rho_T/rho_T.tr())
     print "Thermal state is :", rho_T
     rho_0 = tensor(rho_T,enr_thermal_dm([N_1,N_2], exc, [n_RC_1, n_RC_2]))
 
@@ -172,7 +171,7 @@ if __name__ == "__main__":
     except:
         ss_p = qt.steadystate(H_0, [L_RC+L_p], method= 'iterative-lgmres')
     #print sum((ss-ss_pred).diag())
-    print "DM is ", get_dimer_info(ss_p)
+    print "DM is ", check.get_dimer_info(ss_p)
 
     print "Exciton coherence is ", (ss_p*exciton_coherence).tr()
     print "Dark population is ", (ss_p*dark).tr()
@@ -187,11 +186,11 @@ if __name__ == "__main__":
     #check.get_coh_ops(PARAMS, biases, I)
     #
     """
-    alpha_ph = np.array([0, 10, 100, 300, 500])/pi
-    biases = np.linspace(-0.05, 0.05, 21)*ev_to_inv_cm
+    alpha_ph = np.array([0, 100, 500])/pi
+    biases = np.linspace(-0.05, 0.05, 11)*ev_to_inv_cm
     for alpha in alpha_ph:
         PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
-        check.bias_dependence(biases, PARAMS, I)
+        check.bias_dependence(biases, PARAMS, I, ops)
     #
     #except Exception as err:
     #    print "data not calculated fully because", err

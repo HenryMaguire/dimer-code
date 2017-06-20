@@ -263,12 +263,12 @@ def steadystate_coherence_plot(args, alpha_list, biases):
         p_coh_list = []
         ns_coh_list = []
         for i in range(len(p_ss_dms)):
-            p_ss_obs = ((p_ss_dms[i]*coh_ops[i]).tr()).imag
-            ns_ss_obs = ((ns_ss_dms[i]*coh_ops[i]).tr()).imag
+            p_ss_obs = ((p_ss_dms[i]*coh_ops[i]).tr()).real
+            ns_ss_obs = ((ns_ss_dms[i]*coh_ops[i]).tr()).real
             p_coh_list.append(p_ss_obs)
             ns_coh_list.append(ns_ss_obs)
         #ax.plot(biases, np.array(p_coh_list).real, linestyle='--', linewidth=1.2, color=colors[k])
-        ax.plot(biases, np.array(ns_coh_list).imag, label="pi*alpha={}".format(int(pi*alpha)), color=colors[k])
+        ax.plot(biases, np.array(ns_coh_list), label="pi*alpha={}".format(int(pi*alpha)), color=colors[k])
     ax.set_xlabel(r'Bias $cm^{-1}$')
     ax.set_ylabel('Exciton Coherence')
     ax.legend()
