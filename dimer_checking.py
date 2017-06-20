@@ -24,7 +24,7 @@ def steadystate_comparison(H, L, O):
     t1 = time.time()
     print "direct method took ", t1-t0, ' seconds'
     print "State population is: ", (O*ss_dir).tr()
-    print "trace is: ", ss_dir.tr()
+    print "eigs are: ", ss_dir.eigenenergies()
 
     #ss_eigen = steadystate(H, L, method='eigen')
     t2 = time.time()
@@ -35,6 +35,7 @@ def steadystate_comparison(H, L, O):
     t3 = time.time()
     print "power method took ", t3-t2, "seconds and is ", ss_dir.dims, ss_power.dims, " away"
     print "State population is: ", (O*ss_power).tr()
+    print "eigs are: ", ss_power.eigenenergies()
     del(ss_power)
 
     #ss_iter = steadystate(H, L, method= 'iterative-gmres')
@@ -45,6 +46,7 @@ def steadystate_comparison(H, L, O):
     t5 = time.time()
     print "iterative-gmres method with preconditioner took ", t5-t4, "seconds and is ", (ss_dir-ss_iter).tr(), " away"
     print "State population is: ", (O*ss_iter).tr()
+    print "eigs are: ", ss_iter.eigenenergies()
     ss_iter = steadystate(H, L, method= 'iterative-lgmres', use_precond=True)
     t6 = time.time()
     print "iterative-lgmres method with preconditioner took ", t6-t5, "seconds and is ", (ss_dir-ss_iter).tr(), " away"
