@@ -47,7 +47,7 @@ if __name__ == "__main__":
     sigma_x2 = sigma_m2+sigma_m2.dag()
 
 
-    w_2 = 1.0*ev_to_inv_cm
+    w_2 = 1.4*ev_to_inv_cm
     bias = 0.0*ev_to_inv_cm
     w_1 = w_2 + bias
     V = 0.25*92. #0.1*8065.5
@@ -60,7 +60,7 @@ if __name__ == "__main__":
 
     wc = 1*53. # Ind.-Boson frame phonon cutoff freq
     w0_2, w0_1 = 400., 400. # underdamped SD parameter omega_0
-    w_xx = w_2 + w_1 + V
+    w_xx = w_2 + w_1
     alpha_1, alpha_2 = 0, 0 # Ind.-Boson frame coupling
     N_1, N_2 = 3,3 # set Hilbert space sizes
     exc = int((N_1+N_2)*1)
@@ -116,10 +116,8 @@ if __name__ == "__main__":
     #rho_0 = rho_0/rho_0.tr()
     ops = [OO, XO, OX, XX, site_coherence]
     # Expectation values and time increments needed to calculate the dynamics
-    expects = [OO, XO, OX, XX, site_coherence]
-    expects +=[dark, bright, exciton_coherence]
+    expects = ops+[dark, bright, exciton_coherence]
     expects +=[Phonon_1, Phonon_2, disp_1, disp_2]
-    thermal_RC = enr_thermal_dm([N_1,N_2], exc, [n_RC_1, n_RC_2])
     #Now we build all of the mapped operators and RC Liouvillian.
 
     # electromagnetic bath liouvillians
@@ -187,7 +185,7 @@ if __name__ == "__main__":
     #
     """
     alpha_ph = np.array([0, 100, 500])/pi
-    biases = np.linspace(-0.05, 0.05, 11)*ev_to_inv_cm
+    biases = np.linspace(0, 0.25, 50)*ev_to_inv_cm
     for alpha in alpha_ph:
         PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
         check.bias_dependence(biases, PARAMS, I, ops)

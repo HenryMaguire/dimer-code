@@ -87,9 +87,7 @@ def exciton_states(PARS):
     return [lam_m, lam_p], [qt.Qobj(v_m), qt.Qobj(v_p)]
 
 def get_dimer_info(rho, ops):
-
     g = (rho*ops[0]).tr()
-    print g
     e1 = (rho*ops[1]).tr()
     e2 = (rho*ops[2]).tr()
     xx = (rho*ops[3]).tr()
@@ -103,7 +101,7 @@ def ss_from_dynamics(DATA):
     e2 = DATA.expect[2][-1]
     xx = DATA.expect[3][-1]
     e1e2 = DATA.expect[4][-1]
-    e2e1 = DATA.expect[4][-1].dag()
+    e2e1 = DATA.expect[4][-1].conjugate()
     return Qobj([[g.real, 0,0,0], [0, e1.real,e1e2.real,0],[0, e2e1.real,e2.real,0],[0, 0,0,xx.real]])
 
 def bias_dependence(biases, args, I, ops):
@@ -155,15 +153,17 @@ def bias_dependence(biases, args, I, ops):
                 ss_p = steadystate(H, [p*L_RC+L_p], method=method)
 
             if (args['alpha_1'] == 0 and args['alpha_2'] == 0):
-                rho_T = Qobj((-1/(args['T_1']*0.695))*get_dimer_info(H, ops)).expm()
-                rho_0 = tensor(rho_T/rho_T.tr(), I)
-                print H.dims, rho_0.dims
+                n_RC_1 = Occupation(args['w0_1'], args['T_1'])
+                n_RC_2 = Occupation(args['w0_2'], args['T_2'])
+                rho_T = Qobj((-1/(args['T_1']*0.695))*H).expm()
+                rho_0 = rho_T/rho_T.tr()
                 timelist = np.linspace(0,100,2000)*0.188
                 opts = qt.Options(num_cpus=args['num_cpus'])
                 DATA_ns = mesolve(H, rho_0, timelist, [p*L_RC+L_ns], ops, options=opts, progress_bar=True)
-                ss_ns = tensor(ss_from_dynamics(DATA_ns), I)
+                thermal_RCs = enr_thermal_dm([args['N_1'],args['N_2']], args['exc'], [n_RC_1, n_RC_2])
+                ss_ns = tensor(ss_from_dynamics(DATA_ns), thermal_RCs)
                 DATA_p = mesolve(H, rho_0, timelist, [p*L_RC+L_p], ops, options=opts, progress_bar=True)
-                ss_p = tensor(ss_from_dynamics(DATA_p), I)
+                ss_p = tensor(ss_from_dynamics(DATA_p), thermal_RCs)
             ns_b = ss_ns.diag() <0
             p_b = ss_p.diag() <0
             if True in ns_b:
