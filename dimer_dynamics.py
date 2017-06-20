@@ -62,7 +62,7 @@ if __name__ == "__main__":
     V = 4*92. #0.1*8065.5
     dipole_1, dipole_2 = 1., 1.
     T_EM = 6000. # Optical bath temperature
-    alpha_EM = 0.3*inv_ps_to_inv_cm # Optical S-bath strength (from inv. ps to inv. cm)(larger than a real decay rate because dynamics are more efficient this way)
+    alpha_EM = 0.6*inv_ps_to_inv_cm # Optical S-bath strength (from inv. ps to inv. cm)(larger than a real decay rate because dynamics are more efficient this way)
     mu = w_2*dipole_2/w_1*dipole_1
 
     T_1, T_2 = 300., 300. # Phonon bath temperature
@@ -72,7 +72,7 @@ if __name__ == "__main__":
     w_xx = w_2 + w_1 + V
     alpha_1, alpha_2 = 0, 0 # Ind.-Boson frame coupling
     N_1, N_2 = 2,2 # set Hilbert space sizes
-    exc = int((N_1+N_2)*1)
+    exc = int((N_1+N_2)*0.6)
     num_cpus = 4
     J = J_minimal
 
@@ -94,11 +94,13 @@ if __name__ == "__main__":
 
     #initial_sys = OO*OO.dag()
     #initial_sys = 0.5*(XO+OX)*(XO+OX).dag()
-
+    '''Defining DM states'''
+    site_coherence = tensor(OX*XO.dag(), I)
     OO = tensor(OO*OO.dag(), I)
     XO = tensor(XO*XO.dag(), I)
     OX = tensor(OX*OX.dag(), I)
     XX = tensor(XX*XX.dag(), I)
+
     eVals, eVecs = H_dim.eigenstates()
     eVals, eVecs = zip(*sorted(zip(eVals, eVecs))) # sort them
     dark_old= eVecs[1]*eVecs[1].dag()
@@ -122,10 +124,8 @@ if __name__ == "__main__":
 
     #rho_0 = rho_0/rho_0.tr()
 
-
-    site_coherence = OX*XO.dag()
     # Expectation values and time increments needed to calculate the dynamics
-    expects = [OO*OO.dag(), XO*XO.dag(), OX*OX.dag(), XX*XX.dag()]
+    expects = [OO, XO, OX, XX]
     expects +=[dark, bright, exciton_coherence]
     expects +=[Phonon_1, Phonon_2, disp_1, disp_2]
     expects += [site_coherence, site_coherence.dag()]
@@ -159,13 +159,13 @@ if __name__ == "__main__":
 
 
 
-    timelist = np.linspace(0,3,1000)*0.188
-    DATA_ns = mesolve(H_0, rho_T, timelist, [L_ns], expects, options=opts, progress_bar=True)
+    timelist = np.linspace(0,10,1000)*0.188
+    DATA_ns = mesolve(H_0, rho_0, timelist, [L_ns], expects, options=opts, progress_bar=True)
     ss_dyn = ss_from_dynamics(DATA_ns)
     print "SS from dynamics = ", ss_dyn
     fig = plt.figure(figsize=(12,6))
     ax = fig.add_subplot(111)
-    vis.plot_coherences(DATA_ns, timelist, expects, ax, title='Non-secular driving\n')
+    vis.plot_eig_dynamics(DATA_ns, timelist, expects, ax, title='Non-secular driving\n')
 
     plt.show()
     #print ss_pred.ptrace(0)
