@@ -1,9 +1,11 @@
+utils.pyc
 dimer-python-code
 dimer_phonons.pyc
 dimer_optical.pyc
 electronic_lindblad.pyc
 dimer_plotting.pyc
 dimer_dynamics.pyc
+dimer_checking.pyc
 utils.pyc
 big_DATA
 test.py

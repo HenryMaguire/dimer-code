@@ -44,7 +44,7 @@ def nonsecular_function(i,j, eVals=[], eVecs=[], w_1=8000., A=0,  Gamma=1.,T=0.,
         X2= r_down*A_ji*JI
     return Qobj(X1), Qobj(X2), Qobj(X3), Qobj(X4)
 
-def secular_function(i,j, eVals=[], eVecs=[], A=0, w_opt=8000., Gamma=1.,T=0., J=J_minimal):
+def secular_function(i,j, eVals=[], eVecs=[], A=0, w_1=8000., Gamma=1.,T=0., J=J_minimal):
     L = 0
     lam_ij = A.matrix_element(eVecs[i].dag(), eVecs[j])
     #lam_mn = (A.dag()).matrix_element(eVecs[n].dag(), eVecs[m])
@@ -57,8 +57,8 @@ def secular_function(i,j, eVals=[], eVecs=[], A=0, w_opt=8000., Gamma=1.,T=0., J
         II = eVecs[i]*eVecs[i].dag()
 
         Occ = Occupation(eps_ij, T)
-        r_up = 2*pi*J(eps_ij, Gamma, w_opt)*Occ
-        r_down = 2*pi*J(eps_ij, Gamma, w_opt)*(Occ+1)
+        r_up = 2*pi*J(eps_ij, Gamma, w_1)*Occ
+        r_down = 2*pi*J(eps_ij, Gamma, w_1)*(Occ+1)
 
         T1 = r_up*spre(II)+r_down*spre(JJ)
         T2 = r_up.conjugate()*spost(II)+r_down.conjugate()*spost(JJ)
@@ -88,15 +88,16 @@ def L_nonsecular(H_vib, A, args):
     return -0.5*L
 
 
-def L_secular(H_vib, A, eps, Gamma, T, J, num_cpus=1):
+def L_secular(H_vib, A, args):
     '''
     Initially assuming that the vibronic eigenstructure has no
     degeneracy and the secular approximation has been made
     '''
     ti = time.time()
+    Gamma, T, w_1, J, num_cpus = args['alpha_EM'], args['T_EM'], args['w_1'],args['J'], args['num_cpus']
     dim_ham = H_vib.shape[0]
     eVals, eVecs = H_vib.eigenstates()
-    names = ['eVals', 'eVecs', 'A', 'eps', 'Gamma', 'T', 'J']
+    names = ['eVals', 'eVecs', 'A', 'w_1', 'Gamma', 'T', 'J']
     kwargs = dict()
     for name in names:
         kwargs[name] = eval(name)
