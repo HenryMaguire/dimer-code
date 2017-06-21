@@ -281,7 +281,7 @@ def steadystate_dark_plot(args, alpha_list, biases):
     p_dm_dir = main_dir +"phenom/"
     ns_dm_dir = main_dir +"nonsecular/"
     ops_dir = main_dir +"operators/"
-    dark_ops = load_obj(ops_dir+'bright_ops')
+    dark_ops = load_obj(ops_dir+'dark_ops')
     fig = plt.figure(figsize=(12,6))
     ax = fig.add_subplot(111)
     max_coh_for_alpha = []
@@ -305,36 +305,6 @@ def steadystate_dark_plot(args, alpha_list, biases):
     ax.legend()
     plt.savefig(main_dir+'dark_bias_dependence.pdf')
 
-def steadystate_bright_plot(args, alpha_list, biases):
-    main_dir = "DATA/bias_dependence_wRC{}_N{}_V{}_wc{}/".format(int(args['w0_1']), args['N_1'], int(args['V']), int(args['wc']))
-    energy_differences = 2*np.sqrt(4*float(args['V'])**2 + biases**2)
-    p_dm_dir = main_dir +"phenom/"
-    ns_dm_dir = main_dir +"nonsecular/"
-    ops_dir = main_dir +"operators/"
-    bright_ops = load_obj(ops_dir+'bright_ops')
-    fig = plt.figure(figsize=(12,6))
-    ax = fig.add_subplot(111)
-    max_coh_for_alpha = []
-    bias_at_max_list = []
-    colors = ['m', 'b','r','g', 'k', 'y']
-    for k, alpha in enumerate(alpha_list):
-        p_ss_dms = load_obj(p_dm_dir+'steadystate_DMs_alpha{}'.format(int(alpha)))
-        ns_ss_dms = load_obj(ns_dm_dir+'steadystate_DMs_alpha{}'.format(int(alpha)))
-        assert len(p_ss_dms) == len(bright_ops)
-        p_coh_list = []
-        ns_coh_list = []
-        for i in range(len(p_ss_dms)):
-            p_ss_obs = (p_ss_dms[i]*bright_ops[i]).tr()
-            ns_ss_obs = (ns_ss_dms[i]*bright_ops[i]).tr()
-            p_coh_list.append(p_ss_obs)
-            ns_coh_list.append(ns_ss_obs)
-        #ax.plot(biases, np.array(p_coh_list).real, linestyle='--', linewidth=1.2, color=colors[k])
-        ax.plot(energy_differences, np.array(ns_coh_list).real, label="pi*alpha={}".format(int(pi*alpha)), color=colors[k])
-    ax.set_xlabel(r'Bias $cm^{-1}$')
-    ax.set_ylabel('Bright Eigenstate Population')
-    ax.legend()
-    #ax.set_xlim(-2000, 2000)
-    plt.savefig(main_dir+'bright_bias_dependence.pdf')
 
 def steadystate_bright_plot(args, alpha_list, biases):
     main_dir = "DATA/bias_dependence_wRC{}_N{}_V{}_wc{}/".format(int(args['w0_1']), args['N_1'], int(args['V']), int(args['wc']))
