@@ -33,16 +33,7 @@ def get_dimer_info(rho):
     xx = (rho*XX).tr()
     return Qobj([[g.real, 0,0,0], [0, e1.real,e1e2.real,0],[0, e2e1.real,e2.real,0],[0, 0,0,xx.real]])#/(g+e1+e2+xx)
 
-def ss_from_dynamics(DATA):
-    g = DATA.expect[0][-1]
-    e1 = DATA.expect[1][-1]
-    e2 = DATA.expect[2][-1]
-    xx = DATA.expect[3][-1]
-    e1e2 = DATA.expect[11][-1]
-    e2e1 = DATA.expect[12][-1]
-    print e1e2
-    print e2e1
-    return Qobj([[g.real, 0,0,0], [0, e1.real,e1e2.real,0],[0, e2e1.real,e2.real,0],[0, 0,0,xx.real]])
+
 
 if __name__ == "__main__":
 
@@ -56,22 +47,22 @@ if __name__ == "__main__":
     sigma_x2 = sigma_m2+sigma_m2.dag()
 
 
-    w_2 = 1.0*ev_to_inv_cm
-    bias = 0.*ev_to_inv_cm
+    w_2 = 1.4*ev_to_inv_cm
+    bias = 0.0*ev_to_inv_cm
     w_1 = w_2 + bias
-    V = 4*92. #0.1*8065.5
+    V = 0.25*92. #0.1*8065.5
     dipole_1, dipole_2 = 1., 1.
     T_EM = 6000. # Optical bath temperature
-    alpha_EM = 0.6*inv_ps_to_inv_cm # Optical S-bath strength (from inv. ps to inv. cm)(larger than a real decay rate because dynamics are more efficient this way)
+    alpha_EM = 0.9*inv_ps_to_inv_cm # Optical S-bath strength (from inv. ps to inv. cm)(larger than a real decay rate because dynamics are more efficient this way)
     mu = w_2*dipole_2/w_1*dipole_1
 
     T_1, T_2 = 300., 300. # Phonon bath temperature
 
     wc = 1*53. # Ind.-Boson frame phonon cutoff freq
     w0_2, w0_1 = 400., 400. # underdamped SD parameter omega_0
-    w_xx = w_2 + w_1 + V
+    w_xx = w_2 + w_1
     alpha_1, alpha_2 = 0, 0 # Ind.-Boson frame coupling
-    N_1, N_2 = 2,2 # set Hilbert space sizes
+    N_1, N_2 = 6,6 # set Hilbert space sizes
     exc = int((N_1+N_2)*0.6)
     num_cpus = 4
     J = J_minimal
@@ -123,13 +114,10 @@ if __name__ == "__main__":
     #rho_0 = tensor(initial_sys, enr_thermal_dm([N_1,N_2], exc, [n_RC_1, n_RC_2]))
 
     #rho_0 = rho_0/rho_0.tr()
-
+    ops = [OO, XO, OX, XX, site_coherence]
     # Expectation values and time increments needed to calculate the dynamics
-    expects = [OO, XO, OX, XX]
-    expects +=[dark, bright, exciton_coherence]
+    expects = ops+[dark, bright, exciton_coherence]
     expects +=[Phonon_1, Phonon_2, disp_1, disp_2]
-    expects += [site_coherence, site_coherence.dag()]
-
     #Now we build all of the mapped operators and RC Liouvillian.
 
     # electromagnetic bath liouvillians
@@ -137,38 +125,42 @@ if __name__ == "__main__":
     #print sys.getsizeof(L_ns)
     opts = qt.Options(num_cpus=num_cpus)
     ncolors = len(plt.rcParams['axes.prop_cycle'])
-
+    """
     L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(PARAMS)
 
     L_ns = EM.L_nonsecular(H_0, A_EM, PARAMS)
+    p = 1
+    if (alpha_1 == 0 and alpha_2 == 0):
+        p = 0
     method= 'direct' #'iterative-lgmres'
-    ss_ns = qt.steadystate(H_0, [L_ns], method= method, use_precond=True)
+    ss_ns = qt.steadystate(H_0, [p*L_RC+L_ns], method= method, use_precond=True)
 
     #print sum((ss-ss_pred).diag())
-    print "Steady state is ", get_dimer_info(ss_ns)
+    print "Steady state is ", check.get_dimer_info(ss_ns)
     print "Exciton coherence is ", (ss_ns*exciton_coherence).tr()
     print "Dark population is ", (ss_ns*dark).tr()
     print "Bright population is ", (ss_ns*bright).tr()
     #ss_pred = ((-1/T_EM*0.695)*H_0).expm()
     #ss_pred = ss_pred/ss_pred.tr()
 
-    rho_T = ((-1/T_EM*0.695)*H_0).expm()
-    rho_T = rho_T/rho_T.tr()
-    print "Thermal state is :", get_dimer_info(rho_T)
-    rho_0 = OO*tensor(I_dimer,enr_thermal_dm([N_1,N_2], exc, [n_RC_1, n_RC_2]))
+    rho_T = Qobj((-1/(T_EM*0.695))*H_0).expm()
+    rho_T = check.get_dimer_info(rho_T/rho_T.tr())
+    print "Thermal state is :", rho_T
+    rho_0 = tensor(rho_T,enr_thermal_dm([N_1,N_2], exc, [n_RC_1, n_RC_2]))
 
-
-
-    timelist = np.linspace(0,10,1000)*0.188
-    DATA_ns = mesolve(H_0, rho_0, timelist, [L_ns], expects, options=opts, progress_bar=True)
-    ss_dyn = ss_from_dynamics(DATA_ns)
+    timelist = np.linspace(0,100,2000)*0.188
+    DATA_ns = mesolve(H_0, rho_0, timelist, [p*L_RC+L_ns], expects, options=opts, progress_bar=True)
+    ss_dyn = check.ss_from_dynamics(DATA_ns)
     print "SS from dynamics = ", ss_dyn
+    print "Exciton coherence is ", (ss_dyn*dark_vec*bright_vec.dag()).tr()
+    print "Dark population is ", (ss_dyn*dark_vec*dark_vec.dag()).tr()
+    print "Bright population is ", (ss_dyn*bright_vec*bright_vec.dag()).tr()
     fig = plt.figure(figsize=(12,6))
     ax = fig.add_subplot(111)
     vis.plot_eig_dynamics(DATA_ns, timelist, expects, ax, title='Non-secular driving\n')
-
     plt.show()
     #print ss_pred.ptrace(0)
+    """
     #check.steadystate_comparison(H_0, [L_RC+L_ns], bright)
     """
     L_p = EM.L_phenom(states, energies, I, PARAMS)
@@ -177,15 +169,14 @@ if __name__ == "__main__":
     except:
         ss_p = qt.steadystate(H_0, [L_RC+L_p], method= 'iterative-lgmres')
     #print sum((ss-ss_pred).diag())
-    print "DM is ", get_dimer_info(ss_p)
+    print "DM is ", check.get_dimer_info(ss_p)
 
     print "Exciton coherence is ", (ss_p*exciton_coherence).tr()
     print "Dark population is ", (ss_p*dark).tr()
     print "Bright population is ", (ss_p*bright).tr()
     #print "Steady state is ", qt.steadystate(H_0)
     calculate_dynamics()
-    alpha_ph = np.array([0, 10, 100, 300, 500])/pi
-    biases = np.linspace(-0.25, 0.25, 81)*ev_to_inv_cm
+
     #try:
     #     #np.arange(60, 420, 40)/pi
     PARAMS.update({'w_1':w_2})
@@ -193,20 +184,21 @@ if __name__ == "__main__":
     #check.get_coh_ops(PARAMS, biases, I)
     #
     """
-    """
+    alpha_ph = np.array([0, 100, 500])/pi
+    biases = np.linspace(0, 0.25, 50)*ev_to_inv_cm
     for alpha in alpha_ph:
         PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
-        check.bias_dependence(biases, PARAMS, I)
+        check.bias_dependence(biases, PARAMS, I, ops)
     #
     #except Exception as err:
     #    print "data not calculated fully because", err
     #print 'now to plot things'
-
+    '''
     vis.steadystate_coherence_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_dark_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_bright_plot(PARAMS, alpha_ph, biases)
-    vis.steadystate_darkbright_plot(PARAMS, alpha_ph, biases)
-    """
+    vis.steadystate_darkbright_plot(PARAMS, alpha_ph, biases)'''
+
     #del L_ns
     #L_s = EM.L_secular(H_0, A_EM, eps, alpha_EM, T_EM, J, num_cpus=num_cpus)
     #L_naive = EM_lind.electronic_lindblad(w_xx, w_1, eps, V, mu, alpha_EM, T_EM, N_1, N_2, exc)
@@ -239,4 +231,4 @@ if __name__ == "__main__":
 
     #np.savetxt('DATA/Dynamics/dimer_DATA_ns.txt', np.array([1- DATA_ns.expect[0], timelist]), delimiter = ',', newline= '\n')
 
-    #plt.show()x
+    #plt.show()x    ""

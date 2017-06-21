@@ -247,6 +247,7 @@ def calculate_dynamics():
 
 def steadystate_coherence_plot(args, alpha_list, biases):
     main_dir = "DATA/bias_dependence_wRC{}_N{}_V{}_wc{}/".format(int(args['w0_1']), args['N_1'], int(args['V']), int(args['wc']))
+    energy_differences = 2*np.sqrt(4*float(args['V'])**2 + biases**2)
     p_dm_dir = main_dir +"phenom/"
     ns_dm_dir = main_dir +"nonsecular/"
     ops_dir = main_dir +"operators/"
@@ -263,20 +264,20 @@ def steadystate_coherence_plot(args, alpha_list, biases):
         p_coh_list = []
         ns_coh_list = []
         for i in range(len(p_ss_dms)):
-            p_ss_obs = ((p_ss_dms[i]*coh_ops[i]).tr()).imag
-            ns_ss_obs = ((ns_ss_dms[i]*coh_ops[i]).tr()).imag
+            p_ss_obs = ((p_ss_dms[i]*coh_ops[i]).tr()).real
+            ns_ss_obs = ((ns_ss_dms[i]*coh_ops[i]).tr()).real
             p_coh_list.append(p_ss_obs)
             ns_coh_list.append(ns_ss_obs)
         #ax.plot(biases, np.array(p_coh_list).real, linestyle='--', linewidth=1.2, color=colors[k])
-        ax.plot(biases, np.array(ns_coh_list).imag, label="pi*alpha={}".format(int(pi*alpha)), color=colors[k])
+        ax.plot(energy_differences, np.array(ns_coh_list), label="pi*alpha={}".format(int(pi*alpha)), color=colors[k])
     ax.set_xlabel(r'Bias $cm^{-1}$')
     ax.set_ylabel('Exciton Coherence')
     ax.legend()
-    ax.set_xlim(-2000, 2000)
     plt.savefig(main_dir+'bias_dependence.pdf')
 
 def steadystate_dark_plot(args, alpha_list, biases):
     main_dir = "DATA/bias_dependence_wRC{}_N{}_V{}_wc{}/".format(int(args['w0_1']), args['N_1'], int(args['V']), int(args['wc']))
+    energy_differences = 2*np.sqrt(4*float(args['V'])**2 + biases**2)
     p_dm_dir = main_dir +"phenom/"
     ns_dm_dir = main_dir +"nonsecular/"
     ops_dir = main_dir +"operators/"
@@ -298,11 +299,10 @@ def steadystate_dark_plot(args, alpha_list, biases):
             p_coh_list.append(p_ss_obs)
             ns_coh_list.append(ns_ss_obs)
         #ax.plot(biases, np.array(p_coh_list).real, linestyle='--', linewidth=1.2, color=colors[k])
-        ax.plot(biases, np.array(ns_coh_list).real, label="pi*alpha={}".format(int(pi*alpha)), color=colors[k])
+        ax.plot(energy_differences, np.array(ns_coh_list).real, label="pi*alpha={}".format(int(pi*alpha)), color=colors[k])
     ax.set_xlabel(r'Bias $cm^{-1}$')
     ax.set_ylabel('Dark Eigenstate Population')
     ax.legend()
-    ax.set_xlim(-2000, 2000)
     plt.savefig(main_dir+'dark_bias_dependence.pdf')
 
 def steadystate_bright_plot(args, alpha_list, biases):
@@ -329,13 +329,13 @@ def steadystate_bright_plot(args, alpha_list, biases):
             p_coh_list.append(p_ss_obs)
             ns_coh_list.append(ns_ss_obs)
         #ax.plot(biases, np.array(p_coh_list).real, linestyle='--', linewidth=1.2, color=colors[k])
-        ax.plot(energy_differences[int(len(energy_differences)/2)::], np.array(ns_coh_list)[int(len(energy_differences)/2)::].real, label="pi*alpha={}".format(int(pi*alpha)), color=colors[k])
-    print energy_differences
+        ax.plot(energy_differences, np.array(ns_coh_list).real, label="pi*alpha={}".format(int(pi*alpha)), color=colors[k])
     ax.set_xlabel(r'Bias $cm^{-1}$')
     ax.set_ylabel('Bright Eigenstate Population')
     ax.legend()
     #ax.set_xlim(-2000, 2000)
     plt.savefig(main_dir+'bright_bias_dependence.pdf')
+
 def steadystate_bright_plot(args, alpha_list, biases):
     main_dir = "DATA/bias_dependence_wRC{}_N{}_V{}_wc{}/".format(int(args['w0_1']), args['N_1'], int(args['V']), int(args['wc']))
     energy_differences = 2*np.sqrt(4*float(args['V'])**2 + biases**2)
@@ -360,13 +360,13 @@ def steadystate_bright_plot(args, alpha_list, biases):
             p_coh_list.append(p_ss_obs)
             ns_coh_list.append(ns_ss_obs)
         #ax.plot(biases, np.array(p_coh_list).real, linestyle='--', linewidth=1.2, color=colors[k])
-        ax.plot(energy_differences[int(len(energy_differences)/2)::], np.array(ns_coh_list)[int(len(energy_differences)/2)::].real, label="pi*alpha={}".format(int(pi*alpha)), color=colors[k])
-    print energy_differences
+        ax.plot(energy_differences, np.array(ns_coh_list).real, label="pi*alpha={}".format(int(pi*alpha)), color=colors[k])
     ax.set_xlabel(r'Bias $cm^{-1}$')
     ax.set_ylabel('Bright Eigenstate Population')
     ax.legend()
     #ax.set_xlim(-2000, 2000)
     plt.savefig(main_dir+'bright_bias_dependence.pdf')
+
 def steadystate_darkbright_plot(args, alpha_list, biases):
     main_dir = "DATA/bias_dependence_wRC{}_N{}_V{}_wc{}/".format(int(args['w0_1']), args['N_1'], int(args['V']), int(args['wc']))
     energy_differences = 2*np.sqrt(4*float(args['V'])**2 + biases**2)
@@ -392,7 +392,7 @@ def steadystate_darkbright_plot(args, alpha_list, biases):
             dark_list.append(d_obs)
             bright_list.append(b_obs)
         #ax.plot(biases, np.array(p_coh_list).real, linestyle='--', linewidth=1.2, color=colors[k])
-        ax.plot(energy_differences[int(len(energy_differences)/2)::], ((np.array(bright_list)-np.array(dark_list)))[int(len(energy_differences)/2)::].real, label="pi*alpha={}".format(int(pi*alpha)), color=colors[k])
+        ax.plot(energy_differences, ((np.array(bright_list)-np.array(dark_list))).real, label="pi*alpha={}".format(int(pi*alpha)), color=colors[k])
     #print energy_differences[int(len(energy_differences)/2)::]
     #print -1*(np.array(bright_list)-np.array(dark_list))[int(len(energy_differences)/2)::]
     ax.set_xlabel(r'Eig energy difference $cm^{-1}$')
