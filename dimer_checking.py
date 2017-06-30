@@ -115,6 +115,9 @@ def bias_dependence(biases, args, I, ops):
     bright_ops = []
     dark_ops = []
     print main_dir
+    fig =plt.figure()
+    ax1 = fig.add_subplot(211)
+    ax2 = fig.add_subplot(212)
     if not os.path.isfile(test_file):
         for eps in biases:
             args.update({'bias': eps})
@@ -125,7 +128,8 @@ def bias_dependence(biases, args, I, ops):
             coh =  tensor(states[0]*states[1].dag(), I)
             bright =  tensor(states[1]*states[1].dag(), I)
             dark =  tensor(states[0]*states[0].dag(), I)
-
+            print states[0]*states[1].dag()
+            print states[0]*states[0].dag()
             L_RC, H, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(args)
             L_ns = EM.L_nonsecular(H, A_EM, args)
             L_p = EM.L_phenom(states, energies, I, args)
@@ -142,7 +146,7 @@ def bias_dependence(biases, args, I, ops):
             ti = time.time()
             p = 1
             if (args['alpha_1'] == 0 and args['alpha_2'] == 0):
-                p = 0
+                p = 1
 
             method = 'iterative-lgmres'
             try:
@@ -156,15 +160,24 @@ def bias_dependence(biases, args, I, ops):
             if (args['alpha_1'] == 0 and args['alpha_2'] == 0):
                 n_RC_1 = Occupation(args['w0_1'], args['T_1'])
                 n_RC_2 = Occupation(args['w0_2'], args['T_2'])
-                rho_T = Qobj((-1/(args['T_1']*0.695))*H).expm()
-                rho_0 = rho_T/rho_T.tr()
-                timelist = np.linspace(0,100,2000)
-                opts = qt.Options(num_cpus=args['num_cpus'])
-                DATA_ns = mesolve(H, rho_0, timelist, [p*L_RC+L_ns], ops, options=opts, progress_bar=True)
+                #rho_T = Qobj((-1/(args['T_1']*0.695))*H).expm()
                 thermal_RCs = enr_thermal_dm([args['N_1'],args['N_2']], args['exc'], [n_RC_1, n_RC_2])
+                #rho_0 = rho_T/rho_T.tr()
+
+                rho_0 = tensor(basis(4,0)*basis(4,0).dag(),thermal_RCs)
+                timelist = np.linspace(0,30,3000)
+                opts = qt.Options(num_cpus=args['num_cpus'])
+                DATA_ns = mesolve(H, rho_0, timelist, [p*L_RC+L_ns], ops+[dark, coh], options=opts, progress_bar=True)
+
                 ss_ns = tensor(ss_from_dynamics(DATA_ns), thermal_RCs)
-                DATA_p = mesolve(H, rho_0, timelist, [p*L_RC+L_p], ops, options=opts, progress_bar=True)
+                DATA_p = mesolve(H, rho_0, timelist, [p*L_RC+L_p], ops+[dark, coh], options=opts, progress_bar=True)
                 ss_p = tensor(ss_from_dynamics(DATA_p), thermal_RCs)
+                ax1.plot(timelist, DATA_ns.expect[5], label='nsd bias={}'.format(eps))
+                ax1.plot(timelist, DATA_p.expect[5], label='pd bias={}'.format(eps))
+                ax2.plot(timelist, DATA_ns.expect[6], label='nsc bias={}'.format(eps))
+                ax2.plot(timelist, DATA_p.expect[6], label='pc bias={}'.format(eps))
+
+
             ns_b = ss_ns.diag() <0
             p_b = ss_p.diag() <0
             if True in ns_b:
@@ -178,7 +191,6 @@ def bias_dependence(biases, args, I, ops):
             print "Redfield: coh={}, dark={}, bright={}".format((ss_ns*coh).tr(), (ss_ns*dark).tr(), (ss_ns*bright).tr())
             print "Calculating the steady state took {} seconds".format(time.time()-ti)
             print "so far {} steady states".format(len(ss_p_list))
-
 
         if not os.path.exists(main_dir):
             '''If the data directory doesn't exist:
@@ -200,6 +212,9 @@ def bias_dependence(biases, args, I, ops):
         print "Data found for pi*alpha = {}".format(int(args['alpha_1'])*pi)
     else:
         print "Data for this phonon-coupling and Hamiltonian already exists. Skipping..."
+    ax1.legend()
+    ax2.legend()
+    plt.show()
     return
 
 def SS_convergence_check(sigma, w_1, w_2, w_xx, V, T_1, T_2, w0_1, w0_2, alpha_1, alpha_2, wc,  alpha_EM, T_EM, mu=0, expect_op='bright', time_units='cm', start_n=2, end_n=5, method='direct'):

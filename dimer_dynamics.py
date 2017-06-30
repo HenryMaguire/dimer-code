@@ -50,11 +50,11 @@ if __name__ == "__main__":
     w_2 = 1.4*ev_to_inv_cm
     bias = 0.0*ev_to_inv_cm
     w_1 = w_2 + bias
-    V = 2*92. #0.1*8065.5
+    V = 0.3*92. #0.1*8065.5
     dipole_1, dipole_2 = 1., 1.
     T_EM = 6000. # Optical bath temperature
     alpha_EM = 0.9*inv_ps_to_inv_cm # Optical S-bath strength (from inv. ps to inv. cm)(larger than a real decay rate because dynamics are more efficient this way)
-    mu = w_2*dipole_2/w_1*dipole_1
+    mu = w_2*dipole_2/(w_1*dipole_1)
 
     T_1, T_2 = 300., 300. # Phonon bath temperature
 
@@ -62,7 +62,7 @@ if __name__ == "__main__":
     w0_2, w0_1 = 400., 400. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1
     alpha_1, alpha_2 = 0, 0 # Ind.-Boson frame coupling
-    N_1, N_2 = 6,6 # set Hilbert space sizes
+    N_1, N_2 = 2,2 # set Hilbert space sizes
     exc = int((N_1+N_2)*0.6)
     num_cpus = 4
     J = J_minimal
@@ -185,7 +185,9 @@ if __name__ == "__main__":
     #
     """
     alpha_ph = np.array([0,  10, 100, 500])/pi
+    alpha_ph=np.array([0])
     biases = np.linspace(0, 0.05, 50)*ev_to_inv_cm
+    biases = np.array([0, 0.05*ev_to_inv_cm])
     print biases
     for alpha in alpha_ph:
         PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
@@ -194,11 +196,11 @@ if __name__ == "__main__":
     #except Exception as err:
     #    print "data not calculated fully because", err
     #print 'now to plot things'
-
+    """
     vis.steadystate_coherence_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_dark_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_bright_plot(PARAMS, alpha_ph, biases)
-    vis.steadystate_darkbright_plot(PARAMS, alpha_ph, biases)
+    vis.steadystate_darkbright_plot(PARAMS, alpha_ph, biases)"""
 
     #del L_ns
     #L_s = EM.L_secular(H_0, A_EM, eps, alpha_EM, T_EM, J, num_cpus=num_cpus)
