@@ -25,10 +25,11 @@ def nonsecular_function(i,j, eVals=[], eVecs=[], w_1=8000., A=0,  Gamma=1.,T=0.,
     A_ij = A.matrix_element(eVecs[i].dag(), eVecs[j])
     A_ji = (A.dag()).matrix_element(eVecs[j].dag(), eVecs[i])
     Occ = Occupation(eps_ij, T)
-    IJ = eVecs[i]*eVecs[j].dag()
-    JI = eVecs[j]*eVecs[i].dag()
+
     # 0.5*np.pi*alpha*(N+1)
     if abs(A_ij)>0 or abs(A_ji)>0:
+        IJ = eVecs[i]*eVecs[j].dag()
+        JI = eVecs[j]*eVecs[i].dag()
         r_up = 0
         r_down = 0
         if eps_ij == 0:
@@ -57,8 +58,15 @@ def secular_function(i,j, eVals=[], eVecs=[], A=0, w_1=8000., Gamma=1.,T=0., J=J
         II = eVecs[i]*eVecs[i].dag()
 
         Occ = Occupation(eps_ij, T)
-        r_up = 2*pi*J(eps_ij, Gamma, w_1)*Occ
-        r_down = 2*pi*J(eps_ij, Gamma, w_1)*(Occ+1)
+        r_up = 0
+        r_down = 0
+        if eps_ij == 0:
+            JN = Gamma/(2*pi*w_1*beta_f(T))
+            r_up = 2*pi*JN
+            r_down = 2*pi*JN
+        else:
+            r_up = 2*pi*J(eps_ij, Gamma, w_1)*Occ
+            r_down = 2*pi*J(eps_ij, Gamma, w_1)*(Occ+1)
 
         T1 = r_up*spre(II)+r_down*spre(JJ)
         T2 = r_up.conjugate()*spost(II)+r_down.conjugate()*spost(JJ)
@@ -110,9 +118,10 @@ def L_secular(H_vib, A, args):
 
 def L_phenom(states, energies, I, args):
     ti = time.time()
-    eps, V, w_xx, mu, gamma, w_1, J, T = args['w_1']-args['w_2'], args['V'], args['w_xx'], args['mu'], args['alpha_EM'], args['w_1'], args['J'], args['T_EM']
-    dark, lm = states[1], energies[1]
-    bright, lp = states[0], energies[0]
+    eps, V, w_xx = args['bias'], args['V'], args['w_xx']
+    mu, gamma, w_1, J, T = args['mu'], args['alpha_EM'], args['w_1'], args['J'], args['T_EM']
+    dark, lm = states[0], energies[0]
+    bright, lp = states[1], energies[1]
     OO = basis(4,0)
     XX = basis(4,3)
     eta = np.sqrt(4*V**2+eps**2)
@@ -129,7 +138,7 @@ def L_phenom(states, energies, I, args):
     L += 0.5*rate_down(w_xx-lp, T, gamma, J, w_1)*lin_construct(A_wxx_lp)
     L += 0.5*rate_down(w_xx-lm, T, gamma, J, w_1)*lin_construct(A_wxx_lm)
     print "It took {} seconds to build the phenomenological Liouvillian".format(time.time()-ti)
-    return L
+    return 2*L
 
 if __name__ == "__main__":
     ev_to_inv_cm = 8065.5

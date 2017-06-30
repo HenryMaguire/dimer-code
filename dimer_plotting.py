@@ -342,7 +342,7 @@ def steadystate_bright_plot(args, alpha_list, biases):
 def steadystate_darkbright_plot(args, alpha_list, biases):
     main_dir = "DATA/bias_dependence_wRC{}_N{}_V{}_wc{}/".format(int(args['w0_1']), args['N_1'], int(args['V']), int(args['wc']))
     #energy_differences = 2*np.sqrt(4*float(args['V'])**2 + biases**2)
-    p_dm_dir = main_dir +"phenom/"
+    #p_dm_dir = main_dir +"phenom/"
     ns_dm_dir = main_dir +"nonsecular/"
     ops_dir = main_dir +"operators/"
     bright_ops = load_obj(ops_dir+'bright_ops')

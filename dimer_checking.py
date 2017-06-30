@@ -72,17 +72,17 @@ def get_coh_ops(args, biases, I):
     save_obj(coh_ops, 'DATA/zoomed_coherence_ops_N{}_wRC{}'.format(args['N_1'], int(args['w0_1'])))
 
 def exciton_states(PARS):
-    w_1, w_2, V = PARS['w_1'], PARS['w_2'],PARS['V']
-    print w_1, w_2, V
+    w_1, w_2, V, bias = PARS['w_1'], PARS['w_2'],PARS['V'], PARS['bias']
     v_p, v_m = 0, 0
-    lam_p = 0.5*(w_1+w_2)+0.5*np.sqrt((w_2-w_1)**2+4*(V**2))
-    lam_m = 0.5*(w_1+w_2)-0.5*np.sqrt((w_2-w_1)**2+4*(V**2))
-    v_p = np.array([0., 1., (w_1-lam_p)/V, 0.])
+    eta = np.sqrt(4*(V**2)+bias**2)
+    lam_p = w_2+(bias+eta)*0.5
+    lam_m = w_2+(bias-eta)*0.5
+    v_m = np.array([0., 1., (w_1-lam_p)/V, 0.])
     #v_p/= /(1+(V/(w_2-lam_m))**2)
-    v_p/= np.sqrt(np.dot(v_p, v_p))
-    v_m = np.array([0, 1., V/(w_2-lam_m), 0.])
+    v_m/= np.sqrt(np.dot(v_m, v_m))
+    v_p = np.array([0, 1., V/(w_2-lam_m), 0.])
 
-    v_m /= np.sqrt(np.dot(v_m, v_m))
+    v_p /= np.sqrt(np.dot(v_p, v_p))
     #print  np.dot(v_p, v_m) < 1E-15
     return [lam_m, lam_p], [qt.Qobj(v_m), qt.Qobj(v_p)]
 
@@ -108,37 +108,30 @@ def bias_dependence(biases, args, I, ops):
     enc_dir = 'DATA/'
     main_dir = enc_dir+'bias_dependence_wRC{}_N{}_V{}_wc{}/'.format(int(args['w0_1']), args['N_1'], int(args['V']), int(args['wc']))
     ops_dir = main_dir+'operators/'
-    test_file = main_dir+'phenom/steadystate_DMs_alpha{}.pickle'.format(int(args['alpha_1']))
+    test_file = main_dir+'nonsecular/steadystate_DMs_alpha{}.pickle'.format(int(args['alpha_1']))
     ss_p_list = []
     ss_ns_list = []
     coh_ops = []
     bright_ops = []
     dark_ops = []
     print main_dir
-    fig =plt.figure()
-    ax1 = fig.add_subplot(211)
-    ax2 = fig.add_subplot(212)
     if not os.path.isfile(test_file):
         for eps in biases:
             args.update({'bias': eps})
             args.update({'w_1': args['w_2']+eps})
             args.update({'w_xx': args['w_1'] + args['w_2'] + args['V']})
+            args.update({'mu': args['w_2']/(args['w_1']) })
             #H_dim = qt.Qobj([[0,0,0,0],[0, args['w_1'], args['V'],0 ],[0,args['V'], args['w_2'],0],[0,0,0,args['w_xx']]])
             energies, states = exciton_states(args)
             coh =  tensor(states[0]*states[1].dag(), I)
             bright =  tensor(states[1]*states[1].dag(), I)
             dark =  tensor(states[0]*states[0].dag(), I)
-            print states[0]*states[1].dag()
-            print states[0]*states[0].dag()
             L_RC, H, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(args)
             L_ns = EM.L_nonsecular(H, A_EM, args)
-            L_p = EM.L_phenom(states, energies, I, args)
+            #L_p = EM.L_phenom(states, energies, I, args)
 
             # rather than saving all the massive objects to a list, just calculate steady_states and return them
-            energies, states = exciton_states(args)
-            coh =  tensor(states[0]*states[1].dag(), I)
-            bright =  tensor(states[0]*states[0].dag(), I)
-            dark =  tensor(states[1]*states[1].dag(), I)
+
 
             coh_ops.append(coh)
             bright_ops.append(bright)
@@ -146,16 +139,16 @@ def bias_dependence(biases, args, I, ops):
             ti = time.time()
             p = 1
             if (args['alpha_1'] == 0 and args['alpha_2'] == 0):
-                p = 1
+                p = 0
 
             method = 'iterative-lgmres'
             try:
                 ss_ns = steadystate(H, [p*L_RC+L_ns], method=method, use_precond=True)
-                ss_p = steadystate(H, [p*L_RC+L_p], method=method, use_precond=True)
+                #ss_p = steadystate(H, [p*L_RC+L_p], method=method, use_precond=True)
             except:
                 print "Could not build preconditioner, solving steadystate without one"
                 ss_ns = steadystate(H, [p*L_RC+L_ns], method= method)
-                ss_p = steadystate(H, [p*L_RC+L_p], method=method)
+                #ss_p = steadystate(H, [p*L_RC+L_p], method=method)
 
             if (args['alpha_1'] == 0 and args['alpha_2'] == 0):
                 n_RC_1 = Occupation(args['w0_1'], args['T_1'])
@@ -165,32 +158,28 @@ def bias_dependence(biases, args, I, ops):
                 #rho_0 = rho_T/rho_T.tr()
 
                 rho_0 = tensor(basis(4,0)*basis(4,0).dag(),thermal_RCs)
-                timelist = np.linspace(0,30,3000)
+                timelist = np.linspace(0,4,4000)
                 opts = qt.Options(num_cpus=args['num_cpus'])
-                DATA_ns = mesolve(H, rho_0, timelist, [p*L_RC+L_ns], ops+[dark, coh], options=opts, progress_bar=True)
+                DATA_ns = mesolve(H, rho_0, timelist, [p*L_RC+L_ns], ops+[dark, bright, coh], options=opts, progress_bar=True)
 
                 ss_ns = tensor(ss_from_dynamics(DATA_ns), thermal_RCs)
-                DATA_p = mesolve(H, rho_0, timelist, [p*L_RC+L_p], ops+[dark, coh], options=opts, progress_bar=True)
-                ss_p = tensor(ss_from_dynamics(DATA_p), thermal_RCs)
-                ax1.plot(timelist, DATA_ns.expect[5], label='nsd bias={}'.format(eps))
-                ax1.plot(timelist, DATA_p.expect[5], label='pd bias={}'.format(eps))
-                ax2.plot(timelist, DATA_ns.expect[6], label='nsc bias={}'.format(eps))
-                ax2.plot(timelist, DATA_p.expect[6], label='pc bias={}'.format(eps))
+                #DATA_p = mesolve(H, rho_0, timelist, [p*L_RC+L_p], ops+[dark, bright, coh], options=opts, progress_bar=True)
+
 
 
             ns_b = ss_ns.diag() <0
-            p_b = ss_p.diag() <0
+            #p_b = ss_p.diag() <0
             if True in ns_b:
                 print "There were negative populations in ns."
-            if True in p_b:
-                print "There were negative populations in phenom."
+            #if True in p_b:
+            #    print "There were negative populations in phenom."
 
-            ss_p_list.append(ss_p)
+            #ss_p_list.append(ss_p)
             ss_ns_list.append(ss_ns)
-            print "Phenom: coh={}, dark={}, bright={}".format((ss_p*coh).tr(), (ss_p*dark).tr(), (ss_p*bright).tr())
+            #print "Phenom: coh={}, dark={}, bright={}".format((ss_p*coh).tr(), (ss_p*dark).tr(), (ss_p*bright).tr())
             print "Redfield: coh={}, dark={}, bright={}".format((ss_ns*coh).tr(), (ss_ns*dark).tr(), (ss_ns*bright).tr())
             print "Calculating the steady state took {} seconds".format(time.time()-ti)
-            print "so far {} steady states".format(len(ss_p_list))
+            print "so far {} steady states".format(len(ss_ns_list))
 
         if not os.path.exists(main_dir):
             '''If the data directory doesn't exist:
@@ -199,22 +188,19 @@ def bias_dependence(biases, args, I, ops):
             os.makedirs(main_dir)
             os.makedirs(ops_dir)
             os.makedirs(main_dir+'nonsecular')
-            os.makedirs(main_dir+'phenom')
-            save_obj(ss_p_list, main_dir+'phenom/steadystate_DMs_alpha{}'.format(int(args['alpha_1'])))
+            #os.makedirs(main_dir+'phenom')
+            #save_obj(ss_p_list, main_dir+'phenom/steadystate_DMs_alpha{}'.format(int(args['alpha_1'])))
             save_obj(ss_ns_list, main_dir+'nonsecular/steadystate_DMs_alpha{}'.format(int(args['alpha_1'])))
             save_obj(coh_ops, ops_dir+'eigcoherence_ops')
             save_obj(dark_ops, ops_dir+'dark_ops')
             save_obj(bright_ops, ops_dir+'bright_ops')
         else:
-            save_obj(ss_p_list, main_dir+'phenom/steadystate_DMs_alpha{}'.format(int(args['alpha_1'])))
+            #save_obj(ss_p_list, main_dir+'phenom/steadystate_DMs_alpha{}'.format(int(args['alpha_1'])))
             save_obj(ss_ns_list, main_dir+'nonsecular/steadystate_DMs_alpha{}'.format(int(args['alpha_1'])))
         print "file saving at {}".format(main_dir+'steadystate_DMs_alpha{}'.format(int(args['alpha_1'])))
         print "Data found for pi*alpha = {}".format(int(args['alpha_1'])*pi)
     else:
         print "Data for this phonon-coupling and Hamiltonian already exists. Skipping..."
-    ax1.legend()
-    ax2.legend()
-    plt.show()
     return
 
 def SS_convergence_check(sigma, w_1, w_2, w_xx, V, T_1, T_2, w0_1, w0_2, alpha_1, alpha_2, wc,  alpha_EM, T_EM, mu=0, expect_op='bright', time_units='cm', start_n=2, end_n=5, method='direct'):
@@ -258,7 +244,7 @@ def SS_convergence_check(sigma, w_1, w_2, w_xx, V, T_1, T_2, w0_1, w0_2, alpha_1
     p_file_name = "Notes/Images/Checks/SuperPop_convergence_a{:d}_Tem{:d}_w0{:d}_eps{:d}_{}.pdf".format(int(alpha_1), int(T_EM), int(w0_1), int(eps), method)
     plt.savefig(p_file_name)
     return ss_list_s,ss_list_ns,ss_list_naive, p_file_name
-
+"""
 if __name__ == "__main__":
     OO = basis(4,0)
     XO = basis(4,1)
@@ -287,7 +273,7 @@ if __name__ == "__main__":
     #N_1 = 6 # set Hilbert space sizes
     #N_2 = 6
     #Now we build all the operators
-    """
+
     L_RC, H, A_EM, A_nrwa, wRC, kappa= RC.RC_function_UD(sigma, eps, T_ph, wc, w0, alpha_ph, N)
     L_s = EM.L_vib_lindblad(H, A_EM, alpha_EM, T_EM)
     L_ns = EM.L_nonsecular(H, A_EM, alpha_EM, T_EM)
@@ -297,7 +283,7 @@ if __name__ == "__main__":
     #plt.figure()
     #plt.scatter(TD, rates)
     #plt.show()
-    """
+
     plt.figure()
     ss_list_s,ss_list_ns,ss_list_naive, p_file_name = SS_convergence_check(sigma_m1+(1-mu)*sigma_m1, w_1, w_2, w_xx, V, T_1, T_2, w0_1, w0_2, alpha_1, alpha_2, wc,  alpha_EM, T_EM, start_n = 2, end_n=5)
     #eps_values = range(1000, 2000, 50)+range(2000, 4000, 500)+range(4000, 14000, 1000)
@@ -306,4 +292,4 @@ if __name__ == "__main__":
     #ss_list_s,ss_list_ns,ss_list_naive, p_file_name = plot_SS_divergences(sigma, eps, T_EM, T_ph, wc, w0, alpha_ph, alpha_EM, N_values, eps_values, method=solver_method)
     print "Plot saved: ",p_file_name
     plt.savefig(p_file_name)
-    plt.close()
+    plt.close()"""
