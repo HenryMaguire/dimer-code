@@ -114,6 +114,7 @@ def bias_dependence(biases, args, I, ops):
     coh_ops = []
     bright_ops = []
     dark_ops = []
+    print main_dir
     if not os.path.isfile(test_file):
         for eps in biases:
             args.update({'bias': eps})
@@ -157,7 +158,7 @@ def bias_dependence(biases, args, I, ops):
                 n_RC_2 = Occupation(args['w0_2'], args['T_2'])
                 rho_T = Qobj((-1/(args['T_1']*0.695))*H).expm()
                 rho_0 = rho_T/rho_T.tr()
-                timelist = np.linspace(0,100,2000)*0.188
+                timelist = np.linspace(0,100,2000)
                 opts = qt.Options(num_cpus=args['num_cpus'])
                 DATA_ns = mesolve(H, rho_0, timelist, [p*L_RC+L_ns], ops, options=opts, progress_bar=True)
                 thermal_RCs = enr_thermal_dm([args['N_1'],args['N_2']], args['exc'], [n_RC_1, n_RC_2])

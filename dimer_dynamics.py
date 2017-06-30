@@ -50,7 +50,7 @@ if __name__ == "__main__":
     w_2 = 1.4*ev_to_inv_cm
     bias = 0.0*ev_to_inv_cm
     w_1 = w_2 + bias
-    V = 0.25*92. #0.1*8065.5
+    V = 2*92. #0.1*8065.5
     dipole_1, dipole_2 = 1., 1.
     T_EM = 6000. # Optical bath temperature
     alpha_EM = 0.9*inv_ps_to_inv_cm # Optical S-bath strength (from inv. ps to inv. cm)(larger than a real decay rate because dynamics are more efficient this way)
@@ -184,8 +184,9 @@ if __name__ == "__main__":
     #check.get_coh_ops(PARAMS, biases, I)
     #
     """
-    alpha_ph = np.array([0, 10, 100, 500])/pi
+    alpha_ph = np.array([0,  10, 100, 500])/pi
     biases = np.linspace(0, 0.05, 50)*ev_to_inv_cm
+    print biases
     for alpha in alpha_ph:
         PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
         check.bias_dependence(biases, PARAMS, I, ops)
