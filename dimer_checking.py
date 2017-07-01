@@ -108,7 +108,7 @@ def bias_dependence(biases, args, I, ops):
     enc_dir = 'DATA/'
     main_dir = enc_dir+'bias_dependence_wRC{}_N{}_V{}_wc{}/'.format(int(args['w0_1']), args['N_1'], int(args['V']), int(args['wc']))
     ops_dir = main_dir+'operators/'
-    test_file = main_dir+'nonsecular/steadystate_DMs_alpha{}.pickle'.format(int(args['alpha_1']))
+    test_file = main_dir+'nonsecular/steadystate_DMs_pialpha{}.pickle'.format(int(pi*args['alpha_1']))
     ss_p_list = []
     ss_ns_list = []
     coh_ops = []
@@ -117,6 +117,7 @@ def bias_dependence(biases, args, I, ops):
     print main_dir
     if not os.path.isfile(test_file):
         for eps in biases:
+
             args.update({'bias': eps})
             args.update({'w_1': args['w_2']+eps})
             args.update({'w_xx': args['w_1'] + args['w_2'] + args['V']})
@@ -138,8 +139,8 @@ def bias_dependence(biases, args, I, ops):
             dark_ops.append(dark)
             ti = time.time()
             p = 1
-            if (args['alpha_1'] == 0 and args['alpha_2'] == 0):
-                p = 0
+            if (args['alpha_1'] == 0) and (args['alpha_2'] == 0):
+                p = 1
 
             method = 'iterative-lgmres'
             try:
@@ -149,8 +150,8 @@ def bias_dependence(biases, args, I, ops):
                 print "Could not build preconditioner, solving steadystate without one"
                 ss_ns = steadystate(H, [p*L_RC+L_ns], method= method)
                 #ss_p = steadystate(H, [p*L_RC+L_p], method=method)
-
-            if (args['alpha_1'] ==  args['alpha_2'] and  args['bias'] == 0):
+            if (args['alpha_1'] == 0) and (args['alpha_2'] == 0) and  (args['bias'] == 0):
+                print "YES"
                 n_RC_1 = Occupation(args['w0_1'], args['T_1'])
                 n_RC_2 = Occupation(args['w0_2'], args['T_2'])
                 #rho_T = Qobj((-1/(args['T_1']*0.695))*H).expm()
@@ -164,8 +165,8 @@ def bias_dependence(biases, args, I, ops):
 
                 ss_ns = tensor(ss_from_dynamics(DATA_ns), thermal_RCs)
                 #DATA_p = mesolve(H, rho_0, timelist, [p*L_RC+L_p], ops+[dark, bright, coh], options=opts, progress_bar=True)
-
-
+            else:
+                pass
 
             ns_b = ss_ns.diag() <0
             #p_b = ss_p.diag() <0
@@ -190,14 +191,14 @@ def bias_dependence(biases, args, I, ops):
             os.makedirs(main_dir+'nonsecular')
             #os.makedirs(main_dir+'phenom')
             #save_obj(ss_p_list, main_dir+'phenom/steadystate_DMs_alpha{}'.format(int(args['alpha_1'])))
-            save_obj(ss_ns_list, main_dir+'nonsecular/steadystate_DMs_alpha{}'.format(int(args['alpha_1'])))
+            save_obj(ss_ns_list, main_dir+'nonsecular/steadystate_DMs_pialpha{}'.format(int(pi*args['alpha_1'])))
             save_obj(coh_ops, ops_dir+'eigcoherence_ops')
             save_obj(dark_ops, ops_dir+'dark_ops')
             save_obj(bright_ops, ops_dir+'bright_ops')
         else:
             #save_obj(ss_p_list, main_dir+'phenom/steadystate_DMs_alpha{}'.format(int(args['alpha_1'])))
-            save_obj(ss_ns_list, main_dir+'nonsecular/steadystate_DMs_alpha{}'.format(int(args['alpha_1'])))
-        print "file saving at {}".format(main_dir+'steadystate_DMs_alpha{}'.format(int(args['alpha_1'])))
+            save_obj(ss_ns_list, main_dir+'nonsecular/steadystate_DMs_pialpha{}'.format(int(pi*args['alpha_1'])))
+        print "file saving at {}".format(main_dir+'steadystate_DMs_pialpha{}'.format(int(pi*args['alpha_1'])))
         print "Data found for pi*alpha = {}".format(int(args['alpha_1'])*pi)
     else:
         print "Data for this phonon-coupling and Hamiltonian already exists. Skipping..."
