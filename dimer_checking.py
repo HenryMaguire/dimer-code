@@ -150,7 +150,7 @@ def bias_dependence(biases, args, I, ops):
                 ss_ns = steadystate(H, [p*L_RC+L_ns], method= method)
                 #ss_p = steadystate(H, [p*L_RC+L_p], method=method)
 
-            if (args['alpha_1'] == 0 and args['alpha_2'] == 0):
+            if (args['alpha_1'] ==  args['alpha_2'] and  args['bias'] == 0):
                 n_RC_1 = Occupation(args['w0_1'], args['T_1'])
                 n_RC_2 = Occupation(args['w0_2'], args['T_2'])
                 #rho_T = Qobj((-1/(args['T_1']*0.695))*H).expm()

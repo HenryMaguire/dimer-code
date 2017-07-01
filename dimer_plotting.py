@@ -248,7 +248,7 @@ def calculate_dynamics():
 def steadystate_coherence_plot(args, alpha_list, biases):
     main_dir = "DATA/bias_dependence_wRC{}_N{}_V{}_wc{}/".format(int(args['w0_1']), args['N_1'], int(args['V']), int(args['wc']))
     #energy_differences = 2*np.sqrt(4*float(args['V'])**2 + biases**2)
-    p_dm_dir = main_dir +"phenom/"
+    #p_dm_dir = main_dir +"phenom/"
     ns_dm_dir = main_dir +"nonsecular/"
     ops_dir = main_dir +"operators/"
     coh_ops = load_obj(ops_dir+'eigcoherence_ops')
@@ -258,15 +258,15 @@ def steadystate_coherence_plot(args, alpha_list, biases):
     bias_at_max_list = []
     colors = ['m', 'b','r','g', 'k', 'y']
     for k, alpha in enumerate(alpha_list):
-        p_ss_dms = load_obj(p_dm_dir+'steadystate_DMs_alpha{}'.format(int(alpha)))
+        #p_ss_dms = load_obj(p_dm_dir+'steadystate_DMs_alpha{}'.format(int(alpha)))
         ns_ss_dms = load_obj(ns_dm_dir+'steadystate_DMs_alpha{}'.format(int(alpha)))
-        assert len(p_ss_dms) == len(coh_ops)
-        p_coh_list = []
+        assert len(ns_ss_dms) == len(coh_ops)
+        #p_coh_list = []
         ns_coh_list = []
-        for i in range(len(p_ss_dms)):
-            p_ss_obs = ((p_ss_dms[i]*coh_ops[i]).tr()).real
+        for i in range(len(ns_ss_dms)):
+            #p_ss_obs = ((p_ss_dms[i]*coh_ops[i]).tr()).real
             ns_ss_obs = ((ns_ss_dms[i]*coh_ops[i]).tr()).real
-            p_coh_list.append(p_ss_obs)
+            #p_coh_list.append(p_ss_obs)
             ns_coh_list.append(ns_ss_obs)
         #ax.plot(biases, np.array(p_coh_list).real, linestyle='--', linewidth=1.2, color=colors[k])
         label = r"{\pi\alpha =}"+ "{}".format(int(pi*alpha))
@@ -279,7 +279,7 @@ def steadystate_coherence_plot(args, alpha_list, biases):
 def steadystate_dark_plot(args, alpha_list, biases):
     main_dir = "DATA/bias_dependence_wRC{}_N{}_V{}_wc{}/".format(int(args['w0_1']), args['N_1'], int(args['V']), int(args['wc']))
     #energy_differences = 2*np.sqrt(4*float(args['V'])**2 + biases**2)
-    p_dm_dir = main_dir +"phenom/"
+    #p_dm_dir = main_dir +"phenom/"
     ns_dm_dir = main_dir +"nonsecular/"
     ops_dir = main_dir +"operators/"
     dark_ops = load_obj(ops_dir+'dark_ops')
@@ -289,15 +289,15 @@ def steadystate_dark_plot(args, alpha_list, biases):
     bias_at_max_list = []
     colors = ['m', 'b','r','g', 'k', 'y']
     for k, alpha in enumerate(alpha_list):
-        p_ss_dms = load_obj(p_dm_dir+'steadystate_DMs_alpha{}'.format(int(alpha)))
+        #p_ss_dms = load_obj(p_dm_dir+'steadystate_DMs_alpha{}'.format(int(alpha)))
         ns_ss_dms = load_obj(ns_dm_dir+'steadystate_DMs_alpha{}'.format(int(alpha)))
-        assert len(p_ss_dms) == len(dark_ops)
-        p_coh_list = []
+        assert len(ns_ss_dms) == len(dark_ops)
+        #p_coh_list = []
         ns_coh_list = []
-        for i in range(len(p_ss_dms)):
-            p_ss_obs = (p_ss_dms[i]*dark_ops[i]).tr()
+        for i in range(len(ns_ss_dms)):
+            #p_ss_obs = (p_ss_dms[i]*dark_ops[i]).tr()
             ns_ss_obs = (ns_ss_dms[i]*dark_ops[i]).tr()
-            p_coh_list.append(p_ss_obs)
+            #p_coh_list.append(p_ss_obs)
             ns_coh_list.append(ns_ss_obs)
         #ax.plot(biases, np.array(p_coh_list).real, linestyle='--', linewidth=1.2, color=colors[k])
         label = r"{\pi\alpha =}"+ "{}".format(int(pi*alpha))
@@ -311,7 +311,7 @@ def steadystate_dark_plot(args, alpha_list, biases):
 def steadystate_bright_plot(args, alpha_list, biases):
     main_dir = "DATA/bias_dependence_wRC{}_N{}_V{}_wc{}/".format(int(args['w0_1']), args['N_1'], int(args['V']), int(args['wc']))
     #energy_differences = 2*np.sqrt(4*float(args['V'])**2 + biases**2)
-    p_dm_dir = main_dir +"phenom/"
+    #p_dm_dir = main_dir +"phenom/"
     ns_dm_dir = main_dir +"nonsecular/"
     ops_dir = main_dir +"operators/"
     bright_ops = load_obj(ops_dir+'bright_ops')
@@ -321,15 +321,15 @@ def steadystate_bright_plot(args, alpha_list, biases):
     bias_at_max_list = []
     colors = ['m', 'b','r','g', 'k', 'y']
     for k, alpha in enumerate(alpha_list):
-        p_ss_dms = load_obj(p_dm_dir+'steadystate_DMs_alpha{}'.format(int(alpha)))
+        #p_ss_dms = load_obj(p_dm_dir+'steadystate_DMs_alpha{}'.format(int(alpha)))
         ns_ss_dms = load_obj(ns_dm_dir+'steadystate_DMs_alpha{}'.format(int(alpha)))
-        assert len(p_ss_dms) == len(bright_ops)
-        p_coh_list = []
+        assert len(ns_ss_dms) == len(bright_ops)
+        #p_coh_list = []
         ns_coh_list = []
-        for i in range(len(p_ss_dms)):
-            p_ss_obs = (p_ss_dms[i]*bright_ops[i]).tr()
+        for i in range(len(ns_ss_dms)):
+            #p_ss_obs = (p_ss_dms[i]*bright_ops[i]).tr()
             ns_ss_obs = (ns_ss_dms[i]*bright_ops[i]).tr()
-            p_coh_list.append(p_ss_obs)
+            #p_coh_list.append(p_ss_obs)
             ns_coh_list.append(ns_ss_obs)
         label = r"{\pi\alpha =}"+ "{}".format(int(pi*alpha))
         ax.plot(biases, np.array(ns_coh_list).real, label=label, color=colors[k])
@@ -368,7 +368,7 @@ def steadystate_darkbright_plot(args, alpha_list, biases):
         ax.plot(biases, ((np.array(bright_list)-np.array(dark_list))).real, label=label, color=colors[k])
     #print energy_differences[int(len(energy_differences)/2)::]
     #print -1*(np.array(bright_list)-np.array(dark_list))[int(len(energy_differences)/2)::]
-    ax.set_xlabel(r'Eig energy difference $cm^{-1}$')
+    ax.set_xlabel(r'Bias $cm^{-1}$')
     ax.set_ylabel('Eigenstate Population difference (bright-dark)')
     ax.legend()
     #ax.set_xlim(-2000, 2000)
