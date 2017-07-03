@@ -77,10 +77,10 @@ def exciton_states(PARS):
     eta = np.sqrt(4*(V**2)+bias**2)
     lam_p = w_2+(bias+eta)*0.5
     lam_m = w_2+(bias-eta)*0.5
-    v_m = np.array([0., 1., (w_1-lam_p)/V, 0.])
+    v_m = np.array([0., -(w_1-lam_p)/V, -1, 0.])
     #v_p/= /(1+(V/(w_2-lam_m))**2)
     v_m/= np.sqrt(np.dot(v_m, v_m))
-    v_p = np.array([0, 1., V/(w_2-lam_m), 0.])
+    v_p = np.array([0, V/(w_2-lam_m),1., 0.])
 
     v_p /= np.sqrt(np.dot(v_p, v_p))
     #print  np.dot(v_p, v_m) < 1E-15

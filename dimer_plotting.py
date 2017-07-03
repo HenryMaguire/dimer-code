@@ -265,7 +265,7 @@ def steadystate_coherence_plot(args, alpha_list, biases):
         ns_coh_list = []
         for i in range(len(ns_ss_dms)):
             #p_ss_obs = ((p_ss_dms[i]*coh_ops[i]).tr()).real
-            ns_ss_obs = ((ns_ss_dms[i]*coh_ops[i]).tr()).real
+            ns_ss_obs = abs((ns_ss_dms[i]*coh_ops[i]).tr())
             #p_coh_list.append(p_ss_obs)
             ns_coh_list.append(ns_ss_obs)
         #ax.plot(biases, np.array(p_coh_list).real, linestyle='--', linewidth=1.2, color=colors[k])

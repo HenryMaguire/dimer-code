@@ -47,11 +47,11 @@ if __name__ == "__main__":
     sigma_x2 = sigma_m2+sigma_m2.dag()
 
     w_2 = 1.4*ev_to_inv_cm
-    bias = 0*ev_to_inv_cm
+    V = 2*92. #0.1*8065.5
+    bias = 0 #1*V #0.01*ev_to_inv_cm
     w_1 = w_2 + bias
-    V = 0.25*92. #0.1*8065.5
     dipole_1, dipole_2 = 1., 1.
-    T_EM = 6000. # Optical bath temperature
+    T_EM = 0. # Optical bath temperature
     alpha_EM = 0.3*inv_ps_to_inv_cm # Optical S-bath strength (from inv. ps to inv. cm)(larger than a real decay rate because dynamics are more efficient this way)
     mu = w_2*dipole_2/(w_1*dipole_1)
 
@@ -102,6 +102,7 @@ if __name__ == "__main__":
     lam_m = 0.5*(w_1+w_2)-0.5*np.sqrt((w_2-w_1)**2+4*(V**2))
     bright_vec = states[1]
     dark_vec = states[0]
+    print (sigma_m1+mu*sigma_m2)*bright_vec
     dark = tensor(dark_vec*dark_vec.dag(), I)
     bright = tensor(bright_vec*bright_vec.dag(), I)
     #print  (states[1]*states[1].dag()).tr(), bright_old, states[1]*states[1].dag()
@@ -126,20 +127,24 @@ if __name__ == "__main__":
     #print sys.getsizeof(L_ns)
     opts = qt.Options(num_cpus=num_cpus)
     ncolors = len(plt.rcParams['axes.prop_cycle'])
-    """
+
     p = 1
     if (alpha_1 == 0 and alpha_2 == 0):
-        p = 0
+        p = 1
     L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(PARAMS)
     L_ns = EM.L_nonsecular(H_0, A_EM, PARAMS)
-    #L_s = EM.L_secular(H_0, A_EM, PARAMS)
+    L_s = EM.L_secular(H_0, A_EM, PARAMS)
+    print "L_s calculated"
     #L_p = EM.L_phenom(states, energies, I, PARAMS)
     thermal_RCs = enr_thermal_dm([N_1,N_2], exc, [n_RC_1, n_RC_2])
-    rho_0 = tensor(basis(4,0)*basis(4,0).dag(),thermal_RCs)
+    rho_0 = tensor(basis(4,1)*basis(4,1).dag(),thermal_RCs)
     timelist = np.linspace(0,100,6000)
     #DATA_p = mesolve(H_0, rho_0, timelist, [L_ns], expects, options=opts, progress_bar=True)
     DATA_ns = mesolve(H_0, rho_0, timelist, [p*L_RC+L_ns], expects, options=opts, progress_bar=True)
-    #DATA_s = mesolve(H_0, rho_0, timelist, [p*L_RC+L_s], expects, options=opts, progress_bar=True)
+    try:
+        DATA_s = mesolve(H_0, rho_0, timelist, [p*L_RC+L_s], expects, options=opts, progress_bar=True)
+    except Exception as e:
+        print "didn't work due to ", e
     fig = plt.figure()
     ax1 = fig.add_subplot(211)
     ax2 = fig.add_subplot(212)
@@ -147,25 +152,27 @@ if __name__ == "__main__":
     ax1.plot(timelist, DATA_ns.expect[7].imag, label='nsc imag')
     ax2.plot(timelist, DATA_ns.expect[5], label='nsd')
     ax2.plot(timelist, DATA_ns.expect[6], label='nsb')
-    #ax1.plot(timelist, DATA_s.expect[5], linestyle="--",label='pd')
-    #ax1.plot(timelist, DATA_s.expect[6], linestyle="--", label='pb')
-    #ax1.plot(timelist, DATA_p.expect[5], linestyle="^",label='pd')
-    #ax1.plot(timelist, DATA_p.expect[6], linestyle="^", label='pb')
+    #ax2.plot(timelist, DATA_ns.expect[0]+ DATA_ns.expect[5]+ DATA_ns.expect[6]+ DATA_ns.expect[3], label='nsb')
+    ax1.plot(timelist, DATA_s.expect[7], linestyle="--",label='pdc')
+    ax1.plot(timelist, DATA_s.expect[7].imag, linestyle="--", label='pbc imag')
+    ax2.plot(timelist, DATA_s.expect[5], linestyle="--",label='pd')
+    ax2.plot(timelist, DATA_s.expect[6], linestyle="--", label='pb')
     method= 'direct' #'iterative-lgmres'
     p = 0
-    ss_ns = qt.steadystate(H_0, [p*L_RC+L_ns], method= method, use_precond=True)
-    exc_coh = (ss_ns*expects[7]).tr()
-    ax1.axhline(exc_coh.real, linestyle = '--')
+    #ss_ns = qt.steadystate(H_0, [p*L_RC+L_ns], method= method, use_precond=True)
+    #exc_coh = (ss_ns*expects[7]).tr()
+    #ax1.axhline(exc_coh.real, linestyle = '--')
     ax1.legend()
-    d = (ss_ns*expects[5]).tr()
-    print d
-    ax2.axhline(d.real, linestyle = '--')
-    d = (ss_ns*expects[6]).tr()
-    print d
-    ax2.axhline(d.real, linestyle = '--')
+    #d = (ss_ns*expects[5]).tr()
+    #print d
+    #ax2.axhline(d.real, linestyle = '--')
+    #d = (ss_ns*expects[6]).tr()
+    #print d
+    #ax2.axhline(d.real, linestyle = '--')
     ax2.legend()
     plt.show()
-    """
+
+
     """
     p = 1
     if (alpha_1 == 0 and alpha_2 == 0):
@@ -224,13 +231,13 @@ if __name__ == "__main__":
     #check.get_coh_ops(PARAMS, biases, I)
     #
     """
-
-
-
+    """
     alpha_ph = np.array([0.1, 1, 10, 100, 500])/pi
     #alpha_ph=np.array([0])
     biases = np.linspace(0, 0.03, 50)*ev_to_inv_cm
     #biases = np.array([0, 0.01*ev_to_inv_cm])
+    PARAMS.update({'N_1':2, 'N_2':2, 'exc': 3})
+    I = enr_identity([4,4], 5)
     PARAMS.update({'V':0.25*92.})
     for alpha in alpha_ph:
         PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
@@ -310,6 +317,7 @@ if __name__ == "__main__":
     vis.steadystate_dark_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_bright_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_darkbright_plot(PARAMS, alpha_ph, biases)
+    """
     #del L_ns
     #L_s = EM.L_secular(H_0, A_EM, eps, alpha_EM, T_EM, J, num_cpus=num_cpus)
     #L_naive = EM_lind.electronic_lindblad(w_xx, w_1, eps, V, mu, alpha_EM, T_EM, N_1, N_2, exc)
