@@ -269,7 +269,7 @@ def steadystate_coherence_plot(args, alpha_list, biases):
             #p_coh_list.append(p_ss_obs)
             ns_coh_list.append(ns_ss_obs)
         #ax.plot(biases, np.array(p_coh_list).real, linestyle='--', linewidth=1.2, color=colors[k])
-        label = r"{\pi\alpha =}"+ "{}".format(int(pi*alpha))
+        label = r"$\pi\alpha =$"+ "{}".format(int(pi*alpha))
         ax.plot(biases, np.array(ns_coh_list), label=label, color=colors[k])
     ax.set_xlabel(r'Bias $cm^{-1}$')
     ax.set_ylabel('Exciton Coherence')
@@ -300,7 +300,7 @@ def steadystate_dark_plot(args, alpha_list, biases):
             #p_coh_list.append(p_ss_obs)
             ns_coh_list.append(ns_ss_obs)
         #ax.plot(biases, np.array(p_coh_list).real, linestyle='--', linewidth=1.2, color=colors[k])
-        label = r"{\pi\alpha =}"+ "{}".format(int(pi*alpha))
+        label = r"$\pi\alpha =$"+ "{}".format(int(pi*alpha))
         ax.plot(biases, np.array(ns_coh_list).real, label=label, color=colors[k])
     ax.set_xlabel(r'Bias $cm^{-1}$')
     ax.set_ylabel('Dark Eigenstate Population')
@@ -331,7 +331,7 @@ def steadystate_bright_plot(args, alpha_list, biases):
             ns_ss_obs = (ns_ss_dms[i]*bright_ops[i]).tr()
             #p_coh_list.append(p_ss_obs)
             ns_coh_list.append(ns_ss_obs)
-        label = r"{\pi\alpha =}"+ "{}".format(int(pi*alpha))
+        label = r"$\pi\alpha =$"+ "{}".format(int(pi*alpha))
         ax.plot(biases, np.array(ns_coh_list).real, label=label, color=colors[k])
     ax.set_xlabel(r'Bias $cm^{-1}$')
     ax.set_ylabel('Bright Eigenstate Population')
@@ -364,7 +364,7 @@ def steadystate_darkbright_plot(args, alpha_list, biases):
             dark_list.append(d_obs)
             bright_list.append(b_obs)
         #ax.plot(biases, np.array(p_coh_list).real, linestyle='--', linewidth=1.2, color=colors[k])
-        label = r"{\pi\alpha =}"+ "{}".format(int(pi*alpha))
+        label = r"$\pi\alpha =$"+ "{}".format(int(pi*alpha))
         ax.plot(biases, ((np.array(bright_list)-np.array(dark_list))).real, label=label, color=colors[k])
     #print energy_differences[int(len(energy_differences)/2)::]
     #print -1*(np.array(bright_list)-np.array(dark_list))[int(len(energy_differences)/2)::]
@@ -376,7 +376,12 @@ def steadystate_darkbright_plot(args, alpha_list, biases):
 
 def steadystate_coherence_and_RC_plot():
         try:
-            coh_ops = load_obj('coherence_ops_N5') #[exciton_coherence]*35
+            main_dir = "DATA/bias_dependence_wRC{}_N{}_V{}_wc{}/".format(int(args['w0_1']), args['N_1'], int(args['V']), int(args['wc']))
+            #energy_differences = 2*np.sqrt(4*float(args['V'])**2 + biases**2)
+            #p_dm_dir = main_dir +"phenom/"
+            ns_dm_dir = main_dir +"nonsecular/"
+            ops_dir = main_dir +"operators/"
+            coh_ops = load_obj(ops_dir+'eigcoherence_ops')
             #site_ops = [site_coherence]*35
             #alpha_ph = [50/pi, 100/pi, 200/pi, 400/pi, 700/pi]
             fig = plt.figure(figsize=(12,6))

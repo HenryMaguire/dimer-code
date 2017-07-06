@@ -115,7 +115,7 @@ def bias_dependence(biases, args, I, ops):
     bright_ops = []
     dark_ops = []
     print main_dir
-    if not os.path.isfile(test_file):
+    if os.path.isfile(test_file):
         for eps in biases:
 
             args.update({'bias': eps})
@@ -127,8 +127,10 @@ def bias_dependence(biases, args, I, ops):
             coh =  tensor(states[0]*states[1].dag(), I)
             bright =  tensor(states[1]*states[1].dag(), I)
             dark =  tensor(states[0]*states[0].dag(), I)
+            """
             L_RC, H, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(args)
             L_ns = EM.L_nonsecular(H, A_EM, args)
+            """
             #L_p = EM.L_phenom(states, energies, I, args)
 
             # rather than saving all the massive objects to a list, just calculate steady_states and return them
@@ -138,6 +140,7 @@ def bias_dependence(biases, args, I, ops):
             bright_ops.append(bright)
             dark_ops.append(dark)
             ti = time.time()
+            """
             p = 1
             if (args['alpha_1'] == 0) and (args['alpha_2'] == 0):
                 p = 1
@@ -181,25 +184,26 @@ def bias_dependence(biases, args, I, ops):
             print "Redfield: coh={}, dark={}, bright={}".format((ss_ns*coh).tr(), (ss_ns*dark).tr(), (ss_ns*bright).tr())
             print "Calculating the steady state took {} seconds".format(time.time()-ti)
             print "so far {} steady states".format(len(ss_ns_list))
-
-        if not os.path.exists(main_dir):
+            """
+        if not os.path.exists(ops_dir):
             '''If the data directory doesn't exist:
             make it, put operators subdir, save inital ss data in dir and ops in subdir once.
             If it exists, just save the ss data to the directory'''
-            os.makedirs(main_dir)
+            #os.makedirs(main_dir)
             os.makedirs(ops_dir)
-            os.makedirs(main_dir+'nonsecular')
+            #os.makedirs(main_dir+'nonsecular')
             #os.makedirs(main_dir+'phenom')
             #save_obj(ss_p_list, main_dir+'phenom/steadystate_DMs_alpha{}'.format(int(args['alpha_1'])))
-            save_obj(ss_ns_list, main_dir+'nonsecular/steadystate_DMs_pialpha{}'.format(int(pi*args['alpha_1'])))
+            #save_obj(ss_ns_list, main_dir+'nonsecular/steadystate_DMs_pialpha{}'.format(int(pi*args['alpha_1'])))
             save_obj(coh_ops, ops_dir+'eigcoherence_ops')
             save_obj(dark_ops, ops_dir+'dark_ops')
             save_obj(bright_ops, ops_dir+'bright_ops')
         else:
             #save_obj(ss_p_list, main_dir+'phenom/steadystate_DMs_alpha{}'.format(int(args['alpha_1'])))
-            save_obj(ss_ns_list, main_dir+'nonsecular/steadystate_DMs_pialpha{}'.format(int(pi*args['alpha_1'])))
-        print "file saving at {}".format(main_dir+'steadystate_DMs_pialpha{}'.format(int(pi*args['alpha_1'])))
-        print "Data found for pi*alpha = {}".format(int(args['alpha_1'])*pi)
+            #save_obj(ss_ns_list, main_dir+'nonsecular/steadystate_DMs_pialpha{}'.format(int(pi*args['alpha_1'])))
+            pass
+        #print "file saving at {}".format(main_dir+'steadystate_DMs_pialpha{}'.format(int(pi*args['alpha_1'])))
+        #print "Data found for pi*alpha = {}".format(int(args['alpha_1'])*pi)
     else:
         print "Data for this phonon-coupling and Hamiltonian already exists. Skipping..."
     return

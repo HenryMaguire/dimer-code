@@ -58,7 +58,7 @@ def J_minimal(omega, Gamma, omega_0):
     return Gamma*omega/(2*np.pi*omega_0)
 
 def J_flat(omega, Gamma, omega_0):
-    return Gamma
+    return Gamma/2*np.pi
 def J_overdamped(omega, alpha, Gamma, omega_0):
     return alpha*Gamma*pow(omega_0,2)*omega/(pow(pow(omega_0,2)-pow(omega,2),2)+(Gamma**2 *omega**2))
 
