@@ -140,7 +140,7 @@ def bias_dependence(biases, args, I, ops):
             bright_ops.append(bright)
             dark_ops.append(dark)
             ti = time.time()
-            """
+
             p = 1
             if (args['alpha_1'] == 0) and (args['alpha_2'] == 0):
                 p = 1
@@ -163,7 +163,7 @@ def bias_dependence(biases, args, I, ops):
 
                 rho_0 = tensor(basis(4,0)*basis(4,0).dag(),thermal_RCs)
                 timelist = np.linspace(0,4,4000)
-                opts = qt.Options(num_cpus=args['num_cpus'])
+                opts = qt.Options(num_cpus=args['num_cpus'], store_final_state=True)
                 DATA_ns = mesolve(H, rho_0, timelist, [p*L_RC+L_ns], ops+[dark, bright, coh], options=opts, progress_bar=True)
 
                 ss_ns = tensor(ss_from_dynamics(DATA_ns), thermal_RCs)
@@ -184,7 +184,7 @@ def bias_dependence(biases, args, I, ops):
             print "Redfield: coh={}, dark={}, bright={}".format((ss_ns*coh).tr(), (ss_ns*dark).tr(), (ss_ns*bright).tr())
             print "Calculating the steady state took {} seconds".format(time.time()-ti)
             print "so far {} steady states".format(len(ss_ns_list))
-            """
+
         if not os.path.exists(ops_dir):
             '''If the data directory doesn't exist:
             make it, put operators subdir, save inital ss data in dir and ops in subdir once.

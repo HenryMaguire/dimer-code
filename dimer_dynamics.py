@@ -126,10 +126,7 @@ if __name__ == "__main__":
     #print sys.getsizeof(L_ns)
     opts = qt.Options(num_cpus=num_cpus)
     ncolors = len(plt.rcParams['axes.prop_cycle'])
-    """
-    p = 1
-    if (alpha_1 == 0 and alpha_2 == 0):
-        p = 1
+
     L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(PARAMS)
     L_ns = EM.L_nonsecular(H_0, A_EM, PARAMS)
     L_s = EM.L_secular(H_0, A_EM, PARAMS)
@@ -138,12 +135,11 @@ if __name__ == "__main__":
     thermal_RCs = enr_thermal_dm([N_1,N_2], exc, [n_RC_1, n_RC_2])
     rho_0 = tensor(basis(4,0)*basis(4,0).dag(),thermal_RCs)
     timelist = np.linspace(0,3,1000)
-    """
-    """
+
     #DATA_p = mesolve(H_0, rho_0, timelist, [L_ns], expects, options=opts, progress_bar=True)
-    DATA_ns = mesolve(H_0, rho_0, timelist, [p*L_RC+L_ns], expects, options=opts, progress_bar=True)
+    DATA_ns = mesolve(H_0, rho_0, timelist, [L_RC+L_ns], expects, options=opts, progress_bar=True)
     try:
-        DATA_s = mesolve(H_0, rho_0, timelist, [p*L_RC+L_s], expects, options=opts, progress_bar=True)
+        DATA_s = mesolve(H_0, rho_0, timelist, [L_RC+L_s], expects, options=opts, progress_bar=True)
     except Exception as e:
         print "didn't work due to ", e
 
@@ -151,7 +147,7 @@ if __name__ == "__main__":
     fig = plt.figure()
     ax1 = fig.add_subplot(211)
     ax2 = fig.add_subplot(212)
-    """
+
     """
     ax1.plot(timelist, DATA_ns.expect[7].real, label='real eig. coherence')
     ax1.plot(timelist, DATA_ns.expect[7].imag, label='imag. eig. coherence')

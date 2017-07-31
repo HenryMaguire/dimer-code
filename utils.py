@@ -5,6 +5,68 @@ from qutip import spre, spost, sprepost
 import qutip as qt
 import pickle
 
+#new ptrace for ENR states.   rho is the state, sel is the same as the normal ptrace
+#(list of which subsystems you want to keep),
+#dims and excitations are the same as the ones you send to the other enr functions
+def ENR_ptrace(rho,sel,dims,excitations):
+    if isinstance(sel, int):
+        sel = np.array([sel])
+    else:
+        sel = np.asarray(sel)
+
+    if (sel < 0).any() or (sel >= len(rho.dims[0])).any():
+        raise TypeError("Invalid selection index in ptrace.")
+
+    ############
+    #dimensions
+    ####################
+    #enr stuff for the original state
+    nstates, state2idx, idx2state = enr_state_dictionaries(dims, excitations)
+
+
+
+    ################
+    #number of states in selection
+    ######################
+    #
+    drho=rho.dims[0]
+    dims_short= np.asarray(drho).take(sel)
+    nstates2, state2idx2, idx2state2 = enr_state_dictionaries(dims_short.tolist(), excitations)
+
+
+    # this is a list of the dimensions of the system one has traced out
+    rest = np.setdiff1d(np.arange(len(drho)), sel)
+
+    #rest_short= np.asarray(drho).take(rest)
+    #nstates3, state2idx3, idx2state3 = enr_state_dictionaries(rest_short.tolist(), excitations)
+
+    #construct matrix to return the new Density matrix
+    rhout = np.zeros((nstates2,nstates2),dtype=np.complex64)
+
+    for ind,state in idx2state.items():
+        for ind2,state2 in idx2state.items():
+            #if the parts of the states of the systems(s) being traced out are diagonal, add this to the new DM
+            if  np.all(np.asarray(state).take(rest) == np.asarray(state2).take(rest)):
+
+                rhout[state2idx2[tuple(np.asarray(state).take(sel))],
+                      state2idx2[tuple(np.asarray(state2).take(sel))]] += rho.data[state2idx[state],state2idx[state2]]
+
+
+    dims_kept0 = np.asarray(rho.dims[0]).take(sel)
+    dims_kept1 = np.asarray(rho.dims[0]).take(sel)
+    rho1_dims = [dims_kept0.tolist(), dims_kept1.tolist()]
+    rho1_shape = [nstates2, nstates2]
+
+    return Qobj(rhout,rho1_dims,rho1_shape)
+
+def dimer_mutual_information(rho, args):
+    N, exc = args['N_1'], args['exc']
+    sel = [1,2]
+    vn12 = qt.entropy_vn(ENR_ptrace(rho,sel,[4,N,N],exc))
+    vn1 = qt.entropy_vn(ENR_ptrace(rho,1,[4,N,N],exc))
+    vn2 = qt.entropy_vn(ENR_ptrace(rho,2,[4,N,N],exc))
+    return vn1+ vn2 -vn12
+
 ev_to_inv_cm = 8065.5
 inv_ps_to_inv_cm = 5.309
 def load_obj(name ):
