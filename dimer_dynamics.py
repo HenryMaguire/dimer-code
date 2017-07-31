@@ -126,7 +126,7 @@ if __name__ == "__main__":
     #print sys.getsizeof(L_ns)
     opts = qt.Options(num_cpus=num_cpus)
     ncolors = len(plt.rcParams['axes.prop_cycle'])
-
+    """
     p = 1
     if (alpha_1 == 0 and alpha_2 == 0):
         p = 1
@@ -138,6 +138,8 @@ if __name__ == "__main__":
     thermal_RCs = enr_thermal_dm([N_1,N_2], exc, [n_RC_1, n_RC_2])
     rho_0 = tensor(basis(4,0)*basis(4,0).dag(),thermal_RCs)
     timelist = np.linspace(0,3,1000)
+    """
+    """
     #DATA_p = mesolve(H_0, rho_0, timelist, [L_ns], expects, options=opts, progress_bar=True)
     DATA_ns = mesolve(H_0, rho_0, timelist, [p*L_RC+L_ns], expects, options=opts, progress_bar=True)
     try:
@@ -149,6 +151,7 @@ if __name__ == "__main__":
     fig = plt.figure()
     ax1 = fig.add_subplot(211)
     ax2 = fig.add_subplot(212)
+    """
     """
     ax1.plot(timelist, DATA_ns.expect[7].real, label='real eig. coherence')
     ax1.plot(timelist, DATA_ns.expect[7].imag, label='imag. eig. coherence')
@@ -165,11 +168,13 @@ if __name__ == "__main__":
     #ax2.plot(timelist, DATA_s.expect[6], linestyle="-", label='p bright')
     method= 'direct' #'iterative-lgmres'
     """
+    """
     plt.figure()
     plt.plot(timelist, DATA_ns.expect[5], linestyle="-",label='dark', color ='r')
     plt.plot(timelist, DATA_ns.expect[6], linestyle="-", label='bright', color ='b')
     plt.ylabel('Population')
     plt.legend()
+
     #ss_ns = qt.steadystate(H_0, [p*L_RC+L_ns], method= method, use_precond=True)
     #exc_coh = (ss_ns*expects[7]).tr()
     #ax1.axhline(exc_coh.real, linestyle = '--')
@@ -182,7 +187,7 @@ if __name__ == "__main__":
     #ax2.axhline(d.real, linestyle = '--', label='bright ss', color ='r')
     ax2.legend()
     plt.show()
-
+    """
     """
     p = 1
     if (alpha_1 == 0 and alpha_2 == 0):
@@ -246,14 +251,14 @@ if __name__ == "__main__":
     #alpha_ph=np.array([0])
     biases = np.linspace(0, 0.03, 50)*ev_to_inv_cm
     #biases = np.array([0, 0.01*ev_to_inv_cm])
-    """
+
     PARAMS.update({'N_1':2, 'N_2':2, 'exc': 3})
     I = enr_identity([2,2], 3)
     PARAMS.update({'V':0.25*92.})
     for alpha in alpha_ph:
         PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
         check.bias_dependence(biases, PARAMS, I, ops)
-
+    vis.steadystate_ground_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_coherence_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_dark_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_bright_plot(PARAMS, alpha_ph, biases)
@@ -263,7 +268,7 @@ if __name__ == "__main__":
     for alpha in alpha_ph:
         PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
         check.bias_dependence(biases, PARAMS, I, ops)
-
+    vis.steadystate_ground_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_coherence_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_dark_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_bright_plot(PARAMS, alpha_ph, biases)
@@ -272,7 +277,7 @@ if __name__ == "__main__":
     for alpha in alpha_ph:
         PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
         check.bias_dependence(biases, PARAMS, I, ops)
-
+    vis.steadystate_ground_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_coherence_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_dark_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_bright_plot(PARAMS, alpha_ph, biases)
@@ -282,13 +287,13 @@ if __name__ == "__main__":
     for alpha in alpha_ph:
         PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
         check.bias_dependence(biases, PARAMS, I, ops)
-
+    vis.steadystate_ground_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_coherence_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_dark_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_bright_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_darkbright_plot(PARAMS, alpha_ph, biases)
-    """
-    """
+
+
     PARAMS.update({'N_1':4, 'N_2':4, 'exc': 5})
 
     I = enr_identity([4,4], 5)
@@ -296,7 +301,7 @@ if __name__ == "__main__":
     for alpha in alpha_ph:
         PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
         check.bias_dependence(biases, PARAMS, I, ops)
-
+    vis.steadystate_ground_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_coherence_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_dark_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_bright_plot(PARAMS, alpha_ph, biases)
@@ -306,7 +311,7 @@ if __name__ == "__main__":
     for alpha in alpha_ph:
         PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
         check.bias_dependence(biases, PARAMS, I, ops)
-
+    vis.steadystate_ground_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_coherence_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_dark_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_bright_plot(PARAMS, alpha_ph, biases)
@@ -315,7 +320,7 @@ if __name__ == "__main__":
     for alpha in alpha_ph:
         PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
         check.bias_dependence(biases, PARAMS, I, ops)
-
+    vis.steadystate_ground_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_coherence_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_dark_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_bright_plot(PARAMS, alpha_ph, biases)
@@ -325,12 +330,12 @@ if __name__ == "__main__":
     for alpha in alpha_ph:
         PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
         check.bias_dependence(biases, PARAMS, I, ops)
-
+    vis.steadystate_ground_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_coherence_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_dark_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_bright_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_darkbright_plot(PARAMS, alpha_ph, biases)
-    """
+
     #del L_ns
     #L_s = EM.L_secular(H_0, A_EM, eps, alpha_EM, T_EM, J, num_cpus=num_cpus)
     #L_naive = EM_lind.electronic_lindblad(w_xx, w_1, eps, V, mu, alpha_EM, T_EM, N_1, N_2, exc)

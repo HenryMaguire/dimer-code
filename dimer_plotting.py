@@ -275,6 +275,7 @@ def steadystate_coherence_plot(args, alpha_list, biases):
     ax.set_ylabel('Exciton Coherence')
     ax.legend()
     plt.savefig(main_dir+'bias_dependence.pdf')
+    plt.close()
 
 def steadystate_dark_plot(args, alpha_list, biases):
     main_dir = "DATA/bias_dependence_wRC{}_N{}_V{}_wc{}/".format(int(args['w0_1']), args['N_1'], int(args['V']), int(args['wc']))
@@ -306,6 +307,7 @@ def steadystate_dark_plot(args, alpha_list, biases):
     ax.set_ylabel('Dark Eigenstate Population')
     ax.legend()
     plt.savefig(main_dir+'dark_bias_dependence.pdf')
+    plt.close()
 
 
 def steadystate_bright_plot(args, alpha_list, biases):
@@ -338,6 +340,7 @@ def steadystate_bright_plot(args, alpha_list, biases):
     ax.legend()
     #ax.set_xlim(-2000, 2000)
     plt.savefig(main_dir+'bright_bias_dependence.pdf')
+    plt.close()
 
 def steadystate_darkbright_plot(args, alpha_list, biases):
     main_dir = "DATA/bias_dependence_wRC{}_N{}_V{}_wc{}/".format(int(args['w0_1']), args['N_1'], int(args['V']), int(args['wc']))
@@ -352,27 +355,68 @@ def steadystate_darkbright_plot(args, alpha_list, biases):
     max_coh_for_alpha = []
     bias_at_max_list = []
     colors = ['m', 'b','r','g', 'k', 'y']
+    OO = qt.basis(4,0)
+    I = qt.enr_identity([args['N_1'],args['N_2']], args['exc'])
+    OO = qt.tensor(OO*OO.dag(), I)
     for k, alpha in enumerate(alpha_list):
         #p_ss_dms = load_obj(p_dm_dir+'steadystate_DMs_alpha{}'.format(int(alpha)))
         ns_ss_dms = load_obj(ns_dm_dir+'steadystate_DMs_pialpha{}'.format(int(pi*alpha)))
         assert len(ns_ss_dms) == len(bright_ops)
         dark_list = []
         bright_list = []
+        ground_list = []
         for i in range(len(ns_ss_dms)):
             d_obs = (ns_ss_dms[i]*dark_ops[i]).tr()
             b_obs = (ns_ss_dms[i]*bright_ops[i]).tr()
+            gr_obs = (ns_ss_dms[i]*OO).tr()
+            ground_list.append(gr_obs)
             dark_list.append(d_obs)
             bright_list.append(b_obs)
         #ax.plot(biases, np.array(p_coh_list).real, linestyle='--', linewidth=1.2, color=colors[k])
         label = r"$\pi\alpha =$"+ "{}".format(int(pi*alpha))
-        ax.plot(biases, ((np.array(bright_list)-np.array(dark_list))).real, label=label, color=colors[k])
+        ax.plot(biases, ((np.array(ground_list)-np.array(bright_list))/(np.array(ground_list)-np.array(dark_list))).real, label=label, color=colors[k])
     #print energy_differences[int(len(energy_differences)/2)::]
     #print -1*(np.array(bright_list)-np.array(dark_list))[int(len(energy_differences)/2)::]
     ax.set_xlabel(r'Bias $cm^{-1}$')
-    ax.set_ylabel('Eigenstate Population difference (bright-dark)')
+    ax.set_ylabel('Eigenstate Population ratio (pop from ground)')
     ax.legend()
     #ax.set_xlim(-2000, 2000)
     plt.savefig(main_dir+'darkbrightdiff_bias_dependence.pdf')
+    plt.close()
+
+def steadystate_ground_plot(args, alpha_list, biases):
+    main_dir = "DATA/bias_dependence_wRC{}_N{}_V{}_wc{}/".format(int(args['w0_1']), args['N_1'], int(args['V']), int(args['wc']))
+    #energy_differences = 2*np.sqrt(4*float(args['V'])**2 + biases**2)
+    #p_dm_dir = main_dir +"phenom/"
+    ns_dm_dir = main_dir +"nonsecular/"
+    ops_dir = main_dir +"operators/"
+    fig = plt.figure(figsize=(12,6))
+    ax = fig.add_subplot(111)
+    max_coh_for_alpha = []
+    bias_at_max_list = []
+    OO = qt.basis(4,0)
+    I = qt.enr_identity([args['N_1'],args['N_2']], args['exc'])
+    OO = qt.tensor(OO*OO.dag(), I)
+    colors = ['m', 'b','r','g', 'k', 'y']
+    for k, alpha in enumerate(alpha_list):
+        #p_ss_dms = load_obj(p_dm_dir+'steadystate_DMs_alpha{}'.format(int(alpha)))
+        ns_ss_dms = load_obj(ns_dm_dir+'steadystate_DMs_pialpha{}'.format(int(pi*alpha)))
+        ground_list = []
+        for i in range(len(ns_ss_dms)):
+            gr_obs = (ns_ss_dms[i]*OO).tr()
+            ground_list.append(gr_obs)
+        #ax.plot(biases, np.array(p_coh_list).real, linestyle='--', linewidth=1.2, color=colors[k])
+        label = r"$\pi\alpha =$"+ "{}".format(int(pi*alpha))
+        ax.plot(biases, ground_list, label=label, color=colors[k])
+    #print energy_differences[int(len(energy_differences)/2)::]
+    #print -1*(np.array(bright_list)-np.array(dark_list))[int(len(energy_differences)/2)::]
+    ax.set_xlabel(r'Bias $cm^{-1}$')
+    ax.set_ylabel('Ground State Population')
+    ax.legend()
+    #ax.set_xlim(-2000, 2000)
+    plt.savefig(main_dir+'ground_bias_dependence.pdf')
+    plt.close()
+
 
 def steadystate_coherence_and_RC_plot():
         try:
