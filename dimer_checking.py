@@ -104,6 +104,70 @@ def ss_from_dynamics(DATA):
     e2e1 = DATA.expect[4][-1].conjugate()
     return Qobj([[g.real, 0,0,0], [0, e1.real,e1e2.real,0],[0, e2e1.real,e2.real,0],[0, 0,0,xx.real]])
 
+def bias_dependence_function(eps, args={}):
+    args.update({'bias': eps})
+    args.update({'w_1': args['w_2']+eps})
+    args.update({'w_xx': args['w_1'] + args['w_2'] + args['V']})
+    args.update({'mu': args['w_2']/(args['w_1']) })
+    energies, states = exciton_states(args)
+    coh =  tensor(states[0]*states[1].dag(), I)
+    bright =  tensor(states[1]*states[1].dag(), I)
+    dark =  tensor(states[0]*states[0].dag(), I)
+
+    L_RC, H, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(args)
+    L_ns = EM.L_nonsecular(H, A_EM, args)
+
+    #L_p = EM.L_phenom(states, energies, I, args)
+
+    # rather than saving all the massive objects to a list, just calculate steady_states and return them
+
+
+    coh_ops.append(coh)
+    bright_ops.append(bright)
+    dark_ops.append(dark)
+    ti = time.time()
+
+    method = 'iterative-lgmres'
+    try:
+        ss_ns = steadystate(H, [p*L_RC+L_ns], method=method, use_precond=True)
+        #ss_p = steadystate(H, [p*L_RC+L_p], method=method, use_precond=True)
+    except:
+        print "Could not build preconditioner, solving steadystate without one"
+        ss_ns = steadystate(H, [p*L_RC+L_ns], method= method)
+        #ss_p = steadystate(H, [p*L_RC+L_p], method=method)
+    if (args['alpha_1'] == 0) and (args['alpha_2'] == 0) and  (args['bias'] == 0):
+        print "YES"
+        n_RC_1 = Occupation(args['w0_1'], args['T_1'])
+        n_RC_2 = Occupation(args['w0_2'], args['T_2'])
+        #rho_T = Qobj((-1/(args['T_1']*0.695))*H).expm()
+        thermal_RCs = enr_thermal_dm([args['N_1'],args['N_2']], args['exc'], [n_RC_1, n_RC_2])
+        #rho_0 = rho_T/rho_T.tr()
+
+        rho_0 = tensor(basis(4,0)*basis(4,0).dag(),thermal_RCs)
+        timelist = np.linspace(0,4,4000)
+        opts = qt.Options(num_cpus=args['num_cpus'], store_final_state=True)
+        DATA_ns = mesolve(H, rho_0, timelist, [L_RC+L_ns], ops+[dark, bright, coh], options=opts, progress_bar=True)
+
+        ss_ns = tensor(ss_from_dynamics(DATA_ns), thermal_RCs)
+        #DATA_p = mesolve(H, rho_0, timelist, [p*L_RC+L_p], ops+[dark, bright, coh], options=opts, progress_bar=True)
+    else:
+        pass
+
+    ns_b = ss_ns.diag() <0
+    #p_b = ss_p.diag() <0
+    if True in ns_b:
+        print "There were negative populations in ns."
+    #if True in p_b:
+    #    print "There were negative populations in phenom."
+
+    #ss_p_list.append(ss_p)
+    ss_ns_list.append(ss_ns)
+    #print "Phenom: coh={}, dark={}, bright={}".format((ss_p*coh).tr(), (ss_p*dark).tr(), (ss_p*bright).tr())
+    print "Redfield: coh={}, dark={}, bright={}".format((ss_ns*coh).tr(), (ss_ns*dark).tr(), (ss_ns*bright).tr())
+    print "Calculating the steady state took {} seconds".format(time.time()-ti)
+    print "so far {} steady states".format(len(ss_ns_list))
+
+
 def bias_dependence(biases, args, I, ops):
     enc_dir = 'DATA/'
     main_dir = enc_dir+'bias_dependence_wRC{}_N{}_V{}_wc{}/'.format(int(args['w0_1']), args['N_1'], int(args['V']), int(args['wc']))
@@ -117,7 +181,6 @@ def bias_dependence(biases, args, I, ops):
     print main_dir
     if os.path.isfile(test_file):
         for eps in biases:
-
             args.update({'bias': eps})
             args.update({'w_1': args['w_2']+eps})
             args.update({'w_xx': args['w_1'] + args['w_2'] + args['V']})
@@ -127,10 +190,10 @@ def bias_dependence(biases, args, I, ops):
             coh =  tensor(states[0]*states[1].dag(), I)
             bright =  tensor(states[1]*states[1].dag(), I)
             dark =  tensor(states[0]*states[0].dag(), I)
-            """
+
             L_RC, H, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(args)
             L_ns = EM.L_nonsecular(H, A_EM, args)
-            """
+
             #L_p = EM.L_phenom(states, energies, I, args)
 
             # rather than saving all the massive objects to a list, just calculate steady_states and return them
@@ -141,17 +204,13 @@ def bias_dependence(biases, args, I, ops):
             dark_ops.append(dark)
             ti = time.time()
 
-            p = 1
-            if (args['alpha_1'] == 0) and (args['alpha_2'] == 0):
-                p = 1
-
             method = 'iterative-lgmres'
             try:
-                ss_ns = steadystate(H, [p*L_RC+L_ns], method=method, use_precond=True)
+                ss_ns = steadystate(H, [L_RC+L_ns], method=method, use_precond=True)
                 #ss_p = steadystate(H, [p*L_RC+L_p], method=method, use_precond=True)
             except:
                 print "Could not build preconditioner, solving steadystate without one"
-                ss_ns = steadystate(H, [p*L_RC+L_ns], method= method)
+                ss_ns = steadystate(H, [L_RC+L_ns], method= method)
                 #ss_p = steadystate(H, [p*L_RC+L_p], method=method)
             if (args['alpha_1'] == 0) and (args['alpha_2'] == 0) and  (args['bias'] == 0):
                 print "YES"
@@ -164,9 +223,9 @@ def bias_dependence(biases, args, I, ops):
                 rho_0 = tensor(basis(4,0)*basis(4,0).dag(),thermal_RCs)
                 timelist = np.linspace(0,4,4000)
                 opts = qt.Options(num_cpus=args['num_cpus'], store_final_state=True)
-                DATA_ns = mesolve(H, rho_0, timelist, [p*L_RC+L_ns], ops+[dark, bright, coh], options=opts, progress_bar=True)
+                DATA_ns = mesolve(H, rho_0, timelist, [L_RC+L_ns], ops+[dark, bright, coh], options=opts, progress_bar=True)
 
-                ss_ns = tensor(ss_from_dynamics(DATA_ns), thermal_RCs)
+                ss_ns = DATA_ns.final_state
                 #DATA_p = mesolve(H, rho_0, timelist, [p*L_RC+L_p], ops+[dark, bright, coh], options=opts, progress_bar=True)
             else:
                 pass

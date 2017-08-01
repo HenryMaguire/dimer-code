@@ -21,7 +21,7 @@ def ENR_ptrace(rho,sel,dims,excitations):
     #dimensions
     ####################
     #enr stuff for the original state
-    nstates, state2idx, idx2state = enr_state_dictionaries(dims, excitations)
+    nstates, state2idx, idx2state = qt.enr_state_dictionaries(dims, excitations)
 
 
 
@@ -31,7 +31,7 @@ def ENR_ptrace(rho,sel,dims,excitations):
     #
     drho=rho.dims[0]
     dims_short= np.asarray(drho).take(sel)
-    nstates2, state2idx2, idx2state2 = enr_state_dictionaries(dims_short.tolist(), excitations)
+    nstates2, state2idx2, idx2state2 = qt.enr_state_dictionaries(dims_short.tolist(), excitations)
 
 
     # this is a list of the dimensions of the system one has traced out
@@ -57,15 +57,17 @@ def ENR_ptrace(rho,sel,dims,excitations):
     rho1_dims = [dims_kept0.tolist(), dims_kept1.tolist()]
     rho1_shape = [nstates2, nstates2]
 
-    return Qobj(rhout,rho1_dims,rho1_shape)
+    return qt.Qobj(rhout,rho1_dims,rho1_shape)
 
 def dimer_mutual_information(rho, args):
     N, exc = args['N_1'], args['exc']
-    sel = [1,2]
-    vn12 = qt.entropy_vn(ENR_ptrace(rho,sel,[4,N,N],exc))
+    vn12 = qt.entropy_vn(ENR_ptrace(rho,[1,2],[4,N,N],exc))
     vn1 = qt.entropy_vn(ENR_ptrace(rho,1,[4,N,N],exc))
     vn2 = qt.entropy_vn(ENR_ptrace(rho,2,[4,N,N],exc))
-    return vn1+ vn2 -vn12
+    vnd = qt.entropy_vn(ENR_ptrace(rho,0,[4,N,N],exc))
+    vnd1 = qt.entropy_vn(ENR_ptrace(rho,[0,1],[4,N,N],exc))
+    vnd2 = qt.entropy_vn(ENR_ptrace(rho,[0,2],[4,N,N],exc))
+    return [vn1+ vn2 -vn12, vnd+ vn1 -vnd1, vnd+ vn2 -vnd2]
 
 ev_to_inv_cm = 8065.5
 inv_ps_to_inv_cm = 5.309

@@ -374,11 +374,11 @@ def steadystate_darkbright_plot(args, alpha_list, biases):
             bright_list.append(b_obs)
         #ax.plot(biases, np.array(p_coh_list).real, linestyle='--', linewidth=1.2, color=colors[k])
         label = r"$\pi\alpha =$"+ "{}".format(int(pi*alpha))
-        ax.plot(biases, ((np.array(ground_list)-np.array(bright_list))/(np.array(ground_list)-np.array(dark_list))).real, label=label, color=colors[k])
+        ax.plot(biases, (np.array(bright_list)/(np.array(ground_list)+np.array(dark_list))).real, label=label, color=colors[k])
     #print energy_differences[int(len(energy_differences)/2)::]
     #print -1*(np.array(bright_list)-np.array(dark_list))[int(len(energy_differences)/2)::]
     ax.set_xlabel(r'Bias $cm^{-1}$')
-    ax.set_ylabel('Eigenstate Population ratio (pop from ground)')
+    ax.set_ylabel('Relative Dark Population ratio (dark/(bright+ground))')
     ax.legend()
     #ax.set_xlim(-2000, 2000)
     plt.savefig(main_dir+'darkbrightdiff_bias_dependence.pdf')
