@@ -191,7 +191,7 @@ def RC_mapping_UD(args):
     gamma_2 = Gamma_2 / (2. * np.pi * wRC_2)
     kappa_2 = np.sqrt(np.pi * alpha_2 * wRC_2 / 2.)
     print "****************************************************************"
-    print args
+    #print args
     H_0, A_1, A_2, A_EM = dimer_ham_RC(w_1, w_2, w_xx, V, mu, wRC_1, wRC_2, kappa_1, kappa_2, N_1, N_2, exc)
     L_RC =  liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2, T_1, T_2, num_cpus=args['num_cpus'])
     full_size = (4*N_1*N_1)**2

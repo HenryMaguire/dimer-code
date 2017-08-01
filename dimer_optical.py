@@ -87,7 +87,7 @@ def L_nonsecular(H_vib, A, args):
         kwargs[name] = eval(name)
     l = dim_ham*range(dim_ham) # Perform two loops in one
     X1, X2, X3, X4 = par.parfor(nonsecular_function, sorted(l), l,
-                                            num_cpus=num_cpus, **kwargs)
+                                            num_cpus=1, **kwargs)
     X1, X2, X3, X4 = np.sum(X1), np.sum(X2), np.sum(X3), np.sum(X4)
     L = spre(A*X1) -sprepost(X1,A)+spost(X2*A)-sprepost(A,X2)
     L+= spre(A.dag()*X3)-sprepost(X3, A.dag())+spost(X4*A.dag())-sprepost(A.dag(), X4)
@@ -111,7 +111,7 @@ def L_secular(H_vib, A, args):
         kwargs[name] = eval(name)
     l = dim_ham*range(dim_ham)
     L = par.parfor(secular_function, sorted(l), l,
-                                            num_cpus=num_cpus, **kwargs)
+                                            num_cpus=1, **kwargs)
 
     print "It took ", time.time()-ti, " seconds to build the vibronic Lindblad Liouvillian"
     return -np.sum(L)

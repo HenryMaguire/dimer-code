@@ -109,6 +109,7 @@ def bias_dependence_function(eps, args={}):
     args.update({'w_1': args['w_2']+eps})
     args.update({'w_xx': args['w_1'] + args['w_2'] + args['V']})
     args.update({'mu': args['w_2']/(args['w_1']) })
+    I = args['I']
     energies, states = exciton_states(args)
     coh =  tensor(states[0]*states[1].dag(), I)
     bright =  tensor(states[1]*states[1].dag(), I)
@@ -119,24 +120,17 @@ def bias_dependence_function(eps, args={}):
 
     #L_p = EM.L_phenom(states, energies, I, args)
 
-    # rather than saving all the massive objects to a list, just calculate steady_states and return them
-
-
-    coh_ops.append(coh)
-    bright_ops.append(bright)
-    dark_ops.append(dark)
     ti = time.time()
 
     method = 'iterative-lgmres'
     try:
-        ss_ns = steadystate(H, [p*L_RC+L_ns], method=method, use_precond=True)
+        ss_ns = steadystate(H, [L_RC+L_ns], method=method, use_precond=True)
         #ss_p = steadystate(H, [p*L_RC+L_p], method=method, use_precond=True)
     except:
         print "Could not build preconditioner, solving steadystate without one"
-        ss_ns = steadystate(H, [p*L_RC+L_ns], method= method)
+        ss_ns = steadystate(H, [L_RC+L_ns], method= method)
         #ss_p = steadystate(H, [p*L_RC+L_p], method=method)
     if (args['alpha_1'] == 0) and (args['alpha_2'] == 0) and  (args['bias'] == 0):
-        print "YES"
         n_RC_1 = Occupation(args['w0_1'], args['T_1'])
         n_RC_2 = Occupation(args['w0_2'], args['T_2'])
         #rho_T = Qobj((-1/(args['T_1']*0.695))*H).expm()
@@ -145,7 +139,7 @@ def bias_dependence_function(eps, args={}):
 
         rho_0 = tensor(basis(4,0)*basis(4,0).dag(),thermal_RCs)
         timelist = np.linspace(0,4,4000)
-        opts = qt.Options(num_cpus=args['num_cpus'], store_final_state=True)
+        opts = qt.Options(store_final_state=True)
         DATA_ns = mesolve(H, rho_0, timelist, [L_RC+L_ns], ops+[dark, bright, coh], options=opts, progress_bar=True)
 
         ss_ns = tensor(ss_from_dynamics(DATA_ns), thermal_RCs)
@@ -156,19 +150,18 @@ def bias_dependence_function(eps, args={}):
     ns_b = ss_ns.diag() <0
     #p_b = ss_p.diag() <0
     if True in ns_b:
-        print "There were negative populations in ns."
+        print "There were negative populations in non-secular dynamics for bias={}.".format(eps)
     #if True in p_b:
     #    print "There were negative populations in phenom."
 
     #ss_p_list.append(ss_p)
-    ss_ns_list.append(ss_ns)
-    #print "Phenom: coh={}, dark={}, bright={}".format((ss_p*coh).tr(), (ss_p*dark).tr(), (ss_p*bright).tr())
     print "Redfield: coh={}, dark={}, bright={}".format((ss_ns*coh).tr(), (ss_ns*dark).tr(), (ss_ns*bright).tr())
     print "Calculating the steady state took {} seconds".format(time.time()-ti)
     print "so far {} steady states".format(len(ss_ns_list))
+    return ss_ns, coh, bright, dark
 
 
-def bias_dependence(biases, args, I, ops):
+def bias_dependence(biases, args, ops):
     enc_dir = 'DATA/'
     main_dir = enc_dir+'bias_dependence_wRC{}_N{}_V{}_wc{}/'.format(int(args['w0_1']), args['N_1'], int(args['V']), int(args['wc']))
     ops_dir = main_dir+'operators/'
@@ -178,93 +171,33 @@ def bias_dependence(biases, args, I, ops):
     coh_ops = []
     bright_ops = []
     dark_ops = []
-    print main_dir
-    if os.path.isfile(test_file):
-        for eps in biases:
-            args.update({'bias': eps})
-            args.update({'w_1': args['w_2']+eps})
-            args.update({'w_xx': args['w_1'] + args['w_2'] + args['V']})
-            args.update({'mu': args['w_2']/(args['w_1']) })
-            #H_dim = qt.Qobj([[0,0,0,0],[0, args['w_1'], args['V'],0 ],[0,args['V'], args['w_2'],0],[0,0,0,args['w_xx']]])
-            energies, states = exciton_states(args)
-            coh =  tensor(states[0]*states[1].dag(), I)
-            bright =  tensor(states[1]*states[1].dag(), I)
-            dark =  tensor(states[0]*states[0].dag(), I)
-
-            L_RC, H, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(args)
-            L_ns = EM.L_nonsecular(H, A_EM, args)
-
-            #L_p = EM.L_phenom(states, energies, I, args)
-
-            # rather than saving all the massive objects to a list, just calculate steady_states and return them
-
-
-            coh_ops.append(coh)
-            bright_ops.append(bright)
-            dark_ops.append(dark)
-            ti = time.time()
-
-            method = 'iterative-lgmres'
-            try:
-                ss_ns = steadystate(H, [L_RC+L_ns], method=method, use_precond=True)
-                #ss_p = steadystate(H, [p*L_RC+L_p], method=method, use_precond=True)
-            except:
-                print "Could not build preconditioner, solving steadystate without one"
-                ss_ns = steadystate(H, [L_RC+L_ns], method= method)
-                #ss_p = steadystate(H, [p*L_RC+L_p], method=method)
-            if (args['alpha_1'] == 0) and (args['alpha_2'] == 0) and  (args['bias'] == 0):
-                print "YES"
-                n_RC_1 = Occupation(args['w0_1'], args['T_1'])
-                n_RC_2 = Occupation(args['w0_2'], args['T_2'])
-                #rho_T = Qobj((-1/(args['T_1']*0.695))*H).expm()
-                thermal_RCs = enr_thermal_dm([args['N_1'],args['N_2']], args['exc'], [n_RC_1, n_RC_2])
-                #rho_0 = rho_T/rho_T.tr()
-
-                rho_0 = tensor(basis(4,0)*basis(4,0).dag(),thermal_RCs)
-                timelist = np.linspace(0,4,4000)
-                opts = qt.Options(num_cpus=args['num_cpus'], store_final_state=True)
-                DATA_ns = mesolve(H, rho_0, timelist, [L_RC+L_ns], ops+[dark, bright, coh], options=opts, progress_bar=True)
-
-                ss_ns = DATA_ns.final_state
-                #DATA_p = mesolve(H, rho_0, timelist, [p*L_RC+L_p], ops+[dark, bright, coh], options=opts, progress_bar=True)
-            else:
-                pass
-
-            ns_b = ss_ns.diag() <0
-            #p_b = ss_p.diag() <0
-            if True in ns_b:
-                print "There were negative populations in ns."
-            #if True in p_b:
-            #    print "There were negative populations in phenom."
-
-            #ss_p_list.append(ss_p)
-            ss_ns_list.append(ss_ns)
-            #print "Phenom: coh={}, dark={}, bright={}".format((ss_p*coh).tr(), (ss_p*dark).tr(), (ss_p*bright).tr())
-            print "Redfield: coh={}, dark={}, bright={}".format((ss_ns*coh).tr(), (ss_ns*dark).tr(), (ss_ns*bright).tr())
-            print "Calculating the steady state took {} seconds".format(time.time()-ti)
-            print "so far {} steady states".format(len(ss_ns_list))
+    args.update({'I': qt.enr_identity([args['N_1'],args['N_2']], args['exc'])})
+    
+    if not os.path.isfile(test_file):
+        ss_ns_list, coh_ops, bright_ops, dark_ops = qt.parfor(bias_dependence_function, biases, args=args)
 
         if not os.path.exists(ops_dir):
             '''If the data directory doesn't exist:
             make it, put operators subdir, save inital ss data in dir and ops in subdir once.
             If it exists, just save the ss data to the directory'''
-            #os.makedirs(main_dir)
+            os.makedirs(main_dir)
             os.makedirs(ops_dir)
-            #os.makedirs(main_dir+'nonsecular')
+            os.makedirs(main_dir+'nonsecular')
             #os.makedirs(main_dir+'phenom')
             #save_obj(ss_p_list, main_dir+'phenom/steadystate_DMs_alpha{}'.format(int(args['alpha_1'])))
-            #save_obj(ss_ns_list, main_dir+'nonsecular/steadystate_DMs_pialpha{}'.format(int(pi*args['alpha_1'])))
+            save_obj(ss_ns_list, main_dir+'nonsecular/steadystate_DMs_pialpha{}'.format(int(pi*args['alpha_1'])))
             save_obj(coh_ops, ops_dir+'eigcoherence_ops')
             save_obj(dark_ops, ops_dir+'dark_ops')
             save_obj(bright_ops, ops_dir+'bright_ops')
         else:
             #save_obj(ss_p_list, main_dir+'phenom/steadystate_DMs_alpha{}'.format(int(args['alpha_1'])))
-            #save_obj(ss_ns_list, main_dir+'nonsecular/steadystate_DMs_pialpha{}'.format(int(pi*args['alpha_1'])))
+            save_obj(ss_ns_list, main_dir+'nonsecular/steadystate_DMs_pialpha{}'.format(int(pi*args['alpha_1'])))
             pass
         #print "file saving at {}".format(main_dir+'steadystate_DMs_pialpha{}'.format(int(pi*args['alpha_1'])))
         #print "Data found for pi*alpha = {}".format(int(args['alpha_1'])*pi)
     else:
-        print "Data for this phonon-coupling and Hamiltonian already exists. Skipping..."
+
+        print "Data already exists at {}. Skipping...".format(main_dir+'nonsecular/steadystate_DMs_pialpha{}'.format(int(pi*args['alpha_1'])))
     return
 
 def SS_convergence_check(sigma, w_1, w_2, w_xx, V, T_1, T_2, w0_1, w0_2, alpha_1, alpha_2, wc,  alpha_EM, T_EM, mu=0, expect_op='bright', time_units='cm', start_n=2, end_n=5, method='direct'):
