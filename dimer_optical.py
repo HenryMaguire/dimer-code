@@ -43,7 +43,7 @@ def nonsecular_function(i,j, eVals=[], eVecs=[], w_1=8000., A=0,  Gamma=1.,T=0.,
         X4= r_up*A_ij*IJ
         X1= r_up*A_ji*JI
         X2= r_down*A_ji*JI
-    return Qobj(X1), Qobj(X2), Qobj(X3), Qobj(X4)
+    return X1, X2, X3, X4
 
 def secular_function(i,j, eVals=[], eVecs=[], A=0, w_1=8000., Gamma=1.,T=0., J=J_minimal):
     L = 0
@@ -76,7 +76,7 @@ def secular_function(i,j, eVals=[], eVecs=[], A=0, w_1=8000., Gamma=1.,T=0., J=J
 
 
 def L_nonsecular(H_vib, A, args):
-    Gamma, T, w_1, J, num_cpus = args['alpha_EM'], args['T_EM'], args['w_1'],args['J'], args['num_cpus']
+    Gamma, T, w_1, J = args['alpha_EM'], args['T_EM'], args['w_1'],args['J']
     #Construct non-secular liouvillian
     ti = time.time()
     dim_ham = H_vib.shape[0]
@@ -86,9 +86,15 @@ def L_nonsecular(H_vib, A, args):
     for name in names:
         kwargs[name] = eval(name)
     l = dim_ham*range(dim_ham) # Perform two loops in one
-    X1, X2, X3, X4 = par.parfor(nonsecular_function, sorted(l), l,
-                                            num_cpus=1, **kwargs)
-    X1, X2, X3, X4 = np.sum(X1), np.sum(X2), np.sum(X3), np.sum(X4)
+    X1, X2, X3, X4 = 0,0,0,0
+    for i in sorted(l):
+        for j in l:
+            x1, x2, x3, x4 = nonsecular_function(i,j, **kwargs)
+            X1+= x1
+            X2+= x2
+            X3+= x3
+            X4+= x4
+    X1, X2, X3, X4 = Qobj(X1), Qobj(X2),Qobj(X3), Qobj(X4)
     L = spre(A*X1) -sprepost(X1,A)+spost(X2*A)-sprepost(A,X2)
     L+= spre(A.dag()*X3)-sprepost(X3, A.dag())+spost(X4*A.dag())-sprepost(A.dag(), X4)
     #print np.sum(X1.full()), np.sum(X2.full()), np.sum(X3.full()), np.sum(X4.full())
@@ -102,7 +108,7 @@ def L_secular(H_vib, A, args):
     degeneracy and the secular approximation has been made
     '''
     ti = time.time()
-    Gamma, T, w_1, J, num_cpus = args['alpha_EM'], args['T_EM'], args['w_1'],args['J'], args['num_cpus']
+    Gamma, T, w_1, J, num_cpus = args['alpha_EM'], args['T_EM'], args['w_1'],args['J'], 0
     dim_ham = H_vib.shape[0]
     eVals, eVecs = H_vib.eigenstates()
     names = ['eVals', 'eVecs', 'A', 'w_1', 'Gamma', 'T', 'J']

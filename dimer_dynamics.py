@@ -261,8 +261,8 @@ if __name__ == "__main__":
     biases = np.linspace(0, 0.03, 50)*ev_to_inv_cm
     #biases = np.array([0, 0.01*ev_to_inv_cm])
 
-    PARAMS.update({'N_1':2, 'N_2':2, 'exc': 4})
-    PARAMS.update({'V':0.25*92.})
+    PARAMS.update({'N_1':4, 'N_2':4, 'exc': 5})
+    PARAMS.update({'V':0.5*92.})
 
     for alpha in alpha_ph:
         PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})

@@ -109,6 +109,7 @@ def bias_dependence_function(eps, args={}):
     args.update({'w_1': args['w_2']+eps})
     args.update({'w_xx': args['w_1'] + args['w_2'] + args['V']})
     args.update({'mu': args['w_2']/(args['w_1']) })
+    args.update({'num_cpus':1})
     I = args['I']
     energies, states = exciton_states(args)
     coh =  tensor(states[0]*states[1].dag(), I)
@@ -116,6 +117,7 @@ def bias_dependence_function(eps, args={}):
     dark =  tensor(states[0]*states[0].dag(), I)
 
     L_RC, H, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(args)
+    L_ns = 0
     L_ns = EM.L_nonsecular(H, A_EM, args)
 
     #L_p = EM.L_phenom(states, energies, I, args)
@@ -142,7 +144,7 @@ def bias_dependence_function(eps, args={}):
         opts = qt.Options(store_final_state=True)
         DATA_ns = mesolve(H, rho_0, timelist, [L_RC+L_ns], ops+[dark, bright, coh], options=opts, progress_bar=True)
 
-        ss_ns = tensor(ss_from_dynamics(DATA_ns), thermal_RCs)
+        ss_ns = DATA_ns.final_state
         #DATA_p = mesolve(H, rho_0, timelist, [p*L_RC+L_p], ops+[dark, bright, coh], options=opts, progress_bar=True)
     else:
         pass
@@ -157,7 +159,6 @@ def bias_dependence_function(eps, args={}):
     #ss_p_list.append(ss_p)
     print "Redfield: coh={}, dark={}, bright={}".format((ss_ns*coh).tr(), (ss_ns*dark).tr(), (ss_ns*bright).tr())
     print "Calculating the steady state took {} seconds".format(time.time()-ti)
-    print "so far {} steady states".format(len(ss_ns_list))
     return ss_ns, coh, bright, dark
 
 
@@ -166,16 +167,15 @@ def bias_dependence(biases, args, ops):
     main_dir = enc_dir+'bias_dependence_wRC{}_N{}_V{}_wc{}/'.format(int(args['w0_1']), args['N_1'], int(args['V']), int(args['wc']))
     ops_dir = main_dir+'operators/'
     test_file = main_dir+'nonsecular/steadystate_DMs_pialpha{}.pickle'.format(int(pi*args['alpha_1']))
-    ss_p_list = []
-    ss_ns_list = []
     coh_ops = []
     bright_ops = []
     dark_ops = []
     args.update({'I': qt.enr_identity([args['N_1'],args['N_2']], args['exc'])})
-    
-    if not os.path.isfile(test_file):
-        ss_ns_list, coh_ops, bright_ops, dark_ops = qt.parfor(bias_dependence_function, biases, args=args)
 
+    if not os.path.isfile(test_file):
+        O = qt.parfor(bias_dependence_function, biases, num_cpus =args['num_cpus'], args=args)
+        #ss_ns_list, coh_ops, bright_ops, dark_ops = O
+        """
         if not os.path.exists(ops_dir):
             '''If the data directory doesn't exist:
             make it, put operators subdir, save inital ss data in dir and ops in subdir once.
@@ -198,6 +198,7 @@ def bias_dependence(biases, args, ops):
     else:
 
         print "Data already exists at {}. Skipping...".format(main_dir+'nonsecular/steadystate_DMs_pialpha{}'.format(int(pi*args['alpha_1'])))
+    """
     return
 
 def SS_convergence_check(sigma, w_1, w_2, w_xx, V, T_1, T_2, w0_1, w0_2, alpha_1, alpha_2, wc,  alpha_EM, T_EM, mu=0, expect_op='bright', time_units='cm', start_n=2, end_n=5, method='direct'):

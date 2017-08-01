@@ -82,7 +82,7 @@ def operator_func(j, k, eVals=[], eVecs=[], A_1=[], A_2=[],
     #    print Chi_1.dims
     return Qobj(Chi_1), Qobj(Xi_1), Qobj(Chi_2), Qobj(Xi_2)
 
-def RCME_operators_par(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus=1):
+def RCME_operators_par(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus=0):
     dim_ham = H_0.shape[0]
     eVals, eVecs = H_0.eigenstates()
     names = ['eVals', 'eVecs', 'A_1', 'A_2', 'gamma_1', 'gamma_2', 'beta_1', 'beta_2']
@@ -130,7 +130,7 @@ def RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus=0):
                     #Xi += 0 #since J_RC goes to zero
     return H_0, Chi_1, Xi_1, Chi_2, Xi_2
 
-def liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2, T_1, T_2, num_cpus=1):
+def liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2, T_1, T_2, num_cpus=0):
     ti = time.time()
     conversion = 0.695
     beta_1 = 0. # We want to calculate beta for each reaction coordinate, but avoid divergences
@@ -152,7 +152,7 @@ def liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2, T_1, T_2, 
         beta_2 = 1./(conversion * T_2)
         #RCnb_2 = (1 / (sp.exp( beta_2 * wRC_2)-1))
     # Now this function has to construct the liouvillian so that it can be passed to mesolve
-    H_0, Chi_1, Xi_1,Chi_2, Xi_2  = RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus=1)
+    H_0, Chi_1, Xi_1,Chi_2, Xi_2  = RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus=num_cpus)
     #H_0, Chi_1_, Xi_1_,Chi_2_, Xi_2_  = RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2)
     '''
     print np.sum(Chi_1.full() == Chi_1_.full()), Chi_1.shape[0]**2
