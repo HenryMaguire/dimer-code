@@ -63,7 +63,7 @@ if __name__ == "__main__":
     alpha_1, alpha_2 = 200/pi, 200/pi # Ind.-Boson frame coupling
     N_1, N_2 = 4,4 # set Hilbert space sizes
     exc = 6
-    num_cpus = 3
+    num_cpus = 4
     J = J_minimal
 
     H_dim = w_1*XO*XO.dag() + w_2*OX*OX.dag() + w_xx*XX*XX.dag() + V*(XO*OX.dag() + OX*XO.dag())
@@ -256,12 +256,12 @@ if __name__ == "__main__":
     """
 
 
-    alpha_ph = np.array([200.])/pi
+    alpha_ph = np.array([0.1, 1., 10., 100., 500.])/pi
     #alpha_ph=np.array([0])
     biases = np.linspace(0, 0.03, 50)*ev_to_inv_cm
     #biases = np.array([0, 0.01*ev_to_inv_cm])
 
-    PARAMS.update({'N_1':4, 'N_2':4, 'exc': 5})
+    PARAMS.update({'N_1':2, 'N_2':2, 'exc': 2})
     PARAMS.update({'V':0.5*92.})
 
     for alpha in alpha_ph:

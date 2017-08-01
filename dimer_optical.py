@@ -81,20 +81,32 @@ def L_nonsecular(H_vib, A, args):
     ti = time.time()
     dim_ham = H_vib.shape[0]
     eVals, eVecs = H_vib.eigenstates()
-    names = ['eVals', 'eVecs', 'A', 'w_1', 'Gamma', 'T', 'J']
-    kwargs = dict() # Hacky way to get parameters to the parallel for loop
-    for name in names:
-        kwargs[name] = eval(name)
     l = dim_ham*range(dim_ham) # Perform two loops in one
     X1, X2, X3, X4 = 0,0,0,0
     for i in sorted(l):
         for j in l:
-            x1, x2, x3, x4 = nonsecular_function(i,j, **kwargs)
-            X1+= x1
-            X2+= x2
-            X3+= x3
-            X4+= x4
-    X1, X2, X3, X4 = Qobj(X1), Qobj(X2),Qobj(X3), Qobj(X4)
+            eps_ij = abs(eVals[i]-eVals[j])
+            A_ij = A.matrix_element(eVecs[i].dag(), eVecs[j])
+            A_ji = (A.dag()).matrix_element(eVecs[j].dag(), eVecs[i])
+            Occ = Occupation(eps_ij, T)
+
+            # 0.5*np.pi*alpha*(N+1)
+            if abs(A_ij)>0 or abs(A_ji)>0:
+                IJ = eVecs[i]*eVecs[j].dag()
+                JI = eVecs[j]*eVecs[i].dag()
+                r_up = 0
+                r_down = 0
+                if eps_ij == 0:
+                    JN = Gamma/(2*pi*w_1*beta_f(T))
+                    r_up = 2*pi*JN
+                    r_down = 2*pi*JN
+                else:
+                    r_up = 2*pi*J(eps_ij, Gamma, w_1)*Occ
+                    r_down = 2*pi*J(eps_ij, Gamma, w_1)*(Occ+1)
+                X3+= r_down*A_ij*IJ
+                X4+= r_up*A_ij*IJ
+                X1+= r_up*A_ji*JI
+                X2+= r_down*A_ji*JI
     L = spre(A*X1) -sprepost(X1,A)+spost(X2*A)-sprepost(A,X2)
     L+= spre(A.dag()*X3)-sprepost(X3, A.dag())+spost(X4*A.dag())-sprepost(A.dag(), X4)
     #print np.sum(X1.full()), np.sum(X2.full()), np.sum(X3.full()), np.sum(X4.full())

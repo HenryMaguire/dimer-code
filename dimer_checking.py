@@ -173,9 +173,9 @@ def bias_dependence(biases, args, ops):
     args.update({'I': qt.enr_identity([args['N_1'],args['N_2']], args['exc'])})
 
     if not os.path.isfile(test_file):
-        O = qt.parfor(bias_dependence_function, biases, num_cpus =args['num_cpus'], args=args)
-        #ss_ns_list, coh_ops, bright_ops, dark_ops = O
-        """
+        ss_ns_list, coh_ops, bright_ops, dark_ops = qt.parfor(bias_dependence_function, biases, num_cpus =args['num_cpus'], args=args)
+        # = O
+
         if not os.path.exists(ops_dir):
             '''If the data directory doesn't exist:
             make it, put operators subdir, save inital ss data in dir and ops in subdir once.
@@ -198,7 +198,7 @@ def bias_dependence(biases, args, ops):
     else:
 
         print "Data already exists at {}. Skipping...".format(main_dir+'nonsecular/steadystate_DMs_pialpha{}'.format(int(pi*args['alpha_1'])))
-    """
+    
     return
 
 def SS_convergence_check(sigma, w_1, w_2, w_xx, V, T_1, T_2, w0_1, w0_2, alpha_1, alpha_2, wc,  alpha_EM, T_EM, mu=0, expect_op='bright', time_units='cm', start_n=2, end_n=5, method='direct'):

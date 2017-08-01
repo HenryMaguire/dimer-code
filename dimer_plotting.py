@@ -260,6 +260,7 @@ def steadystate_coherence_plot(args, alpha_list, biases):
     for k, alpha in enumerate(alpha_list):
         #p_ss_dms = load_obj(p_dm_dir+'steadystate_DMs_alpha{}'.format(int(alpha)))
         ns_ss_dms = load_obj(ns_dm_dir+'steadystate_DMs_pialpha{}'.format(int(pi*alpha)))
+        print len(ns_ss_dms), len(coh_ops)
         assert len(ns_ss_dms) == len(coh_ops)
         #p_coh_list = []
         ns_coh_list = []
@@ -361,7 +362,8 @@ def steadystate_darkbright_plot(args, alpha_list, biases):
     for k, alpha in enumerate(alpha_list):
         #p_ss_dms = load_obj(p_dm_dir+'steadystate_DMs_alpha{}'.format(int(alpha)))
         ns_ss_dms = load_obj(ns_dm_dir+'steadystate_DMs_pialpha{}'.format(int(pi*alpha)))
-        assert len(ns_ss_dms) == len(bright_ops)
+        print len(ns_ss_dms), len(bright_ops)
+        #assert len(ns_ss_dms) == len(bright_ops)
         dark_list = []
         bright_list = []
         ground_list = []
