@@ -61,8 +61,8 @@ if __name__ == "__main__":
     w0_2, w0_1 = 500., 500. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1
     alpha_1, alpha_2 = 1/pi, 1/pi # Ind.-Boson frame coupling
-    N_1, N_2 = 3,3 # set Hilbert space sizes
-    exc = 2
+    N_1, N_2 = 4,4 # set Hilbert space sizes
+    exc = 3
     num_cpus = 4
     J = J_minimal
 
@@ -131,10 +131,11 @@ if __name__ == "__main__":
     rho_0 = tensor(basis(4,0)*basis(4,0).dag(),thermal_RCs)
     #timelist = np.linspace(0,3,1000)
     L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(PARAMS)
-    L_full_s = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='s')
-    L_full_p = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='p')
-    L_full_ns = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='ns')
-    
+    DATA_J = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='j')
+    DATA_S = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='s')
+    DATA_P = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='p')
+    DATA_NS = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='ns')
+
     """
     mut_inf_d1 = []
     mut_inf_d2 = []

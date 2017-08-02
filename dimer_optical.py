@@ -52,7 +52,6 @@ def secular_function(i,j, eVals=[], eVecs=[], A=0, w_1=8000., Gamma=1.,T=0., J=J
     lam_ij_sq = lam_ij*lam_ij.conjugate()
     eps_ij = abs(eVals[i]-eVals[j])
     if lam_ij_sq>0:
-        print lam_ij_sq
         IJ = eVecs[i]*eVecs[j].dag()
         JI = eVecs[j]*eVecs[i].dag()
         JJ = eVecs[j]*eVecs[j].dag()
@@ -147,14 +146,14 @@ def L_phenom(states, energies, I, args):
     pre_m = -(sqrt(eta+eps)-mu*sqrt(eta-eps))/sqrt(2*eta)
     A_lp, A_wxx_lp = pre_p*tensor(OO*bright.dag(), I),  pre_p*tensor(bright*XX.dag(),I)
     A_lm, A_wxx_lm = pre_m*tensor(OO*dark.dag(), I),  pre_m*tensor(dark*XX.dag(),I)
-    L = 0.5*rate_up(lp, T, gamma, J, w_1)*lin_construct(A_lp.dag())
-    L += 0.5*rate_up(lm, T, gamma, J, w_1)*lin_construct(A_lm.dag())
-    L += 0.5*rate_down(lp, T, gamma, J, w_1)*lin_construct(A_lp)
-    L += 0.5*rate_down(lm, T, gamma, J, w_1)*lin_construct(A_lm)
-    L += 0.5*rate_up(w_xx-lp, T, gamma, J, w_1)*lin_construct(A_wxx_lp.dag())
-    L += 0.5*rate_up(w_xx-lm, T, gamma, J, w_1)*lin_construct(A_wxx_lm.dag())
-    L += 0.5*rate_down(w_xx-lp, T, gamma, J, w_1)*lin_construct(A_wxx_lp)
-    L += 0.5*rate_down(w_xx-lm, T, gamma, J, w_1)*lin_construct(A_wxx_lm)
+    L = rate_up(lp, T, gamma, J, w_1)*lin_construct(A_lp.dag())
+    L += rate_up(lm, T, gamma, J, w_1)*lin_construct(A_lm.dag())
+    L += rate_down(lp, T, gamma, J, w_1)*lin_construct(A_lp)
+    L += rate_down(lm, T, gamma, J, w_1)*lin_construct(A_lm)
+    L += rate_up(w_xx-lp, T, gamma, J, w_1)*lin_construct(A_wxx_lp.dag())
+    L += rate_up(w_xx-lm, T, gamma, J, w_1)*lin_construct(A_wxx_lm.dag())
+    L += rate_down(w_xx-lp, T, gamma, J, w_1)*lin_construct(A_wxx_lp)
+    L += rate_down(w_xx-lm, T, gamma, J, w_1)*lin_construct(A_wxx_lm)
     print "It took {} seconds to build the phenomenological Liouvillian".format(time.time()-ti)
     return 2*L
 

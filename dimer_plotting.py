@@ -3,6 +3,7 @@ Plotting module for the dimer dynamics
 """
 import dimer_phonons as RC
 import dimer_optical as EM
+import optical_liouvillian_J as JAKE
 from qutip import steadystate, Qobj
 import qutip as qt
 import matplotlib.pyplot as plt
@@ -10,6 +11,7 @@ import numpy as np
 import matplotlib
 import time
 matplotlib.style.use('ggplot')
+reload(JAKE)
 
 from utils import *
 
@@ -110,6 +112,7 @@ def plot_eig_dynamics(DATA, timelist, exp_ops, ax, title='', ss_dm = False):
             ax.axhline((ss_dm*exp_ops[i]).tr().real, color=c, ls='--')
     ax.set_ylabel("Eigenstate population")
     ax.set_xlabel("Time (ps)")
+    ax.set_ylim(0,1)
     ax.legend()
     #p_file_name = "Notes/Images/Dynamics/Pop_a{:d}_Tph{:d}_Tem{:d}_w0{:d}.pdf".format(int(alpha_ph), int(T_ph), int(T_EM), int(w0))
     #plt.savefig(p_file_name)
@@ -131,6 +134,7 @@ def plot_coherences(DATA, timelist, exp_ops, ax, title='', ss_dm = False):
     ax.legend(loc='lower right')
     ax.set_ylabel("Symm./Anti-symm. Eigenstate Coherence")
     ax.set_xlabel("Time (ps)")
+    ax.set_ylim(0,0.06)
     #file_name = "Notes/Images/Dynamics/Coh_a{:d}_Tph{:d}_Tem{:d}_w0{:d}.pdf".format(int(alpha_1), int(T_1), int(T_EM), int(w0_1))
     #plt.savefig(file_name)
     #plt.close()
@@ -228,46 +232,46 @@ def exciton_states(PARS):
 
 def calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='s'):
     L=0
+    if EM_approx=='ns':
+        L = EM.L_nonsecular(H_0, A_EM, PARAMS)
+    elif EM_approx=='s':
+        L = EM.L_secular(H_0, A_EM, PARAMS)
+    elif EM_approx=='p':
+        I = qt.enr_identity([PARAMS['N_1'],PARAMS['N_2']], PARAMS['exc'])
+        energies, states = exciton_states(PARAMS)
+        L = EM.L_phenom(states, energies, I, PARAMS)
+    elif EM_approx =='j':
+        L = JAKE.EM_dissipator(PARAMS['w_xx'], PARAMS['w_1'], PARAMS['bias'],
+                                            PARAMS['V'], 1, PARAMS['alpha_EM'], PARAMS['T_EM'], PARAMS['J'],
+                                            PARAMS['N_1'], PARAMS['exc'])
+    else:
+        raise KeyError
+    timelist = np.linspace(0,10.0,2000)
+    print L_RC.dims, L.dims
+    L_full = L_RC+L
+    opts = qt.Options(num_cpus=PARAMS['num_cpus'], store_final_state=True)
+    DATA = qt.mesolve(H_0, rho_0, timelist, [L_full], expects, progress_bar=True, options=opts)
+    ss_dm = 0
     try:
-        if EM_approx=='ns':
-            L = EM.L_nonsecular(H_0, A_EM, PARAMS)
-        elif EM_approx=='s':
-            L = EM.L_secular(H_0, A_EM, PARAMS)
-        elif EM_approx=='p':
-            I = qt.enr_identity([PARAMS['N_1'],PARAMS['N_2']], PARAMS['exc'])
-            energies, states = exciton_states(PARAMS)
-            L = EM.L_phenom(states, energies, I, PARAMS)
-        else:
-            raise KeyError
-        timelist = np.linspace(0,20.0,5000)
-
-        L_full = L_RC+L
-        opts = qt.Options(num_cpus=4, store_final_state=True)
-        DATA = qt.mesolve(H_0, rho_0, timelist, [L_full], expects, progress_bar=True, options=opts)
-        ss_dm = 0
-        try:
-            ss_dm = qt.steadystate(H_0, [L_full])
-        except Exception as err:
-            print "Warning: steady state density matrix didn't converge. Probably"
-            print "\t due to some problem with excitation restriction. \n"
-            print err
-
-        #timelist=timelist/0.188 # Convert from cm to picoseconds
-        #DATA_ns = load_obj("DATA_N7_exc8")
-        #fig = plt.figure(figsize=(12,6))
-        fig = plt.figure()
-        ax1 = fig.add_subplot(111)
-        title = 'Eigenstate dynamics'
-        #title = title + r"$\omega_0=$""%i"r"$cm^{-1}$, $\alpha_{ph}=$""%f"r"$cm^{-1}$, $T_{EM}=$""%i K" %(w0_1, alpha_1, T_EM)
-        fig = plt.figure()
-        plot_eig_dynamics(DATA, timelist, expects, ax1, ss_dm=ss_dm)
-        ax2 = fig.add_subplot(111)
-        plot_coherences(DATA, timelist, expects, ax2, ss_dm=ss_dm)
-        plt.savefig("DATA/{}_dynamics.png".format(EM_approx))
-        print 'Plotting finished!'
-        return L_full
+        ss_dm = qt.steadystate(H_0, [L_full])
     except Exception as err:
-        print "Could not get dynamics because ",err
+        print "Warning: steady state density matrix didn't converge. Probably"
+        print "\t due to some problem with excitation restriction. \n"
+        print err
+
+    #timelist=timelist/0.188 # Convert from cm to picoseconds
+    #DATA_ns = load_obj("DATA_N7_exc8")
+    #fig = plt.figure(figsize=(12,6))
+    fig = plt.figure()
+    ax1 = fig.add_subplot(211)
+    title = 'Eigenstate dynamics'
+    #title = title + r"$\omega_0=$""%i"r"$cm^{-1}$, $\alpha_{ph}=$""%f"r"$cm^{-1}$, $T_{EM}=$""%i K" %(w0_1, alpha_1, T_EM)
+    plot_eig_dynamics(DATA, timelist, expects, ax1, ss_dm=ss_dm)
+    ax2 = fig.add_subplot(212)
+    plot_coherences(DATA, timelist, expects, ax2, ss_dm=ss_dm)
+    plt.savefig("DATA/{}_dynamics.pdf".format(EM_approx))
+    print 'Plotting finished!'
+    return DATA
 
 def steadystate_coherence_plot(args, alpha_list, biases):
     main_dir = "DATA/bias_dependence_wRC{}_N{}_V{}_wc{}/".format(int(args['w0_1']), args['N_1'], int(args['V']), int(args['wc']))
