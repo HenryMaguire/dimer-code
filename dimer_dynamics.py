@@ -48,7 +48,7 @@ if __name__ == "__main__":
 
     w_2 = 1.4*ev_to_inv_cm
     V = 92 #0.01*8065.5
-    bias = 0 #1*V #0.01*ev_to_inv_cm
+    bias = V #1*V #0.01*ev_to_inv_cm
     w_1 = w_2 + bias
     dipole_1, dipole_2 = 1., 1.
     T_EM = 6000. # Optical bath temperature
@@ -58,11 +58,11 @@ if __name__ == "__main__":
     T_1, T_2 = 300., 300. # Phonon bath temperature
 
     wc = 1*53. # Ind.-Boson frame phonon cutoff freq
-    w0_2, w0_1 = 400., 400. # underdamped SD parameter omega_0
+    w0_2, w0_1 = 500., 500. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1
-    alpha_1, alpha_2 = 200/pi, 200/pi # Ind.-Boson frame coupling
-    N_1, N_2 = 4,4 # set Hilbert space sizes
-    exc = 6
+    alpha_1, alpha_2 = 1/pi, 1/pi # Ind.-Boson frame coupling
+    N_1, N_2 = 3,3 # set Hilbert space sizes
+    exc = 2
     num_cpus = 4
     J = J_minimal
 
@@ -127,21 +127,14 @@ if __name__ == "__main__":
     opts = qt.Options(num_cpus=num_cpus, store_states=True)
     ncolors = len(plt.rcParams['axes.prop_cycle'])
 
-    #L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(PARAMS)
-    #L_ns = EM.L_nonsecular(H_0, A_EM, PARAMS)
-    #L_s = EM.L_secular(H_0, A_EM, PARAMS)
-    print "L_s calculated"
-    #L_p = EM.L_phenom(states, energies, I, PARAMS)
     thermal_RCs = enr_thermal_dm([N_1,N_2], exc, [n_RC_1, n_RC_2])
     rho_0 = tensor(basis(4,0)*basis(4,0).dag(),thermal_RCs)
-    timelist = np.linspace(0,3,1000)
-
-    #DATA_p = mesolve(H_0, rho_0, timelist, [L_ns], expects, options=opts, progress_bar=True)
-    #DATA_ns = mesolve(H_0, rho_0, timelist, [L_RC+L_ns], expects, options=opts, progress_bar=True)
-    #try:
-    #    DATA_s = mesolve(H_0, rho_0, timelist, [L_RC+L_s], expects, options=opts, progress_bar=True)
-    #except Exception as e:
-    #    print "didn't work due to ", e
+    #timelist = np.linspace(0,3,1000)
+    L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(PARAMS)
+    L_full_s = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='s')
+    L_full_p = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='p')
+    L_full_ns = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='ns')
+    
     """
     mut_inf_d1 = []
     mut_inf_d2 = []
@@ -160,22 +153,22 @@ if __name__ == "__main__":
     #ax1 = fig.add_subplot(211)
     #ax2 = fig.add_subplot(212)
     """
-    """
-    ax1.plot(timelist, DATA_ns.expect[7].real, label='real eig. coherence')
-    ax1.plot(timelist, DATA_ns.expect[7].imag, label='imag. eig. coherence')
-    ax2.plot(timelist, DATA_ns.expect[8]-DATA_ns.expect[9], label='Phonon occupation diff.')
+
+    #ax1.plot(timelist, DATA_ns.expect[7].real, label='real eig. coherence')
+    #ax1.plot(timelist, DATA_ns.expect[7].imag, label='imag. eig. coherence')
+    #ax2.plot(timelist, DATA_ns.expect[8]-DATA_ns.expect[9], label='Phonon occupation diff.')
     #ax2.plot(timelist, DATA_ns.expect[1], label='site 1', linestyle="--")
     #ax2.plot(timelist, DATA_ns.expect[2], label='site 2', linestyle="--")
     #ax2.plot(timelist, DATA_ns.expect[0]+ DATA_ns.expect[5]+ DATA_ns.expect[6]+ DATA_ns.expect[3], label='nsb')
-    ax1.plot(timelist, DATA_s.expect[7].real, linestyle="--",label='secular')
+    #ax1.plot(timelist, DATA_s.expect[7].real, linestyle="--",label='secular')
     #ax1.plot(timelist, DATA_s.expect[7].imag, linestyle="--", label='pbc imag')
     #ax2.plot(timelist, DATA_ns.expect[5], linestyle="-",label='dark', color ='r')
     #ax2.plot(timelist, DATA_ns.expect[6], linestyle="-", label='bright', color ='b')
     #ax2.plot(timelist, DATA_ns.expect[3], linestyle="-", label='exc')
     #ax2.plot(timelist, DATA_s.expect[5], linestyle="-",label='p dark')
     #ax2.plot(timelist, DATA_s.expect[6], linestyle="-", label='p bright')
-    method= 'direct' #'iterative-lgmres'
-    """
+    #method= 'direct' #'iterative-lgmres'
+
     """
     plt.figure()
     plt.plot(timelist, DATA_ns.expect[5], linestyle="-",label='dark', color ='r')
@@ -254,8 +247,7 @@ if __name__ == "__main__":
     #check.get_coh_ops(PARAMS, biases, I)
     #
     """
-
-
+    """
     alpha_ph = np.array([0.1, 1., 10., 100., 500.])/pi
     #alpha_ph=np.array([0])
     biases = np.linspace(0, 0.03, 50)*ev_to_inv_cm
@@ -350,7 +342,7 @@ if __name__ == "__main__":
     vis.steadystate_dark_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_bright_plot(PARAMS, alpha_ph, biases)'''
     vis.steadystate_darkbright_plot(PARAMS, alpha_ph, biases)
-
+    """
     #del L_ns
     #L_s = EM.L_secular(H_0, A_EM, eps, alpha_EM, T_EM, J, num_cpus=num_cpus)
     #L_naive = EM_lind.electronic_lindblad(w_xx, w_1, eps, V, mu, alpha_EM, T_EM, N_1, N_2, exc)

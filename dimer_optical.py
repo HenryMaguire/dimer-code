@@ -52,6 +52,7 @@ def secular_function(i,j, eVals=[], eVecs=[], A=0, w_1=8000., Gamma=1.,T=0., J=J
     lam_ij_sq = lam_ij*lam_ij.conjugate()
     eps_ij = abs(eVals[i]-eVals[j])
     if lam_ij_sq>0:
+        print lam_ij_sq
         IJ = eVecs[i]*eVecs[j].dag()
         JI = eVecs[j]*eVecs[i].dag()
         JJ = eVecs[j]*eVecs[j].dag()
@@ -83,30 +84,29 @@ def L_nonsecular(H_vib, A, args):
     eVals, eVecs = H_vib.eigenstates()
     l = dim_ham*range(dim_ham) # Perform two loops in one
     X1, X2, X3, X4 = 0,0,0,0
-    for i in sorted(l):
-        for j in l:
-            eps_ij = abs(eVals[i]-eVals[j])
-            A_ij = A.matrix_element(eVecs[i].dag(), eVecs[j])
-            A_ji = (A.dag()).matrix_element(eVecs[j].dag(), eVecs[i])
-            Occ = Occupation(eps_ij, T)
+    for i,j in zip(sorted(l), l):
+        eps_ij = abs(eVals[i]-eVals[j])
+        A_ij = A.matrix_element(eVecs[i].dag(), eVecs[j])
+        A_ji = (A.dag()).matrix_element(eVecs[j].dag(), eVecs[i])
 
-            # 0.5*np.pi*alpha*(N+1)
-            if abs(A_ij)>0 or abs(A_ji)>0:
-                IJ = eVecs[i]*eVecs[j].dag()
-                JI = eVecs[j]*eVecs[i].dag()
-                r_up = 0
-                r_down = 0
-                if eps_ij == 0:
-                    JN = Gamma/(2*pi*w_1*beta_f(T))
-                    r_up = 2*pi*JN
-                    r_down = 2*pi*JN
-                else:
-                    r_up = 2*pi*J(eps_ij, Gamma, w_1)*Occ
-                    r_down = 2*pi*J(eps_ij, Gamma, w_1)*(Occ+1)
-                X3+= r_down*A_ij*IJ
-                X4+= r_up*A_ij*IJ
-                X1+= r_up*A_ji*JI
-                X2+= r_down*A_ji*JI
+        # 0.5*np.pi*alpha*(N+1)
+        if abs(A_ij)>0 or abs(A_ji)>0:
+            Occ = Occupation(eps_ij, T)
+            IJ = eVecs[i]*eVecs[j].dag()
+            JI = eVecs[j]*eVecs[i].dag()
+            r_up = 0
+            r_down = 0
+            if eps_ij == 0:
+                JN = Gamma/(2*pi*w_1*beta_f(T))
+                r_up = 2*pi*JN
+                r_down = 2*pi*JN
+            else:
+                r_up = 2*pi*J(eps_ij, Gamma, w_1)*Occ
+                r_down = 2*pi*J(eps_ij, Gamma, w_1)*(Occ+1)
+            X3+= r_down*A_ij*IJ
+            X4+= r_up*A_ij*IJ
+            X1+= r_up*A_ji*JI
+            X2+= r_down*A_ji*JI
     L = spre(A*X1) -sprepost(X1,A)+spost(X2*A)-sprepost(A,X2)
     L+= spre(A.dag()*X3)-sprepost(X3, A.dag())+spost(X4*A.dag())-sprepost(A.dag(), X4)
     #print np.sum(X1.full()), np.sum(X2.full()), np.sum(X3.full()), np.sum(X4.full())

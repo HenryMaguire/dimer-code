@@ -152,7 +152,7 @@ def liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2, T_1, T_2, 
         beta_2 = 1./(conversion * T_2)
         #RCnb_2 = (1 / (sp.exp( beta_2 * wRC_2)-1))
     # Now this function has to construct the liouvillian so that it can be passed to mesolve
-    H_0, Chi_1, Xi_1,Chi_2, Xi_2  = RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus=num_cpus)
+    H_0, Chi_1, Xi_1,Chi_2, Xi_2  = RCME_operators_par(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus=num_cpus)
     #H_0, Chi_1_, Xi_1_,Chi_2_, Xi_2_  = RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2)
     '''
     print np.sum(Chi_1.full() == Chi_1_.full()), Chi_1.shape[0]**2

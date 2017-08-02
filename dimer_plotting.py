@@ -1,7 +1,8 @@
 """
 Plotting module for the dimer dynamics
 """
-
+import dimer_phonons as RC
+import dimer_optical as EM
 from qutip import steadystate, Qobj
 import qutip as qt
 import matplotlib.pyplot as plt
@@ -210,15 +211,39 @@ def plot_observable(DATA, timelist, ax, things):
         if things['show_steadystates']:
             ax.axhline(SS)
 
+def exciton_states(PARS):
+    w_1, w_2, V, bias = PARS['w_1'], PARS['w_2'],PARS['V'], PARS['bias']
+    v_p, v_m = 0, 0
+    eta = np.sqrt(4*(V**2)+bias**2)
+    lam_p = w_2+(bias+eta)*0.5
+    lam_m = w_2+(bias-eta)*0.5
+    v_m = np.array([0., -(w_1-lam_p)/V, -1, 0.])
+    #v_p/= /(1+(V/(w_2-lam_m))**2)
+    v_m/= np.sqrt(np.dot(v_m, v_m))
+    v_p = np.array([0, V/(w_2-lam_m),1., 0.])
 
-def calculate_dynamics():
-    assert PARAMS['w_1'] != PARAMS['w_2']
+    v_p /= np.sqrt(np.dot(v_p, v_p))
+    #print  np.dot(v_p, v_m) < 1E-15
+    return [lam_m, lam_p], [qt.Qobj(v_m), qt.Qobj(v_p)]
+
+def calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='s'):
+    L=0
     try:
-        timelist = np.linspace(0,20.0,5000)*0.188
-        L_ns = EM.L_nonsecular(H_0, A_EM, PARAMS)
-        L_full = L_RC+L_ns
+        if EM_approx=='ns':
+            L = EM.L_nonsecular(H_0, A_EM, PARAMS)
+        elif EM_approx=='s':
+            L = EM.L_secular(H_0, A_EM, PARAMS)
+        elif EM_approx=='p':
+            I = qt.enr_identity([PARAMS['N_1'],PARAMS['N_2']], PARAMS['exc'])
+            energies, states = exciton_states(PARAMS)
+            L = EM.L_phenom(states, energies, I, PARAMS)
+        else:
+            raise KeyError
+        timelist = np.linspace(0,20.0,5000)
 
-        DATA_ns = mesolve(H_0, rho_0, timelist, [L_full], expects, options=opts, progress_bar=True)
+        L_full = L_RC+L
+        opts = qt.Options(num_cpus=4, store_final_state=True)
+        DATA = qt.mesolve(H_0, rho_0, timelist, [L_full], expects, progress_bar=True, options=opts)
         ss_dm = 0
         try:
             ss_dm = qt.steadystate(H_0, [L_full])
@@ -227,23 +252,22 @@ def calculate_dynamics():
             print "\t due to some problem with excitation restriction. \n"
             print err
 
-        timelist=timelist/0.188 # Convert from cm to picoseconds
+        #timelist=timelist/0.188 # Convert from cm to picoseconds
         #DATA_ns = load_obj("DATA_N7_exc8")
         #fig = plt.figure(figsize=(12,6))
         fig = plt.figure()
         ax1 = fig.add_subplot(111)
-        title = 'Eigenstate population'
+        title = 'Eigenstate dynamics'
         #title = title + r"$\omega_0=$""%i"r"$cm^{-1}$, $\alpha_{ph}=$""%f"r"$cm^{-1}$, $T_{EM}=$""%i K" %(w0_1, alpha_1, T_EM)
         fig = plt.figure()
-        vis.plot_eig_dynamics(DATA_ns, timelist, expects, ax1, ss_dm=ss_dm)
+        plot_eig_dynamics(DATA, timelist, expects, ax1, ss_dm=ss_dm)
         ax2 = fig.add_subplot(111)
-        vis.plot_coherences(DATA_ns, timelist, expects, ax2, ss_dm=ss_dm)
-        plt.savefig("Notes/dynamics.png")
-        print (ss_dm*exciton_coherence).tr()
-        print 'Plotting worked!'
+        plot_coherences(DATA, timelist, expects, ax2, ss_dm=ss_dm)
+        plt.savefig("DATA/{}_dynamics.png".format(EM_approx))
+        print 'Plotting finished!'
         return L_full
     except Exception as err:
-        print "Could not get non-secular-driving dynamics because ",err
+        print "Could not get dynamics because ",err
 
 def steadystate_coherence_plot(args, alpha_list, biases):
     main_dir = "DATA/bias_dependence_wRC{}_N{}_V{}_wc{}/".format(int(args['w0_1']), args['N_1'], int(args['V']), int(args['wc']))
