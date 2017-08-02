@@ -362,11 +362,11 @@ def steadystate_darkbright_plot(args, alpha_list, biases):
     for k, alpha in enumerate(alpha_list):
         #p_ss_dms = load_obj(p_dm_dir+'steadystate_DMs_alpha{}'.format(int(alpha)))
         ns_ss_dms = load_obj(ns_dm_dir+'steadystate_DMs_pialpha{}'.format(int(pi*alpha)))
+        print len(ns_ss_dms), len(bright_ops)
         #assert len(ns_ss_dms) == len(bright_ops)
         dark_list = []
         bright_list = []
         ground_list = []
-
         for i in range(len(ns_ss_dms)):
             d_obs = (ns_ss_dms[i]*dark_ops[i]).tr()
             b_obs = (ns_ss_dms[i]*bright_ops[i]).tr()
@@ -375,9 +375,8 @@ def steadystate_darkbright_plot(args, alpha_list, biases):
             dark_list.append(d_obs)
             bright_list.append(b_obs)
         #ax.plot(biases, np.array(p_coh_list).real, linestyle='--', linewidth=1.2, color=colors[k])
-        print bright_list
         label = r"$\pi\alpha =$"+ "{}".format(int(pi*alpha))
-        ax.plot(biases, (np.array(dark_list)/(np.array(ground_list)+np.array(bright_list))).real, label=label, color=colors[k])
+        ax.plot(biases, (np.array(bright_list)/(np.array(ground_list)+np.array(dark_list))).real, label=label, color=colors[k])
     #print energy_differences[int(len(energy_differences)/2)::]
     #print -1*(np.array(bright_list)-np.array(dark_list))[int(len(energy_differences)/2)::]
     ax.set_xlabel(r'Bias $cm^{-1}$')

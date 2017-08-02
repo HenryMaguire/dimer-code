@@ -261,18 +261,18 @@ if __name__ == "__main__":
     biases = np.linspace(0, 0.03, 50)*ev_to_inv_cm
     #biases = np.array([0, 0.01*ev_to_inv_cm])
 
-    PARAMS.update({'N_1':2, 'N_2':2, 'exc': 3})
-    PARAMS.update({'V':0.25*92.})
-    '''
+    PARAMS.update({'N_1':2, 'N_2':2, 'exc': 2})
+    PARAMS.update({'V':0.5*92.})
+
     for alpha in alpha_ph:
         PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
         check.bias_dependence(biases, PARAMS, ops)
     vis.steadystate_ground_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_coherence_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_dark_plot(PARAMS, alpha_ph, biases)
-    vis.steadystate_bright_plot(PARAMS, alpha_ph, biases)'''
-    #vis.steadystate_darkbright_plot(PARAMS, alpha_ph, biases)
-
+    vis.steadystate_bright_plot(PARAMS, alpha_ph, biases)
+    vis.steadystate_darkbright_plot(PARAMS, alpha_ph, biases)
+    """
     PARAMS.update({'V':0.5*92.})
     '''
     for alpha in alpha_ph:
@@ -282,7 +282,7 @@ if __name__ == "__main__":
     vis.steadystate_coherence_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_dark_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_bright_plot(PARAMS, alpha_ph, biases)'''
-    #vis.steadystate_darkbright_plot(PARAMS, alpha_ph, biases)
+    vis.steadystate_darkbright_plot(PARAMS, alpha_ph, biases)
     PARAMS.update({'V':1*92.})
     '''
     for alpha in alpha_ph:
@@ -350,7 +350,7 @@ if __name__ == "__main__":
     vis.steadystate_dark_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_bright_plot(PARAMS, alpha_ph, biases)'''
     vis.steadystate_darkbright_plot(PARAMS, alpha_ph, biases)
-
+    """
     #del L_ns
     #L_s = EM.L_secular(H_0, A_EM, eps, alpha_EM, T_EM, J, num_cpus=num_cpus)
     #L_naive = EM_lind.electronic_lindblad(w_xx, w_1, eps, V, mu, alpha_EM, T_EM, N_1, N_2, exc)
