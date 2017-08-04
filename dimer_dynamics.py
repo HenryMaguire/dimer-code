@@ -61,8 +61,8 @@ if __name__ == "__main__":
     w0_2, w0_1 = 500., 500. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1
     alpha_1, alpha_2 = 1/pi, 1/pi # Ind.-Boson frame coupling
-    N_1, N_2 = 4,4 # set Hilbert space sizes
-    exc = 3
+    N_1, N_2 = 5,5 # set Hilbert space sizes
+    exc = 6
     num_cpus = 4
     J = J_minimal
 
@@ -135,7 +135,11 @@ if __name__ == "__main__":
     DATA_S = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='s')
     DATA_P = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='p')
     DATA_NS = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='ns')
-
+    PARAMS.update({'J': J_flat})
+    DATA_J = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='j', l='flat_')
+    DATA_S = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='s', l='flat_')
+    DATA_P = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='p', l='flat_')
+    DATA_NS = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='ns', l='flat_')
     """
     mut_inf_d1 = []
     mut_inf_d2 = []

@@ -230,7 +230,7 @@ def exciton_states(PARS):
     #print  np.dot(v_p, v_m) < 1E-15
     return [lam_m, lam_p], [qt.Qobj(v_m), qt.Qobj(v_p)]
 
-def calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='s'):
+def calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='s', l=''):
     L=0
     if EM_approx=='ns':
         L = EM.L_nonsecular(H_0, A_EM, PARAMS)
@@ -269,7 +269,7 @@ def calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='s'):
     plot_eig_dynamics(DATA, timelist, expects, ax1, ss_dm=ss_dm)
     ax2 = fig.add_subplot(212)
     plot_coherences(DATA, timelist, expects, ax2, ss_dm=ss_dm)
-    plt.savefig("DATA/{}_dynamics.pdf".format(EM_approx))
+    plt.savefig("DATA/{}_{}dynamics.pdf".format(EM_approx, l))
     print 'Plotting finished!'
     return DATA
 
