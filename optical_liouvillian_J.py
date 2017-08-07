@@ -8,6 +8,7 @@ from numpy import matrix
 from numpy import linalg
 from utils import J_multipolar, J_flat, rate_up, rate_down
 from scipy import *
+from dimer_checking import exciton_states
 
 
 
@@ -27,7 +28,7 @@ def rate_down(w, beta, gamma):
 	return rate
 """
 
-def	EM_dissipator(wXX, w1, eps, V, mu, gamma, EM_temp, J, N, exc):
+def	EM_dissipator(states, wXX, w2, eps, V, mu, gamma, EM_temp, J, N, exc):
 #
 # A function  to build the Liouvillian describing the processes due to the
 # electromagnetic field (without Lamb shift contributions). The important
@@ -48,7 +49,7 @@ def	EM_dissipator(wXX, w1, eps, V, mu, gamma, EM_temp, J, N, exc):
 	# the dimension list for the RCs is:
 	dims = [N] * 2
 	#2 is the number of modes taken
-
+	w1 = w2
 	#and dimension of the sysetm:
 	Nsys = 4
 
@@ -70,13 +71,17 @@ def	EM_dissipator(wXX, w1, eps, V, mu, gamma, EM_temp, J, N, exc):
 	eta = sqrt(eps ** 2. + 4. * V ** 2.)
 
 	# and the eigenvalues are:
-	lam_p = 0.5 * (2 * w1 + eps + eta)
-	lam_m = 0.5 * (2 * w1 + eps - eta)
+	lam_p = 0.5 * (2 * w2 + eps + eta)
+	lam_m = 0.5 * (2 * w2 + eps - eta)
+
 
 	# first we define the eigenstates:
 	psi_p = (sqrt( eta - eps) * b1 + sqrt( eta + eps) * b2) / sqrt(2 * eta)
 	psi_m = (- sqrt(eta + eps) * b1 + sqrt(eta - eps) * b2) / sqrt(2 * eta)
-
+	dark = states[0]
+	bright= states[1]
+	#psi_m = dark
+	#psi_p = bright
 	# Now the system eigenoperators
 	#ground -> dressed state transitions
 	Alam_p = (sqrt( eta - eps) + mu * sqrt(eta + eps)) / sqrt(2 * eta) * gr * (psi_p.dag())
@@ -128,4 +133,4 @@ def	EM_dissipator(wXX, w1, eps, V, mu, gamma, EM_temp, J, N, exc):
 	Li = Li + gam_bi_p_emm * L3_emission + gam_bi_p_abs * L3_absorption
 	Li = Li + gam_bi_m_emm * L4_emission + gam_bi_m_abs * L4_absorption
 
-	return Li
+	return 2*Li

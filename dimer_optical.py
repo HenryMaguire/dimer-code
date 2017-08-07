@@ -43,7 +43,7 @@ def nonsecular_function(i,j, eVals=[], eVecs=[], w_1=8000., A=0,  Gamma=1.,T=0.,
         X4= r_up*A_ij*IJ
         X1= r_up*A_ji*JI
         X2= r_down*A_ji*JI
-    return X1, X2, X3, X4
+    return Qobj(X1), Qobj(X2), Qobj(X3), Qobj(X4)
 
 def secular_function(i,j, eVals=[], eVecs=[], A=0, w_1=8000., Gamma=1.,T=0., J=J_minimal):
     L = 0
@@ -138,7 +138,7 @@ def L_secular_par(H_vib, A, args):
     degeneracy and the secular approximation has been made
     '''
     ti = time.time()
-    Gamma, T, w_1, J, num_cpus = args['alpha_EM'], args['T_EM'], args['w_1'],args['J'], 0
+    Gamma, T, w_1, J, num_cpus = args['alpha_EM'], args['T_EM'], args['w_1'],args['J'], args['num_cpus']
     dim_ham = H_vib.shape[0]
     eVals, eVecs = H_vib.eigenstates()
     names = ['eVals', 'eVecs', 'A', 'w_1', 'Gamma', 'T', 'J']

@@ -1,4 +1,5 @@
 import sys
+import os
 from numpy import pi
 import numpy as np
 
@@ -45,7 +46,7 @@ if __name__ == "__main__":
     sigma_m2 = XO*XX.dag() + OO*OX.dag()
     sigma_x1 = sigma_m1+sigma_m1.dag()
     sigma_x2 = sigma_m2+sigma_m2.dag()
-
+    """
     w_2 = 1.4*ev_to_inv_cm
     V = 92 #0.01*8065.5
     bias = 0 #1*V #0.01*ev_to_inv_cm
@@ -60,9 +61,25 @@ if __name__ == "__main__":
     wc = 1*53. # Ind.-Boson frame phonon cutoff freq
     w0_2, w0_1 = 500., 500. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1
-    alpha_1, alpha_2 = 1/pi, 1/pi # Ind.-Boson frame coupling
-    N_1, N_2 = 2,2 # set Hilbert space sizes
-    exc = 4
+    """
+    w_2 = 1500
+    V = 100 #0.01*8065.5
+    bias = 0 #1*V #0.01*ev_to_inv_cm
+    w_1 = w_2 + bias
+    dipole_1, dipole_2 = 1., 1.
+    T_EM = 6000. # Optical bath temperature
+    alpha_EM = 0.1 #0.3*inv_ps_to_inv_cm # Optical S-bath strength (from inv. ps to inv. cm)(larger than a real decay rate because dynamics are more efficient this way)
+    mu = w_2*dipole_2/(w_1*dipole_1)
+
+    T_1, T_2 = 300., 300. # Phonon bath temperature
+
+    wc = 1*53. # Ind.-Boson frame phonon cutoff freq
+    w0_2, w0_1 = 500., 500. # underdamped SD parameter omega_0
+    w_xx = w_2 + w_1
+
+    alpha_1, alpha_2 = 2/pi, 2/pi # Ind.-Boson frame coupling
+    N_1, N_2 = 3,3 # set Hilbert space sizes
+    exc = 2
     num_cpus = 4
     J = J_minimal
 
@@ -132,14 +149,14 @@ if __name__ == "__main__":
     #timelist = np.linspace(0,3,1000)
     L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(PARAMS)
     DATA_J = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='j')
-    DATA_S = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='s')
     DATA_P = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='p')
-    DATA_NS = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='ns')
+    #DATA_S = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='s')
+    #DATA_NS = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='ns')
     PARAMS.update({'J': J_flat})
-    DATA_J = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='j', l='flat_')
-    DATA_S = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='s', l='flat_')
-    DATA_P = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='p', l='flat_')
-    DATA_NS = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='ns', l='flat_')
+    #DATA_J = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='j', l='flat_')
+    #DATA_P = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='p', l='flat_')
+    #DATA_S = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='s', l='flat_')
+    #DATA_NS = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='ns', l='flat_')
     """
     mut_inf_d1 = []
     mut_inf_d2 = []

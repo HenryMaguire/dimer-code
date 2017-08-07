@@ -1,6 +1,7 @@
 """
 Plotting module for the dimer dynamics
 """
+import os
 import dimer_phonons as RC
 import dimer_optical as EM
 import optical_liouvillian_J as JAKE
@@ -12,6 +13,8 @@ import matplotlib
 import time
 matplotlib.style.use('ggplot')
 reload(JAKE)
+reload(RC)
+reload(EM)
 
 from utils import *
 
@@ -233,22 +236,26 @@ def exciton_states(PARS):
 
 def calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='s', l=''):
     L=0
+    if l == 'flat_':
+        PARAMS.update({'mu':1})
+    else:
+        pass
     if EM_approx=='ns':
-        L = EM.L_nonsecular(H_0, A_EM, PARAMS)
+        L = EM.L_nonsecular_par(H_0, A_EM, PARAMS)
     elif EM_approx=='s':
-        L = EM.L_secular(H_0, A_EM, PARAMS)
+        L = EM.L_secular_par(H_0, A_EM, PARAMS)
     elif EM_approx=='p':
         I = qt.enr_identity([PARAMS['N_1'],PARAMS['N_2']], PARAMS['exc'])
         energies, states = exciton_states(PARAMS)
         L = EM.L_phenom(states, energies, I, PARAMS)
     elif EM_approx =='j':
-        L = JAKE.EM_dissipator(PARAMS['w_xx'], PARAMS['w_1'], PARAMS['bias'],
-                                            PARAMS['V'], 1, PARAMS['alpha_EM'], PARAMS['T_EM'], PARAMS['J'],
+        energies, states = exciton_states(PARAMS)
+        L = JAKE.EM_dissipator(states, PARAMS['w_xx'], PARAMS['w_2'], PARAMS['bias'],
+                                            PARAMS['V'], PARAMS['mu'], PARAMS['alpha_EM'], PARAMS['T_EM'], PARAMS['J'],
                                             PARAMS['N_1'], PARAMS['exc'])
     else:
         raise KeyError
-    timelist = np.linspace(0,15.0,2500)
-    print L_RC.dims, L.dims
+    timelist = np.linspace(0,5.0,2500)
     L_full = L_RC+L
     opts = qt.Options(num_cpus=PARAMS['num_cpus'], store_final_state=True)
     DATA = qt.mesolve(H_0, rho_0, timelist, [L_full], expects, progress_bar=True, options=opts)
@@ -270,7 +277,12 @@ def calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='s', l
     plot_eig_dynamics(DATA, timelist, expects, ax1, ss_dm=ss_dm)
     ax2 = fig.add_subplot(212)
     plot_coherences(DATA, timelist, expects, ax2, ss_dm=ss_dm)
-    plt.savefig("DATA/{}_{}dynamics.pdf".format(EM_approx, l))
+    data_dir = "DATA/Dynamics_Jwc_N{}_exc{}".format(PARAMS['N_1'], PARAMS['exc'])
+    if not os.path.exists(data_dir):
+        os.makedirs(data_dir)
+    plt.savefig(data_dir+"/{}_{}dynamics.pdf".format(EM_approx, l))
+    data_name = data_dir+"/{}_{}data".format(EM_approx, l)
+    save_obj(DATA, data_name)
     plt.close()
     print 'Plotting finished!'
     return DATA
