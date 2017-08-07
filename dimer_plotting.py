@@ -100,7 +100,7 @@ def plot_dynamics(DATA, timelist, exp_ops, ax, title='', ss_dm = False):
 def plot_eig_dynamics(DATA, timelist, exp_ops, ax, title='', ss_dm = False):
     """ Docstring here please
     """
-    labels = [r'Ground', r'Anti-Symm.', r'Symmetric', r'Biexciton']
+    labels = [r'Ground', r'Dark.', r'Bright', r'Biexciton']
     colors = [i['color'] for i in list(plt.rcParams['axes.prop_cycle'])][0:4]
     info = zip([0,5,6,3], labels, colors) # expval id, etc., etc.
     #ax.title(title)
@@ -113,6 +113,7 @@ def plot_eig_dynamics(DATA, timelist, exp_ops, ax, title='', ss_dm = False):
     ax.set_ylabel("Eigenstate population")
     ax.set_xlabel("Time (ps)")
     ax.set_ylim(0,1)
+    ax.set_xlim(0,timelist[-1])
     ax.legend()
     #p_file_name = "Notes/Images/Dynamics/Pop_a{:d}_Tph{:d}_Tem{:d}_w0{:d}.pdf".format(int(alpha_ph), int(T_ph), int(T_EM), int(w0))
     #plt.savefig(p_file_name)
@@ -132,9 +133,9 @@ def plot_coherences(DATA, timelist, exp_ops, ax, title='', ss_dm = False):
             ax.axhline(s, color=c, ls='--')
     #ax.title(title)
     ax.legend(loc='lower right')
-    ax.set_ylabel("Symm./Anti-symm. Eigenstate Coherence")
+    ax.set_ylabel("Eigenstate Coherence")
     ax.set_xlabel("Time (ps)")
-    ax.set_ylim(0,0.06)
+    ax.set_xlim(0,timelist[-1])
     #file_name = "Notes/Images/Dynamics/Coh_a{:d}_Tph{:d}_Tem{:d}_w0{:d}.pdf".format(int(alpha_1), int(T_1), int(T_EM), int(w0_1))
     #plt.savefig(file_name)
     #plt.close()
@@ -246,7 +247,7 @@ def calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='s', l
                                             PARAMS['N_1'], PARAMS['exc'])
     else:
         raise KeyError
-    timelist = np.linspace(0,10.0,2000)
+    timelist = np.linspace(0,15.0,2500)
     print L_RC.dims, L.dims
     L_full = L_RC+L
     opts = qt.Options(num_cpus=PARAMS['num_cpus'], store_final_state=True)
@@ -262,7 +263,7 @@ def calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='s', l
     #timelist=timelist/0.188 # Convert from cm to picoseconds
     #DATA_ns = load_obj("DATA_N7_exc8")
     #fig = plt.figure(figsize=(12,6))
-    fig = plt.figure()
+    fig = plt.figure(figsize=(12,10))
     ax1 = fig.add_subplot(211)
     title = 'Eigenstate dynamics'
     #title = title + r"$\omega_0=$""%i"r"$cm^{-1}$, $\alpha_{ph}=$""%f"r"$cm^{-1}$, $T_{EM}=$""%i K" %(w0_1, alpha_1, T_EM)
@@ -270,6 +271,7 @@ def calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='s', l
     ax2 = fig.add_subplot(212)
     plot_coherences(DATA, timelist, expects, ax2, ss_dm=ss_dm)
     plt.savefig("DATA/{}_{}dynamics.pdf".format(EM_approx, l))
+    plt.close()
     print 'Plotting finished!'
     return DATA
 

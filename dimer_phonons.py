@@ -195,7 +195,7 @@ def RC_mapping_UD(args):
     H_0, A_1, A_2, A_EM = dimer_ham_RC(w_1, w_2, w_xx, V, mu, wRC_1, wRC_2, kappa_1, kappa_2, N_1, N_2, exc)
     L_RC =  liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2, T_1, T_2, num_cpus=args['num_cpus'])
     full_size = (4*N_1*N_1)**2
-    #print "It is {}by{} and of type {}. The full basis would be {}by{}".format(L_RC.shape[0], L_RC.shape[0], L_RC.type, full_size, full_size)
+    print "It is {}by{}. The full basis would be {}by{}".format(L_RC.shape[0], L_RC.shape[0], full_size, full_size)
     return L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2
     #H_dim_full = w_1*XO*XO.dag() + w_2*w_1*OX*OX.dag() + w_xx*XX*XX.dag() + V*((SIGMA_m1+SIGMA_m1.dag())*(SIGMA_m2+SIGMA_m2.dag()))
 
