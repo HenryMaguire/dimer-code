@@ -48,7 +48,7 @@ if __name__ == "__main__":
 
     w_2 = 1.4*ev_to_inv_cm
     V = 92 #0.01*8065.5
-    bias = V #1*V #0.01*ev_to_inv_cm
+    bias = 0 #1*V #0.01*ev_to_inv_cm
     w_1 = w_2 + bias
     dipole_1, dipole_2 = 1., 1.
     T_EM = 6000. # Optical bath temperature
@@ -61,8 +61,8 @@ if __name__ == "__main__":
     w0_2, w0_1 = 500., 500. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1
     alpha_1, alpha_2 = 1/pi, 1/pi # Ind.-Boson frame coupling
-    N_1, N_2 = 5,5 # set Hilbert space sizes
-    exc = 6
+    N_1, N_2 = 4,4 # set Hilbert space sizes
+    exc = 4
     num_cpus = 4
     J = J_minimal
 

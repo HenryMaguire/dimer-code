@@ -128,7 +128,7 @@ def L_secular(H_vib, A, args):
         kwargs[name] = eval(name)
     l = dim_ham*range(dim_ham)
     L = par.parfor(secular_function, sorted(l), l,
-                                            num_cpus=1, **kwargs)
+                                            num_cpus=num_cpus, **kwargs)
 
     print "It took ", time.time()-ti, " seconds to build the vibronic Lindblad Liouvillian"
     return -np.sum(L)

@@ -102,7 +102,7 @@ def plot_eig_dynamics(DATA, timelist, exp_ops, ax, title='', ss_dm = False):
     """
     labels = [r'Ground', r'Anti-Symm.', r'Symmetric', r'Biexciton']
     colors = [i['color'] for i in list(plt.rcParams['axes.prop_cycle'])][0:4]
-    info = zip([0,4,5,3], labels, colors) # expval id, etc., etc.
+    info = zip([0,5,6,3], labels, colors) # expval id, etc., etc.
     #ax.title(title)
     linewidth = 1.5
     linestyle = '-'
@@ -119,8 +119,8 @@ def plot_eig_dynamics(DATA, timelist, exp_ops, ax, title='', ss_dm = False):
 def plot_coherences(DATA, timelist, exp_ops, ax, title='', ss_dm = False):
     labels = [r'Real part', 'Imaginary part']
     colors = [i['color'] for i in list(plt.rcParams['axes.prop_cycle'])][0:2]
-    coh = DATA.expect[6]
-    ss = (ss_dm*exp_ops[6]).tr()
+    coh = DATA.expect[7]
+    ss = (ss_dm*exp_ops[7]).tr()
     info = zip([ss.real, ss.imag],[coh.real, coh.imag], labels, colors)
 
     #ax.title(r"$\alpha_{ph}=$""%i"r"$cm^{-1}$, $T_{EM}=$""%i K" %(alpha_1, T_EM))
