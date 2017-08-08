@@ -10,7 +10,6 @@ import dimer_phonons as RC
 import dimer_optical as EM
 
 #import electronic_lindblad as EM_naive
-from dimer_plotting import dataObject
 from utils import *
 reload(RC)
 reload(EM)
@@ -198,7 +197,7 @@ def bias_dependence(biases, args, ops):
     else:
 
         print "Data already exists at {}. Skipping...".format(main_dir+'nonsecular/steadystate_DMs_pialpha{}'.format(int(pi*args['alpha_1'])))
-    
+
     return
 
 def SS_convergence_check(sigma, w_1, w_2, w_xx, V, T_1, T_2, w0_1, w0_2, alpha_1, alpha_2, wc,  alpha_EM, T_EM, mu=0, expect_op='bright', time_units='cm', start_n=2, end_n=5, method='direct'):

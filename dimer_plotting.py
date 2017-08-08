@@ -255,9 +255,9 @@ def calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='s', l
                                             PARAMS['N_1'], PARAMS['exc'])
     else:
         raise KeyError
-    timelist = np.linspace(0,5.0,2500)
+    timelist = np.linspace(0,5.0,4000)
     L_full = L_RC+L
-    opts = qt.Options(num_cpus=PARAMS['num_cpus'], store_final_state=True)
+    opts = qt.Options(num_cpus=PARAMS['num_cpus'], store_final_state=True, nsteps=3000)
     DATA = qt.mesolve(H_0, rho_0, timelist, [L_full], expects, progress_bar=True, options=opts)
     ss_dm = 0
     try:
