@@ -46,10 +46,9 @@ if __name__ == "__main__":
     sigma_m2 = XO*XX.dag() + OO*OX.dag()
     sigma_x1 = sigma_m1+sigma_m1.dag()
     sigma_x2 = sigma_m2+sigma_m2.dag()
-    """
     w_2 = 1.4*ev_to_inv_cm
     V = 92 #0.01*8065.5
-    bias = 0 #1*V #0.01*ev_to_inv_cm
+    bias = 0.01*ev_to_inv_cm
     w_1 = w_2 + bias
     dipole_1, dipole_2 = 1., 1.
     T_EM = 6000. # Optical bath temperature
@@ -62,9 +61,9 @@ if __name__ == "__main__":
     w0_2, w0_1 = 500., 500. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1
     """
-    w_2 = 15000
-    V = 100 #0.01*8065.5
-    bias = 200 #1*V #0.01*ev_to_inv_cm
+    w_2 = 1500
+    V = 10 #0.01*8065.5
+    bias = 20 #1*V #0.01*ev_to_inv_cm
     w_1 = w_2 + bias
     dipole_1, dipole_2 = 1., 1.
     T_EM = 5700. # Optical bath temperature
@@ -76,10 +75,10 @@ if __name__ == "__main__":
     wc = 1*53. # Ind.-Boson frame phonon cutoff freq
     w0_2, w0_1 = 666., 666. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1
-
-    alpha_1, alpha_2 = 10/pi, 10/pi # Ind.-Boson frame coupling
+    """
+    alpha_1, alpha_2 = 200/pi, 200/pi # Ind.-Boson frame coupling
     N_1, N_2 = 4,4 # set Hilbert space sizes
-    exc = 2
+    exc = 4
     num_cpus = 4
     J = J_minimal
 
