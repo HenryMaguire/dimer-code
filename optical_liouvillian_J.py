@@ -74,14 +74,13 @@ def	EM_dissipator(states, wXX, w2, eps, V, mu, gamma, EM_temp, J, N, exc):
 	lam_p = 0.5 * (2 * w2 + eps + eta)
 	lam_m = 0.5 * (2 * w2 + eps - eta)
 
-
 	# first we define the eigenstates:
 	psi_p = (sqrt( eta - eps) * b1 + sqrt( eta + eps) * b2) / sqrt(2 * eta)
 	psi_m = (- sqrt(eta + eps) * b1 + sqrt(eta - eps) * b2) / sqrt(2 * eta)
 	dark = states[0]
 	bright= states[1]
-	#psi_m = dark
-	#psi_p = bright
+	psi_m = dark
+	psi_p = bright
 	# Now the system eigenoperators
 	#ground -> dressed state transitions
 	Alam_p = (sqrt( eta - eps) + mu * sqrt(eta + eps)) / sqrt(2 * eta) * gr * (psi_p.dag())

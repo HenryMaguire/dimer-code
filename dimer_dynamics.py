@@ -62,24 +62,24 @@ if __name__ == "__main__":
     w0_2, w0_1 = 500., 500. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1
     """
-    w_2 = 1500
+    w_2 = 15000
     V = 100 #0.01*8065.5
-    bias = 50 #1*V #0.01*ev_to_inv_cm
+    bias = 200 #1*V #0.01*ev_to_inv_cm
     w_1 = w_2 + bias
     dipole_1, dipole_2 = 1., 1.
-    T_EM = 6000. # Optical bath temperature
+    T_EM = 5700. # Optical bath temperature
     alpha_EM = 0.1 #0.3*inv_ps_to_inv_cm # Optical S-bath strength (from inv. ps to inv. cm)(larger than a real decay rate because dynamics are more efficient this way)
     mu = w_2*dipole_2/(w_1*dipole_1)
 
     T_1, T_2 = 300., 300. # Phonon bath temperature
 
     wc = 1*53. # Ind.-Boson frame phonon cutoff freq
-    w0_2, w0_1 = 500., 500. # underdamped SD parameter omega_0
+    w0_2, w0_1 = 666., 666. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1
 
-    alpha_1, alpha_2 = 100/pi, 100/pi # Ind.-Boson frame coupling
+    alpha_1, alpha_2 = 10/pi, 10/pi # Ind.-Boson frame coupling
     N_1, N_2 = 4,4 # set Hilbert space sizes
-    exc = 5
+    exc = 2
     num_cpus = 4
     J = J_minimal
 
@@ -114,16 +114,15 @@ if __name__ == "__main__":
     dark_old= eVecs[1]
     bright_old= eVecs[2]
     energies, states = check.exciton_states(PARAMS)
-
     lam_p = 0.5*(w_1+w_2)+0.5*np.sqrt((w_2-w_1)**2+4*(V**2))
     lam_m = 0.5*(w_1+w_2)-0.5*np.sqrt((w_2-w_1)**2+4*(V**2))
     bright_vec = states[1]
     dark_vec = states[0]
-    dark = tensor(dark_old*dark_old.dag(), I)
-    bright = tensor(bright_old*bright_old.dag(), I)
+    dark = tensor(dark_vec*dark_vec.dag(), I)
+    bright = tensor(bright_vec*bright_vec.dag(), I)
     #print  (states[1]*states[1].dag()).tr(), bright_old, states[1]*states[1].dag()
     #print (states[0]*states[0].dag()).tr(), dark_old, states[0]*states[0].dag()
-    exciton_coherence = tensor(dark_old*bright_old.dag(), I)
+    exciton_coherence = tensor(dark_vec*bright_vec.dag(), I)
     Phonon_1 = tensor(I_dimer, phonon_num_1)
     Phonon_2 = tensor(I_dimer, phonon_num_2)
     disp_1 = tensor(I_dimer, x_1)
@@ -148,7 +147,7 @@ if __name__ == "__main__":
     rho_0 = tensor(basis(4,0)*basis(4,0).dag(),thermal_RCs)
     #timelist = np.linspace(0,3,1000)
     L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(PARAMS)
-    #DATA_J = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='j')
+    DATA_J = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='j')
     DATA_P = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='p')
     DATA_S = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='s')
     DATA_NS = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='ns')
