@@ -123,8 +123,19 @@ def J_minimal(omega, Gamma, omega_0):
 
 def J_flat(omega, Gamma, omega_0):
     return Gamma/(2*np.pi)
-def J_overdamped(omega, alpha, Gamma, omega_0):
+
+def J_underdamped(omega, alpha, Gamma, omega_0):
     return alpha*Gamma*pow(omega_0,2)*omega/(pow(pow(omega_0,2)-pow(omega,2),2)+(Gamma**2 *omega**2))
+
+def J_overdamped(omega, alpha, wc):
+    return alpha*wc*omega/(omega**2 +wc**2)
+def J_OD_to_UD(omega, gamma, Omega, kappa):
+    # kappa is  referred to as lambda
+    # in J. Chem. Phys. 144, 044110 (2016)
+    n = 4*gamma*omega*(Omega**2)*(kappa**2)
+    d1= (Omega**2-omega**2)**2
+    d2 = (2*np.pi*gamma*Omega*omega)**2
+    return n/ (d1 + d2)
 
 def rate_up(w, T, gamma, J, w_0):
     n = Occupation(w, T)

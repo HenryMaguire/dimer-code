@@ -41,7 +41,7 @@ propto = 5.
 steplist =  linspace(0, propto, stepsize)
 
 #coupling strength (in terms of the single RC)
-alp = 4. / pi
+alp = 200. / pi
 
 # st = time.time()
 # sol = rcfunc.RCfunction(eps, V, Temp, wc, alp, 10, propto, stepsize)

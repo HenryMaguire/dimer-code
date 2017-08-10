@@ -24,8 +24,6 @@ import time as time
 
 def RCfunction(eps, V, Temp, wc, alpha, N, propto, stepsize):
 
-
-
 	#Now define system operators:
 	#TLS Hamiltonian:
 
@@ -46,9 +44,7 @@ def RCfunction(eps, V, Temp, wc, alpha, N, propto, stepsize):
 
 	# define inverse temperature
 	beta = 1. / (0.695 * Temp)
-
-
-
+	
 	# reaction coordinate parameters are:
 	#calculate the RC parameters:
 	gamma = 2.#sqrt((eps ** 2. + V ** 2.)) / (2. * pi * wc)  # free parameter that we fix to the system splitting

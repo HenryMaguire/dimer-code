@@ -243,7 +243,7 @@ def calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='s', l
     if EM_approx=='ns':
         L = EM.L_nonsecular(H_0, A_EM, PARAMS)
     elif EM_approx=='s':
-        L = EM.L_secular_par(H_0, A_EM, PARAMS)
+        L = EM.L_secular(H_0, A_EM, PARAMS)
     elif EM_approx=='p':
         I = qt.enr_identity([PARAMS['N_1'],PARAMS['N_2']], PARAMS['exc'])
         energies, states = exciton_states(PARAMS)
@@ -280,7 +280,7 @@ def calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='s', l
     lab='wc'
     if PARAMS['alpha_1']>PARAMS['w_1']/500.:
         lab = 'sc'
-    data_dir = "DATA/Dynamics_O{}_N{}_exc{}".format(lab, PARAMS['N_1'], PARAMS['exc'])
+    data_dir = "DATA/Dynamics_J{}_N{}_exc{}".format(lab, PARAMS['N_1'], PARAMS['exc'])
     if not os.path.exists(data_dir):
         os.makedirs(data_dir)
     plt.savefig(data_dir+"/{}_{}dynamics.pdf".format(EM_approx, l))
