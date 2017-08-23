@@ -63,24 +63,24 @@ if __name__ == "__main__":
     w_xx = w_2 + w_1
 
     """
-    w_2 = 1500
-    V = 10 #0.01*8065.5
-    bias = 250 #1*V #0.01*ev_to_inv_cm
+    w_2 = 100
+    V = 20 #0.01*8065.5
+    bias = 0 #1*V #0.01*ev_to_inv_cm
     w_1 = w_2 + bias
     dipole_1, dipole_2 = 1., 1.
-    T_EM = 5700. # Optical bath temperature
-    alpha_EM = 0.1 #0.3*inv_ps_to_inv_cm # Optical S-bath strength (from inv. ps to inv. cm)(larger than a real decay rate because dynamics are more efficient this way)
+    T_EM = 50. # Optical bath temperature
+    alpha_EM = 1. #0.3*inv_ps_to_inv_cm # Optical S-bath strength (from inv. ps to inv. cm)(larger than a real decay rate because dynamics are more efficient this way)
     mu = w_2*dipole_2/(w_1*dipole_1)
 
     T_1, T_2 = 300., 300. # Phonon bath temperature
 
-    wc = 1*53. # Ind.-Boson frame phonon cutoff freq
+    wc = 1*53.08 # Ind.-Boson frame phonon cutoff freq
     w0_2, w0_1 = 3000., 3000. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1
 
-    alpha_1, alpha_2 = 0.5/pi, 0.5/pi # Ind.-Boson frame coupling
+    alpha_1, alpha_2 = 0, 0 # Ind.-Boson frame coupling
     N_1, N_2 = 3,3 # set Hilbert space sizes
-    exc = 3
+    exc = 4
     num_cpus = 4
     J = J_minimal
 
