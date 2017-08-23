@@ -241,9 +241,9 @@ def calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, timelist, EM_app
     else:
         pass
     if EM_approx=='ns':
-        L = EM.L_nonsecular(H_0, A_EM, PARAMS)
+        L = EM.L_nonsecular_par(H_0, A_EM, PARAMS)
     elif EM_approx=='s':
-        L = EM.L_secular(H_0, A_EM, PARAMS)
+        L = EM.L_secular_par(H_0, A_EM, PARAMS)
     elif EM_approx=='p':
         I = qt.enr_identity([PARAMS['N_1'],PARAMS['N_2']], PARAMS['exc'])
         energies, states = exciton_states(PARAMS)
@@ -255,9 +255,7 @@ def calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, timelist, EM_app
                                             PARAMS['N_1'], PARAMS['exc'])
     else:
         raise KeyError
-    L_full = L_RC+L
-    opts = qt.Options(num_cpus=PARAMS['num_cpus'], store_final_state=True, nsteps=4000)
-    DATA = qt.mesolve(H_0, rho_0, timelist, [L_full], expects, progress_bar=True, options=opts)
+    L_full = L_RC
     ss_dm = 0
     try:
         ss_dm = qt.steadystate(H_0, [L_full])
@@ -266,27 +264,35 @@ def calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, timelist, EM_app
         print "\t due to some problem with excitation restriction. \n"
         print err
 
+    #print ENR_ptrace(ss_dm, 0, [4, PARAMS['N_1'],PARAMS['N_2']], PARAMS['exc'] )
+    opts = qt.Options(num_cpus=PARAMS['num_cpus'], store_final_state=True, nsteps=100000, method='bdf')
+    try:
+        DATA = qt.mesolve(H_0, rho_0, timelist, [L_full], e_ops=expects, progress_bar=True, options=opts)
+        fig = plt.figure(figsize=(12,10))
+        ax1 = fig.add_subplot(211)
+        title = 'Eigenstate dynamics'
+        #title = title + r"$\omega_0=$""%i"r"$cm^{-1}$, $\alpha_{ph}=$""%f"r"$cm^{-1}$, $T_{EM}=$""%i K" %(w0_1, alpha_1, T_EM)
+        plot_eig_dynamics(DATA, timelist, expects, ax1, ss_dm=ss_dm)
+        ax2 = fig.add_subplot(212)
+        plot_coherences(DATA, timelist, expects, ax2, ss_dm=ss_dm)
+        lab='wc'
+        if PARAMS['alpha_1']>PARAMS['w_1']/500.:
+            lab = 'sc'
+        data_dir = "DATA/Dynamics_J{}_N{}_exc{}".format(lab, PARAMS['N_1'], PARAMS['exc'])
+        if not os.path.exists(data_dir):
+            os.makedirs(data_dir)
+        plt.savefig(data_dir+"/{}_{}dynamics.pdf".format(EM_approx, l))
+        data_name = data_dir+"/{}_{}data".format(EM_approx, l)
+        save_obj(DATA, data_name)
+        plt.close()
+        print 'Plotting finished!'
+    except Exception as err:
+        DATA = None
+        print "could not calculate dynamics because:\n {}".format(err)
+
     #timelist=timelist/0.188 # Convert from cm to picoseconds
     #DATA_ns = load_obj("DATA_N7_exc8")
     #fig = plt.figure(figsize=(12,6))
-    fig = plt.figure(figsize=(12,10))
-    ax1 = fig.add_subplot(211)
-    title = 'Eigenstate dynamics'
-    #title = title + r"$\omega_0=$""%i"r"$cm^{-1}$, $\alpha_{ph}=$""%f"r"$cm^{-1}$, $T_{EM}=$""%i K" %(w0_1, alpha_1, T_EM)
-    plot_eig_dynamics(DATA, timelist, expects, ax1, ss_dm=ss_dm)
-    ax2 = fig.add_subplot(212)
-    plot_coherences(DATA, timelist, expects, ax2, ss_dm=ss_dm)
-    lab='wc'
-    if PARAMS['alpha_1']>PARAMS['w_1']/500.:
-        lab = 'sc'
-    data_dir = "DATA/Dynamics_J{}_N{}_exc{}".format(lab, PARAMS['N_1'], PARAMS['exc'])
-    if not os.path.exists(data_dir):
-        os.makedirs(data_dir)
-    plt.savefig(data_dir+"/{}_{}dynamics.pdf".format(EM_approx, l))
-    data_name = data_dir+"/{}_{}data".format(EM_approx, l)
-    save_obj(DATA, data_name)
-    plt.close()
-    print 'Plotting finished!'
     return ss_dm, DATA
 
 def steadystate_coherence_plot(args, alpha_list, biases):

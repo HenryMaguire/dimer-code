@@ -22,20 +22,6 @@ reload(check)
 
 
 
-def get_dimer_info(rho):
-    e1e2 = tensor(basis(4,1)*basis(4,2).dag(), I)
-    e2e1 = tensor(basis(4,2)*basis(4,1).dag(), I)
-    g = (rho*OO).tr()
-    e1 = (rho*XO).tr()
-    e2 = (rho*OX).tr()
-
-    e1e2 = (rho*e1e2).tr()
-    e2e1 = (rho*e2e1).tr()
-    xx = (rho*XX).tr()
-    return Qobj([[g.real, 0,0,0], [0, e1.real,e1e2.real,0],[0, e2e1.real,e2.real,0],[0, 0,0,xx.real]])#/(g+e1+e2+xx)
-
-
-
 if __name__ == "__main__":
 
     OO = basis(4,0)
@@ -46,24 +32,24 @@ if __name__ == "__main__":
     sigma_m2 = XO*XX.dag() + OO*OX.dag()
     sigma_x1 = sigma_m1+sigma_m1.dag()
     sigma_x2 = sigma_m2+sigma_m2.dag()
-    """
+
     w_2 = 1.4*ev_to_inv_cm
     V = 92 #0.01*8065.5
-    bias = 0.01*ev_to_inv_cm
+    bias = 0 #0.01*ev_to_inv_cm
     w_1 = w_2 + bias
     dipole_1, dipole_2 = 1., 1.
-    T_EM = 6000. # Optical bath temperature
+    T_EM = 5700. # Optical bath temperature
     alpha_EM = 0.3*inv_ps_to_inv_cm # Optical S-bath strength (from inv. ps to inv. cm)(larger than a real decay rate because dynamics are more efficient this way)
     mu = w_2*dipole_2/(w_1*dipole_1)
 
     T_1, T_2 = 300., 300. # Phonon bath temperature
 
-    wc = 1*53. # Ind.-Boson frame phonon cutoff freq
-    w0_2, w0_1 = 1000., 1000. # underdamped SD parameter omega_0
+    wc = 1*53.08 # Ind.-Boson frame phonon cutoff freq
+    w0_2, w0_1 = 700., 700. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1
 
     """
-    w_2 = 100
+    w_2 = 4000
     V = 20 #0.01*8065.5
     bias = 0 #1*V #0.01*ev_to_inv_cm
     w_1 = w_2 + bias
@@ -77,10 +63,10 @@ if __name__ == "__main__":
     wc = 1*53.08 # Ind.-Boson frame phonon cutoff freq
     w0_2, w0_1 = 3000., 3000. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1
-
-    alpha_1, alpha_2 = 0, 0 # Ind.-Boson frame coupling
-    N_1, N_2 = 3,3 # set Hilbert space sizes
-    exc = 4
+    """
+    alpha_1, alpha_2 = 0., 0. # Ind.-Boson frame coupling
+    N_1, N_2 = 2, 2 # set Hilbert space sizes
+    exc = 6
     num_cpus = 4
     J = J_minimal
 
@@ -135,29 +121,29 @@ if __name__ == "__main__":
     ops = [OO, XO, OX, XX, site_coherence]
     # Expectation values and time increments needed to calculate the dynamics
     expects = ops + [dark, bright, exciton_coherence]
-    expects +=[Phonon_1, Phonon_2, disp_1, disp_2]
+    #expects += [Phonon_1, Phonon_2, disp_1, disp_2]
     #Now we build all of the mapped operators and RC Liouvillian.
 
     # electromagnetic bath liouvillians
 
     #print sys.getsizeof(L_ns)
-    opts = qt.Options(num_cpus=num_cpus, store_states=True)
+    #opts = qt.Options(num_cpus=num_cpus, store_states=True)
     ncolors = len(plt.rcParams['axes.prop_cycle'])
 
     thermal_RCs = enr_thermal_dm([N_1,N_2], exc, [n_RC_1, n_RC_2])
-    rho_0 = tensor(basis(4,0)*basis(4,0).dag(),thermal_RCs)
+    rho_0 = tensor(basis(4,1)*basis(4,1).dag(),thermal_RCs)
     #timelist = np.linspace(0,3,1000)
     L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_OD(PARAMS)
-    timelist = (0,1,5000)
+    timelist = (0,0.01,70000)
     #Gamma_1 = (wRC_1**2)/wc
     #plt.plot(freqs, J_overdamped(freqs, alpha_1, wc), label='OD')
     #plt.plot(freqs, J_underdamped(freqs, alpha_1, Gamma_1, wRC_1), label='UD')
     #plt.plot(freqs, J_OD_to_UD(freqs, 2, wRC_1, kappa_1), label='setting gamma=2')
     plt.legend()
     ss_J, DATA_J = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, timelist, EM_approx='j', l='flat_')
-    ss_P, DATA_P = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, timelist, EM_approx='p')
-    ss_S, DATA_S = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, timelist, EM_approx='s')
-    ss_NS, DATA_NS = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, timelist, EM_approx='ns')
+    #ss_P, DATA_P = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, timelist, EM_approx='p')
+    #ss_S, DATA_S = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, timelist, EM_approx='s')
+    #ss_NS, DATA_NS = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, timelist, EM_approx='ns')
     plt.plot(DATA_J.expect[7])
     #PARAMS.update({'exc': 5})
     #PARAMS.update({'N_1': 5, 'N_2': 5, 'alpha_1':50/pi, 'alpha_2': 50/pi})

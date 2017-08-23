@@ -1,7 +1,7 @@
 import numpy as np
 from numpy import pi
 import scipy as sp
-from qutip import spre, spost, sprepost
+from qutip import spre, spost, sprepost, tensor, basis
 import qutip as qt
 import pickle
 
@@ -113,6 +113,33 @@ def Occupation(omega, T):
         else:
             n = float(1./(sp.exp(omega*beta)-1))
     return n
+
+
+def get_dimer_info(rho, I):
+    # must be a density matrix
+    e1e2 = tensor(basis(4,1)*basis(4,2).dag(), I)
+    e2e1 = tensor(basis(4,2)*basis(4,1).dag(), I)
+    OO = basis(4,0)
+    XO = basis(4,1)
+    OX = basis(4,2)
+    XX = basis(4,3)
+    OO = tensor(OO*OO.dag(), I)
+    XO = tensor(XO*XO.dag(), I)
+    OX = tensor(OX*OX.dag(), I)
+    XX = tensor(XX*XX.dag(), I)
+
+    g = (rho*OO).tr()
+    e1 = (rho*XO).tr()
+    e2 = (rho*OX).tr()
+
+    e1e2 = (rho*e1e2).tr()
+    e2e1 = (rho*e2e1).tr()
+    print g
+    print e1, e1e2
+    xx = (rho*XX).tr()
+    return qt.Qobj([[g.real, 0,0,0], [0, e1.real,e1e2.real,0],[0, e2e1.real,e2.real,0],[0, 0,0,xx.real]])#/(g+e1+e2+xx)
+
+
 
 
 def J_multipolar(omega, Gamma, omega_0):

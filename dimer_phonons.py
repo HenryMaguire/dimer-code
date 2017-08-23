@@ -6,6 +6,7 @@ import numpy as np
 import scipy as sp
 from numpy import pi
 import time
+from utils import *
 
 
 def dimer_ham_RC(w_1, w_2, w_xx, V, mu, Omega_1,
@@ -153,8 +154,8 @@ def liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2, T_1, T_2, 
         beta_2 = 1./(conversion * T_2)
         #RCnb_2 = (1 / (sp.exp( beta_2 * wRC_2)-1))
     # Now this function has to construct the liouvillian so that it can be passed to mesolve
-    H_0, Chi_1, Xi_1,Chi_2, Xi_2  = RCME_operators_par(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus=num_cpus)
-    #H_0, Chi_1_, Xi_1_,Chi_2_, Xi_2_  = RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2)
+    H_1 = H_0
+    H_0, Chi_1, Xi_1,Chi_2, Xi_2  = RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus=num_cpus)
     '''
     print np.sum(Chi_1.full() == Chi_1_.full()), Chi_1.shape[0]**2
     print np.sum(Chi_2.full() == Chi_2_.full()), Chi_1.shape[0]**2
@@ -176,6 +177,17 @@ def liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2, T_1, T_2, 
     print "Building the RC Liouvillian took ", time.time()-ti, "seconds."
     return L
 
+def construct_thermal(args):
+    w_1, w_2, w_xx, V, mu = args['w_1'], args['w_2'], args['w_xx'], args['V'], args['mu']
+    alpha_1, alpha_2, wc, T_EM = args['alpha_1'], args['alpha_2'], args['wc'], args['T_EM']
+    gamma_1, gamma_2 = 2, 2
+    wRC_1, wRC_2 = 2*pi*wc*gamma_1, 2*pi*wc*gamma_2
+    kappa_1, kappa_2 = np.sqrt(pi*alpha_1*wRC_1/2.), np.sqrt(pi*alpha_2*wRC_2/2.)
+    N_1, N_2, exc = args['N_1'], args['N_2'], args['exc']
+    H_0, A_1, A_2, A_EM = dimer_ham_RC(w_1, w_2, w_xx, V, mu, wRC_1, wRC_2, kappa_1, kappa_2, N_1, N_2, exc)
+    I = enr_identity([N_1,N_2], exc)
+    D = (-H_0/(0.695*T_EM)).expm()
+    return D/D.tr()
 
 def RC_mapping_OD(args):
 
@@ -187,12 +199,13 @@ def RC_mapping_OD(args):
     gamma_1, gamma_2 = 2, 2
     wRC_1 = wRC_2 = 2*pi*wc*gamma_1
     kappa_1, kappa_2 = np.sqrt(pi*alpha_1*wRC_1/2.), np.sqrt(pi*alpha_2*wRC_2/2.)
-    #print args
+    print "****************************************************************"
     H_0, A_1, A_2, A_EM = dimer_ham_RC(w_1, w_2, w_xx, V, mu, wRC_1, wRC_2, kappa_1, kappa_2, N_1, N_2, exc)
     L_RC =  liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2, T_1, T_2, num_cpus=args['num_cpus'])
     full_size = (4*N_1*N_1)**2
     print "It is {}by{}. The full basis would be {}by{}".format(L_RC.shape[0], L_RC.shape[0], full_size, full_size)
     return L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2
+
 
 def RC_mapping_UD(args):
 
