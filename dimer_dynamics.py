@@ -22,6 +22,20 @@ reload(check)
 
 
 
+def get_dimer_info(rho):
+    e1e2 = tensor(basis(4,1)*basis(4,2).dag(), I)
+    e2e1 = tensor(basis(4,2)*basis(4,1).dag(), I)
+    g = (rho*OO).tr()
+    e1 = (rho*XO).tr()
+    e2 = (rho*OX).tr()
+
+    e1e2 = (rho*e1e2).tr()
+    e2e1 = (rho*e2e1).tr()
+    xx = (rho*XX).tr()
+    return Qobj([[g.real, 0,0,0], [0, e1.real,e1e2.real,0],[0, e2e1.real,e2.real,0],[0, 0,0,xx.real]])#/(g+e1+e2+xx)
+
+
+
 if __name__ == "__main__":
 
     OO = basis(4,0)
@@ -32,46 +46,44 @@ if __name__ == "__main__":
     sigma_m2 = XO*XX.dag() + OO*OX.dag()
     sigma_x1 = sigma_m1+sigma_m1.dag()
     sigma_x2 = sigma_m2+sigma_m2.dag()
-
+    """
     w_2 = 1.4*ev_to_inv_cm
     V = 92 #0.01*8065.5
-    bias = 0 #0.01*ev_to_inv_cm
+    bias = 0 #1*V #0.01*ev_to_inv_cm
     w_1 = w_2 + bias
     dipole_1, dipole_2 = 1., 1.
-    T_EM = 5700. # Optical bath temperature
+    T_EM = 6000. # Optical bath temperature
     alpha_EM = 0.3*inv_ps_to_inv_cm # Optical S-bath strength (from inv. ps to inv. cm)(larger than a real decay rate because dynamics are more efficient this way)
     mu = w_2*dipole_2/(w_1*dipole_1)
 
     T_1, T_2 = 300., 300. # Phonon bath temperature
 
-    wc = 1*53.08 # Ind.-Boson frame phonon cutoff freq
-    w0_2, w0_1 = 700., 700. # underdamped SD parameter omega_0
+    wc = 1*53. # Ind.-Boson frame phonon cutoff freq
+    w0_2, w0_1 = 500., 500. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1
-
     """
-    w_2 = 4000
-    V = 20 #0.01*8065.5
-    bias = 0 #1*V #0.01*ev_to_inv_cm
+    w_2 = 1500
+    V = 100 #0.01*8065.5
+    bias = 50 #1*V #0.01*ev_to_inv_cm
     w_1 = w_2 + bias
     dipole_1, dipole_2 = 1., 1.
-    T_EM = 50. # Optical bath temperature
-    alpha_EM = 1. #0.3*inv_ps_to_inv_cm # Optical S-bath strength (from inv. ps to inv. cm)(larger than a real decay rate because dynamics are more efficient this way)
+    T_EM = 6000. # Optical bath temperature
+    alpha_EM = 0.1 #0.3*inv_ps_to_inv_cm # Optical S-bath strength (from inv. ps to inv. cm)(larger than a real decay rate because dynamics are more efficient this way)
     mu = w_2*dipole_2/(w_1*dipole_1)
 
     T_1, T_2 = 300., 300. # Phonon bath temperature
 
-    wc = 1*53.08 # Ind.-Boson frame phonon cutoff freq
-    w0_2, w0_1 = 3000., 3000. # underdamped SD parameter omega_0
+    wc = 1*53. # Ind.-Boson frame phonon cutoff freq
+    w0_2, w0_1 = 500., 500. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1
-    """
-    alpha_1, alpha_2 = 0., 0. # Ind.-Boson frame coupling
-    N_1, N_2 = 2, 2 # set Hilbert space sizes
-    exc = 6
+
+    alpha_1, alpha_2 = 100/pi, 100/pi # Ind.-Boson frame coupling
+    N_1, N_2 = 4,4 # set Hilbert space sizes
+    exc = 4
     num_cpus = 4
     J = J_minimal
 
     H_dim = w_1*XO*XO.dag() + w_2*OX*OX.dag() + w_xx*XX*XX.dag() + V*(XO*OX.dag() + OX*XO.dag())
-    num_energies, num_states = H_dim.eigenstates()
     PARAM_names = ['w_1', 'w_2', 'V', 'bias', 'w_xx', 'T_1', 'T_2', 'wc',
                     'w0_1', 'w0_2', 'alpha_1', 'alpha_2', 'N_1', 'N_2', 'exc', 'T_EM', 'alpha_EM','mu', 'num_cpus', 'J']
     PARAMS = dict((name, eval(name)) for name in PARAM_names)
@@ -101,15 +113,16 @@ if __name__ == "__main__":
     dark_old= eVecs[1]
     bright_old= eVecs[2]
     energies, states = check.exciton_states(PARAMS)
+
     lam_p = 0.5*(w_1+w_2)+0.5*np.sqrt((w_2-w_1)**2+4*(V**2))
     lam_m = 0.5*(w_1+w_2)-0.5*np.sqrt((w_2-w_1)**2+4*(V**2))
     bright_vec = states[1]
     dark_vec = states[0]
-    dark = tensor(dark_vec*dark_vec.dag(), I)
-    bright = tensor(bright_vec*bright_vec.dag(), I)
+    dark = tensor(dark_old*dark_old.dag(), I)
+    bright = tensor(bright_old*bright_old.dag(), I)
     #print  (states[1]*states[1].dag()).tr(), bright_old, states[1]*states[1].dag()
     #print (states[0]*states[0].dag()).tr(), dark_old, states[0]*states[0].dag()
-    exciton_coherence = tensor(dark_vec*bright_vec.dag(), I)
+    exciton_coherence = tensor(dark_old*bright_old.dag(), I)
     Phonon_1 = tensor(I_dimer, phonon_num_1)
     Phonon_2 = tensor(I_dimer, phonon_num_2)
     disp_1 = tensor(I_dimer, x_1)
@@ -121,39 +134,34 @@ if __name__ == "__main__":
     ops = [OO, XO, OX, XX, site_coherence]
     # Expectation values and time increments needed to calculate the dynamics
     expects = ops + [dark, bright, exciton_coherence]
-    #expects += [Phonon_1, Phonon_2, disp_1, disp_2]
+    expects +=[Phonon_1, Phonon_2, disp_1, disp_2]
     #Now we build all of the mapped operators and RC Liouvillian.
 
     # electromagnetic bath liouvillians
 
     #print sys.getsizeof(L_ns)
-    #opts = qt.Options(num_cpus=num_cpus, store_states=True)
+    opts = qt.Options(num_cpus=num_cpus, store_states=True)
     ncolors = len(plt.rcParams['axes.prop_cycle'])
 
     thermal_RCs = enr_thermal_dm([N_1,N_2], exc, [n_RC_1, n_RC_2])
-    rho_0 = tensor(basis(4,1)*basis(4,1).dag(),thermal_RCs)
+    rho_0 = tensor(basis(4,0)*basis(4,0).dag(),thermal_RCs)
     #timelist = np.linspace(0,3,1000)
-    L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_OD(PARAMS)
-    timelist = (0,0.01,70000)
-    #Gamma_1 = (wRC_1**2)/wc
-    #plt.plot(freqs, J_overdamped(freqs, alpha_1, wc), label='OD')
-    #plt.plot(freqs, J_underdamped(freqs, alpha_1, Gamma_1, wRC_1), label='UD')
-    #plt.plot(freqs, J_OD_to_UD(freqs, 2, wRC_1, kappa_1), label='setting gamma=2')
-    plt.legend()
-    ss_J, DATA_J = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, timelist, EM_approx='j', l='flat_')
-    #ss_P, DATA_P = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, timelist, EM_approx='p')
-    #ss_S, DATA_S = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, timelist, EM_approx='s')
-    #ss_NS, DATA_NS = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, timelist, EM_approx='ns')
-    plt.plot(DATA_J.expect[7])
+    L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_oD(PARAMS)
+    timelist = np.linspace(0,1,7000)
+    #DATA_J = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='j')
+    DATA_P = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, timelist, EM_approx='p')
+    DATA_S = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, timelist, EM_approx='s')
+    DATA_NS = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, timelist, EM_approx='ns')
     #PARAMS.update({'exc': 5})
     #PARAMS.update({'N_1': 5, 'N_2': 5, 'alpha_1':50/pi, 'alpha_2': 50/pi})
     #PARAMS.update({'N_2': 6, 'N_1': 6})
-
+    """
     PARAMS.update({'J': J_flat})
     #DATA_J = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='j', l='flat_')
-    #DATA_P = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='p', l='flat_')
-    #DATA_S = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='s', l='flat_')
-    #DATA_NS = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='ns', l='flat_')
+    DATA_P = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='p', l='flat_')
+    DATA_S = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='s', l='flat_')
+    DATA_NS = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='ns', l='flat_')"""
+
     """
     mut_inf_d1 = []
     mut_inf_d2 = []

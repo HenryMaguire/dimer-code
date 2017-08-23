@@ -255,7 +255,7 @@ def calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, timelist, EM_app
                                             PARAMS['N_1'], PARAMS['exc'])
     else:
         raise KeyError
-    L_full = L_RC
+    L_full = L_RC+L
     ss_dm = 0
     try:
         ss_dm = qt.steadystate(H_0, [L_full])
@@ -268,6 +268,14 @@ def calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, timelist, EM_app
     opts = qt.Options(num_cpus=PARAMS['num_cpus'], store_final_state=True, nsteps=100000, method='bdf')
     try:
         DATA = qt.mesolve(H_0, rho_0, timelist, [L_full], e_ops=expects, progress_bar=True, options=opts)
+        lab='wc'
+        if PARAMS['alpha_1']>PARAMS['w_1']/500.:
+            lab = 'sc'
+        data_dir = "DATA/Dynamics_J{}_N{}_exc{}".format(lab, PARAMS['N_1'], PARAMS['exc'])
+        if not os.path.exists(data_dir):
+            os.makedirs(data_dir)
+        data_name = data_dir+"/{}_{}data".format(EM_approx, l)
+        plot_name = data_dir+"/{}_{}dynamics.pdf".format(EM_approx, l)
         fig = plt.figure(figsize=(12,10))
         ax1 = fig.add_subplot(211)
         title = 'Eigenstate dynamics'
@@ -275,17 +283,10 @@ def calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, timelist, EM_app
         plot_eig_dynamics(DATA, timelist, expects, ax1, ss_dm=ss_dm)
         ax2 = fig.add_subplot(212)
         plot_coherences(DATA, timelist, expects, ax2, ss_dm=ss_dm)
-        lab='wc'
-        if PARAMS['alpha_1']>PARAMS['w_1']/500.:
-            lab = 'sc'
-        data_dir = "DATA/Dynamics_J{}_N{}_exc{}".format(lab, PARAMS['N_1'], PARAMS['exc'])
-        if not os.path.exists(data_dir):
-            os.makedirs(data_dir)
-        plt.savefig(data_dir+"/{}_{}dynamics.pdf".format(EM_approx, l))
-        data_name = data_dir+"/{}_{}data".format(EM_approx, l)
+        plt.savefig(plot_name)
+        print "plot saved at: {}".format(plot_name)
         save_obj(DATA, data_name)
         plt.close()
-        print 'Plotting finished!'
     except Exception as err:
         DATA = None
         print "could not calculate dynamics because:\n {}".format(err)
