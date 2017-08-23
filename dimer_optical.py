@@ -131,25 +131,7 @@ def L_nonsecular(H_vib, A, args):
     print "It took ", time.time()-ti, " seconds to build the Non-secular RWA Liouvillian"
     return -0.5*L
 
-def L_nonsecular_par(H_vib, A, args):
-    Gamma, T, w_1, J, num_cpus = args['alpha_EM'], args['T_EM'], args['w_1'],args['J'], args['num_cpus']
-    #Construct non-secular liouvillian
-    ti = time.time()
-    dim_ham = H_vib.shape[0]
-    eVals, eVecs = H_vib.eigenstates()
-    names = ['eVals', 'eVecs', 'A', 'w_1', 'Gamma', 'T', 'J']
-    kwargs = dict() # Hacky way to get parameters to the parallel for loop
-    for name in names:
-        kwargs[name] = eval(name)
-    l = dim_ham*range(dim_ham) # Perform two loops in one
-    X1, X2, X3, X4 = par.parfor(nonsecular_function, sorted(l), l,
-                                            num_cpus=num_cpus, **kwargs)
-    X1, X2, X3, X4 = np.sum(X1), np.sum(X2), np.sum(X3), np.sum(X4)
-    L = spre(A*X1) -sprepost(X1,A)+spost(X2*A)-sprepost(A,X2)
-    L+= spre(A.dag()*X3)-sprepost(X3, A.dag())+spost(X4*A.dag())-sprepost(A.dag(), X4)
-    #print np.sum(X1.full()), np.sum(X2.full()), np.sum(X3.full()), np.sum(X4.full())
-    print "It took ", time.time()-ti, " seconds to build the Non-secular RWA Liouvillian"
-    return -0.5*L
+
 
 def L_secular_par(H_vib, A, args):
     '''

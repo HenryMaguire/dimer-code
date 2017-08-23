@@ -119,10 +119,10 @@ def J_multipolar(omega, Gamma, omega_0):
     return Gamma*(omega**3)/(2*np.pi*(omega_0**3))
 
 def J_minimal(omega, Gamma, omega_0):
-    return Gamma*omega/(2*np.pi*omega_0)
+    return Gamma*omega/(omega_0) #2*np.pi*
 
 def J_flat(omega, Gamma, omega_0):
-    return Gamma/(2*np.pi)
+    return Gamma#/(2*np.pi)
 
 def J_underdamped(omega, alpha, Gamma, omega_0):
     return alpha*Gamma*pow(omega_0,2)*omega/(pow(pow(omega_0,2)-pow(omega,2),2)+(Gamma**2 *omega**2))

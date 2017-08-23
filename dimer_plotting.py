@@ -234,7 +234,7 @@ def exciton_states(PARS):
     #print  np.dot(v_p, v_m) < 1E-15
     return [lam_m, lam_p], [qt.Qobj(v_m), qt.Qobj(v_p)]
 
-def calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='s', l=''):
+def calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, timelist, EM_approx='s', l=''):
     L=0
     if l == 'flat_':
         PARAMS.update({'mu':1})
@@ -255,7 +255,6 @@ def calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='s', l
                                             PARAMS['N_1'], PARAMS['exc'])
     else:
         raise KeyError
-    timelist = np.linspace(0,10.0,7000)
     L_full = L_RC+L
     opts = qt.Options(num_cpus=PARAMS['num_cpus'], store_final_state=True, nsteps=4000)
     DATA = qt.mesolve(H_0, rho_0, timelist, [L_full], expects, progress_bar=True, options=opts)
@@ -288,7 +287,7 @@ def calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='s', l
     save_obj(DATA, data_name)
     plt.close()
     print 'Plotting finished!'
-    return DATA
+    return ss_dm, DATA
 
 def steadystate_coherence_plot(args, alpha_list, biases):
     main_dir = "DATA/bias_dependence_wRC{}_N{}_V{}_wc{}/".format(int(args['w0_1']), args['N_1'], int(args['V']), int(args['wc']))

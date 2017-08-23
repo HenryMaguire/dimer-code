@@ -148,25 +148,26 @@ if __name__ == "__main__":
     rho_0 = tensor(basis(4,0)*basis(4,0).dag(),thermal_RCs)
     #timelist = np.linspace(0,3,1000)
     L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_OD(PARAMS)
-    freqs = np.linspace(0,w_1,10000)
-    Gamma_1 = (wRC_1**2)/wc
+    timelist = (0,1,5000)
+    #Gamma_1 = (wRC_1**2)/wc
     #plt.plot(freqs, J_overdamped(freqs, alpha_1, wc), label='OD')
     #plt.plot(freqs, J_underdamped(freqs, alpha_1, Gamma_1, wRC_1), label='UD')
     #plt.plot(freqs, J_OD_to_UD(freqs, 2, wRC_1, kappa_1), label='setting gamma=2')
     plt.legend()
-    #DATA_J = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='j')
-    #DATA_P = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='p')
-    #DATA_S = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='s')
-    #DATA_NS = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='ns')
+    ss_J, DATA_J = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, timelist, EM_approx='j', l='flat_')
+    ss_P, DATA_P = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, timelist, EM_approx='p')
+    ss_S, DATA_S = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, timelist, EM_approx='s')
+    ss_NS, DATA_NS = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, timelist, EM_approx='ns')
+    plt.plot(DATA_J.expect[7])
     #PARAMS.update({'exc': 5})
     #PARAMS.update({'N_1': 5, 'N_2': 5, 'alpha_1':50/pi, 'alpha_2': 50/pi})
     #PARAMS.update({'N_2': 6, 'N_1': 6})
 
     PARAMS.update({'J': J_flat})
     #DATA_J = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='j', l='flat_')
-    DATA_P = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='p', l='flat_')
-    DATA_S = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='s', l='flat_')
-    DATA_NS = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='ns', l='flat_')
+    #DATA_P = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='p', l='flat_')
+    #DATA_S = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='s', l='flat_')
+    #DATA_NS = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='ns', l='flat_')
     """
     mut_inf_d1 = []
     mut_inf_d2 = []
