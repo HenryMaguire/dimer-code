@@ -109,13 +109,14 @@ def plot_eig_dynamics(DATA, timelist, exp_ops, ax, title='', ss_dm = False):
     #ax.title(title)
     linewidth = 1.5
     linestyle = '-'
+
     for i, l, c in info:
         ax.plot(timelist, DATA.expect[i].real, label=l, color=c, linewidth=linewidth, linestyle=linestyle)
         if ss_dm:
             ax.axhline((ss_dm*exp_ops[i]).tr().real, color=c, ls='--')
     ax.set_ylabel("Eigenstate population")
     ax.set_xlabel("Time (ps)")
-    ax.set_ylim(0,1)
+    #ax.set_ylim(0,0.6)
     ax.set_xlim(0,timelist[-1])
     ax.legend()
     #p_file_name = "Notes/Images/Dynamics/Pop_a{:d}_Tph{:d}_Tem{:d}_w0{:d}.pdf".format(int(alpha_ph), int(T_ph), int(T_EM), int(w0))
@@ -256,14 +257,15 @@ def calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, timelist, EM_app
     else:
         raise KeyError
     L_full = L_RC+L
-    ss_dm = 0
+    ss_dm = False
+    """
     try:
         ss_dm = qt.steadystate(H_0, [L_full])
     except Exception as err:
         print "Warning: steady state density matrix didn't converge. Probably"
         print "\t due to some problem with excitation restriction. \n"
         print err
-
+    """
     #print ENR_ptrace(ss_dm, 0, [4, PARAMS['N_1'],PARAMS['N_2']], PARAMS['exc'] )
     opts = qt.Options(num_cpus=PARAMS['num_cpus'], store_final_state=True, nsteps=100000, method='bdf')
     try:
@@ -295,6 +297,10 @@ def calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, timelist, EM_app
     #DATA_ns = load_obj("DATA_N7_exc8")
     #fig = plt.figure(figsize=(12,6))
     return ss_dm, DATA
+
+
+
+
 
 def steadystate_coherence_plot(args, alpha_list, biases):
     main_dir = "DATA/bias_dependence_wRC{}_N{}_V{}_wc{}/".format(int(args['w0_1']), args['N_1'], int(args['V']), int(args['wc']))

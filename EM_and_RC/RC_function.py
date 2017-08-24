@@ -44,7 +44,7 @@ def RCfunction(eps, V, Temp, wc, alpha, N, propto, stepsize):
 
 	# define inverse temperature
 	beta = 1. / (0.695 * Temp)
-	
+
 	# reaction coordinate parameters are:
 	#calculate the RC parameters:
 	gamma = 2.#sqrt((eps ** 2. + V ** 2.)) / (2. * pi * wc)  # free parameter that we fix to the system splitting
@@ -105,7 +105,7 @@ def RCfunction(eps, V, Temp, wc, alpha, N, propto, stepsize):
 
 
 
-def RCdimerfunction_ENR(wXX, w2, eps, V, Temp, wc, alpha, N, excitations, propto, stepsize):
+def RCdimerfunction_ENR(wXX, w2, eps, V, Temp, wc, alpha, gam_op, N, excitations, propto, stepsize):
 #
 # 	"""
 # 	A function to calculate the RC dynamics using the excitation number restricted basis,
@@ -140,9 +140,8 @@ def RCdimerfunction_ENR(wXX, w2, eps, V, Temp, wc, alpha, N, excitations, propto
 	#calculate the RC parameters:
 	gamma = 2. #sqrt((eps ** 2. + V ** 2.)) / (2. * pi * wc1)  # free parameter that we fix to the system splitting
 	wRC = 2. * pi * gamma * wc #RC splitting
-	print wRC
 	kappa = sqrt(pi * alpha * wRC / 2.)  # coupling strength between the TLS and RC
-
+	print gamma, wRC, kappa
 
 
 # 	#start defining the excitation restricted states:
@@ -187,7 +186,7 @@ def RCdimerfunction_ENR(wXX, w2, eps, V, Temp, wc, alpha, N, excitations, propto
 
 	HDim = (w2 + eps) * site1 * site1.dag() + w2 * site2 * site2.dag() + wXX * biexc * biexc.dag()
 	HDim = HDim + V * (site1 * site2.dag() + site2 * site1.dag())
-
+	print HDim
 	# define the eigenstates
 	eta = sqrt(eps ** 2. + 4. * V ** 2.)
 	psi1 = (sqrt(eta + eps) * site1 + sqrt(eta - eps) * site2) / sqrt(2 * eta)
@@ -207,7 +206,6 @@ def RCdimerfunction_ENR(wXX, w2, eps, V, Temp, wc, alpha, N, excitations, propto
  	#call function that constructs the dissipator
 	st = time.time()
 	EM_temp = 5700.0
-	gam_op = 0.1/pi
  	#LRC = twolio.Liou((b1 + bd1), (b2 + bd2), gamma1, gamma2, beta, dimHil, HamRC)
 	LRC = enrlio.enr_Liouvillian(HamRC, a, NHil, gamma, beta)
 	LOP = opli.EM_dissipator(wXX, w2, eps, V, 0, gam_op, EM_temp, N, excitations)
@@ -233,7 +231,7 @@ def RCdimerfunction_ENR(wXX, w2, eps, V, Temp, wc, alpha, N, excitations, propto
 	unsteps = linspace(0, propto, stepsize)
 
  	#ODE solver:
-	RCsolution = mesolve(HamRC, psi0, unsteps, [LRC+LOP], expeclist, options = (Options(nsteps = 15000)))
+	RCsolution = mesolve(HamRC, psi0, unsteps, [LRC+LOP], expeclist, options = (Options(nsteps = 6000)), progress_bar=True)
 
 # 	#write to file:
 # 	file_name ='data/RC_dynamics_N={2}_expec={3}_alpha={0}wc={1}.dat'.format(alpha * pi / 2., wc, N, excitations)

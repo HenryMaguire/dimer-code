@@ -8,7 +8,8 @@ from numpy import matrix
 from numpy import linalg
 
 from scipy import *
-
+import RC_function as RC_f
+reload(RC_f)
 
 #import plotting packages
 import matplotlib.pyplot as plt
@@ -43,13 +44,15 @@ w2 = 1500. # splitting for site 1
 V = 100.
 mu = 0.
 gamma = 0.1
-EM_temp = 500.0
+alpha =0
+T = 300.
 k_b = 0.695
-thermal_energy = k_b * EM_temp
+thermal_energy = k_b * T
 beta = float(1. / thermal_energy)
-
-eps = 100.0
-
+wc = 53.08
+eps = 50.0
+N = 2
+excitations = 6
 
 # the eigenstate splitting is given by:
 eta = sqrt(eps ** 2. + 4. * V ** 2.)
@@ -61,7 +64,7 @@ wXX =  2 * w2 + eps
 #
 
 #
-
+#print w2+eps, w2, wXX, V, gamma, alpha, T, wc
 #print(lam_p, lam_m)
 
 HDim = (w2 + eps) * site1 * site1.dag() + (w2 ) * site2 * site2.dag() + wXX * biexc * biexc.dag()
@@ -73,27 +76,28 @@ psi_m = (- sqrt(eta - eps) * site1 + sqrt(eta + eps) * site2) / sqrt(2 * eta)
 lam_p = 0.5 * (2 * w2 + eps + eta)
 lam_m = 0.5 * (2 * w2 + eps - eta)
 vals, vecs = HDim.eigenstates()
-print(vals,[lam_p,lam_m])
-print(vecs)
-print([psi_p,psi_m])
+#print(vals,[lam_p,lam_m])
+#print(vecs)
+#print([psi_p,psi_m])
 
 #build optical dissipator
-L_EM = opli.EM_dissipator(wXX, w2, eps, V, mu, gamma, EM_temp,4,4)
+#L_EM = opli.EM_dissipator(wXX, w2, eps, V, mu, gamma, EM_temp,4,4)
 #print(L_EM)
 
 #need initial conditions:
-rho_1 = psi_m * psi_m.dag()#site1 * site1.dag()
+#rho_1 = psi_m * psi_m.dag()#site1 * site1.dag()
 
 
 
 
-no_steps = 10000
-propto = 100.
+no_steps = 4000
+propto = 1.
 time_steps = linspace(0., propto, no_steps)
 
 expec = [gr * gr.dag(), psi_m * psi_m.dag(), psi_p * psi_p.dag(), biexc * biexc.dag(), psi_p * psi_m.dag()]
 
-time_ev = mesolve(HDim, rho_1, time_steps, [L_EM], expec)
+#time_ev = mesolve(HDim, rho_1, time_steps, [L_EM], expec)
+time_ev = RC_f.RCdimerfunction_ENR(wXX, w2, eps, V, T, wc, alpha, gamma, N, excitations, propto, no_steps)
 #
 #
 #

@@ -79,7 +79,7 @@ if __name__ == "__main__":
 
     alpha_1, alpha_2 = 100/pi, 100/pi # Ind.-Boson frame coupling
     N_1, N_2 = 4,4 # set Hilbert space sizes
-    exc = 4
+    exc = 5
     num_cpus = 4
     J = J_minimal
 
@@ -146,7 +146,7 @@ if __name__ == "__main__":
     thermal_RCs = enr_thermal_dm([N_1,N_2], exc, [n_RC_1, n_RC_2])
     rho_0 = tensor(basis(4,0)*basis(4,0).dag(),thermal_RCs)
     #timelist = np.linspace(0,3,1000)
-    L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_oD(PARAMS)
+    L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_OD(PARAMS)
     timelist = np.linspace(0,1,7000)
     #DATA_J = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='j')
     DATA_P = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, timelist, EM_approx='p')

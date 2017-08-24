@@ -81,7 +81,7 @@ def	EM_dissipator(wXX, w2, eps, V, mu, gamma, EM_temp, N, exc):
 	HDim = (w2 + eps) * b1 * b1.dag() + w2 * b2 * b2.dag() + wXX * bi * bi.dag()
 	HDim = HDim + V * (b1 * b2.dag() + b2 * b1.dag())
 	energies, states = HDim.eigenstates()
-	print psi_p.dag()*states[1], psi_p.dag()*states[2], psi_m.dag()*states[1], psi_m.dag()*states[2]
+	#print psi_p.dag()*states[1], psi_p.dag()*states[2], psi_m.dag()*states[1], psi_m.dag()*states[2]
 	psi_m = states[1]
 	psi_p = states[2]
 	# Now the system eigenoperators
