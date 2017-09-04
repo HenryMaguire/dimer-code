@@ -10,7 +10,7 @@ from numpy import linalg
 from scipy import *
 
 
-import enr_functions as excres
+#import enr_functions as excres
 
 
 def lin_construct(O):
@@ -55,7 +55,7 @@ def	EM_dissipator(wXX, w2, eps, V, mu, gamma, EM_temp, N, exc):
 	Nsys = 4
 
 	#Load the ENR dictionaries
-	nstates, state2idx, idx2state = excres._enr_state_dictionaries(dims, exc)
+	nstates, state2idx, idx2state = enr_state_dictionaries(dims, exc)
 
 
 	#boltzmann constant in eV
@@ -86,25 +86,33 @@ def	EM_dissipator(wXX, w2, eps, V, mu, gamma, EM_temp, N, exc):
 	psi_p = states[2]
 	# Now the system eigenoperators
 	#ground -> dressed state transitions
-	Alam_p = (sqrt( eta - eps) + (1 - mu) * sqrt(eta + eps)) / sqrt(2 * eta) * gr * (psi_p.dag())
-	Alam_p = tensor(excres.enr_unit(dims, exc), Alam_p)
+	Alam_p = (sqrt( eta - eps) + (1 - mu) * sqrt(eta + eps)) / sqrt(2 * eta)
+	Alam_p *= gr * (psi_p.dag())
+	Alam_p = tensor(enr_identity(dims, exc), Alam_p)
 
-	Alam_m = - (sqrt( eta + eps) - (1 - mu) * sqrt(eta - eps)) / sqrt(2 * eta) * gr * (psi_m.dag())
-	Alam_m = tensor(excres.enr_unit(dims, exc), Alam_m)
+	Alam_m = - (sqrt( eta + eps) - (1 - mu) * sqrt(eta - eps)) / sqrt(2 * eta)
+	Alam_m *= gr * (psi_m.dag())
+	Alam_m = tensor(enr_identity(dims, exc), Alam_m)
 
 	#print(Alam_m)
 	#dressed state -> biexciton transitions
-	Alam_p_bi = (sqrt( eta - eps) + (1 - mu) * sqrt(eta + eps)) / sqrt(2 * eta) * (psi_p) * (bi.dag())
-	Alam_p_bi = tensor(excres.enr_unit(dims, exc), Alam_p_bi)
+	Alam_p_bi = (sqrt( eta - eps) + (1 - mu) * sqrt(eta + eps)) / sqrt(2 * eta)
+	print Alam_p_bi
+	Alam_p_bi *= (psi_p) * (bi.dag())
+	Alam_p_bi = tensor(enr_identity(dims, exc), Alam_p_bi)
 
 
-	Alam_m_bi = - (sqrt( eta + eps) - (1 - mu) * sqrt(eta - eps)) / sqrt(2 * eta)  * (psi_m) * (bi.dag())
-	Alam_m_bi = tensor(excres.enr_unit(dims, exc), Alam_m_bi)
+	Alam_m_bi = - (sqrt( eta + eps) - (1 - mu) * sqrt(eta - eps)) / sqrt(2 * eta)
+	Alam_m_bi = - (sqrt( eta + eps) - (1 - mu) * sqrt(eta - eps)) / sqrt(2 * eta)
+	print Alam_m_bi
+	Alam_m_bi *= (psi_m) * (bi.dag())
+	Alam_m_bi = tensor(enr_identity(dims, exc), Alam_m_bi)
 
 
 
 	# Now the dissipators and there associated rates are are given by:
 	gam_p_emm = rate_down(lam_p, beta, gamma)
+
 	L1_emission = lin_construct(Alam_p)
 
 	gam_p_abs = rate_up(lam_p, beta, gamma)

@@ -96,6 +96,7 @@ def plot_dynamics(DATA, timelist, exp_ops, ax, title='', ss_dm = False):
     ax.set_ylabel("Site populations")
     ax.set_xlabel("Time (ps)")
     ax.legend(loc='best')
+    ax.set_xlim(0,timelist[-1])
     #ax.title(title)
     #p_file_name = "Notes/Images/Dynamics/Pop_a{:d}_Tph{:d}_Tem{:d}_w0{:d}.pdf".format(int(alpha_ph), int(T_ph), int(T_EM), int(w0))
     #plt.savefig(p_file_name)
@@ -237,10 +238,13 @@ def exciton_states(PARS):
 
 def calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, timelist, EM_approx='s', l=''):
     L=0
+    mu = PARAMS['mu']
     if l == 'flat_':
         PARAMS.update({'mu':1})
+        PARAMS.update({'J':J_flat})
     else:
-        pass
+        PARAMS.update({'mu':mu})
+        PARAMS.update({'J':J_minimal})
     if EM_approx=='ns':
         L = EM.L_nonsecular_par(H_0, A_EM, PARAMS)
     elif EM_approx=='s':

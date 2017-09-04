@@ -8,7 +8,7 @@ from numpy import matrix
 from numpy import linalg
 from utils import J_multipolar, J_flat, rate_up, rate_down
 from scipy import *
-from dimer_checking import exciton_states
+from dimer_tests import exciton_states
 
 
 
@@ -16,6 +16,7 @@ def lin_construct(O):
 	Od = O.dag()
 	L = 2. * qt.spre(O) * qt.spost(Od) - qt.spre(Od * O) - qt.spost(Od * O)
 	return L
+
 """
 def rate_up(w, beta, gamma):
 	n = 1 / (exp(beta * w) - 1.)
@@ -83,23 +84,29 @@ def	EM_dissipator(states, wXX, w2, eps, V, mu, gamma, EM_temp, J, N, exc):
 	psi_p = bright
 	# Now the system eigenoperators
 	#ground -> dressed state transitions
-	Alam_p = (sqrt( eta - eps) + mu * sqrt(eta + eps)) / sqrt(2 * eta) * gr * (psi_p.dag())
+	Alam_p = (sqrt( eta - eps) + mu * sqrt(eta + eps)) / sqrt(2 * eta)
+	print Alam_p
+	Alam_p *= gr * (psi_p.dag())
 	Alam_p = tensor( Alam_p, qt.enr_identity(dims, exc))
 
-	Alam_m = - (sqrt( eta + eps) - mu * sqrt(eta - eps)) / sqrt(2 * eta) * gr * (psi_m.dag())
+	Alam_m = - (sqrt( eta + eps) - mu * sqrt(eta - eps)) / sqrt(2 * eta)
+	print Alam_m
+	Alam_m *= gr * (psi_m.dag())
 	Alam_m = tensor(Alam_m, qt.enr_identity(dims, exc))
 
 	#print(Alam_m)
 	#dressed state -> biexciton transitions
-	Alam_p_bi = (sqrt( eta - eps) + mu * sqrt(eta + eps)) / sqrt(2 * eta) * (psi_p) * (bi.dag())
+	Alam_p_bi = (sqrt( eta - eps) + mu * sqrt(eta + eps)) / sqrt(2 * eta)
+	print Alam_p_bi
+	Alam_p_bi *= (psi_p) * (bi.dag())
 	Alam_p_bi = tensor( Alam_p_bi, qt.enr_identity(dims, exc))
 
 
-	Alam_m_bi = - (sqrt( eta + eps) - mu * sqrt(eta - eps)) / sqrt(2 * eta)  * (psi_m) * (bi.dag())
+	Alam_m_bi = - (sqrt( eta + eps) - mu * sqrt(eta - eps)) / sqrt(2 * eta)
+	print Alam_m_bi
+	Alam_m_bi *= (psi_m) * (bi.dag())
 	Alam_m_bi = tensor( Alam_m_bi, qt.enr_identity(dims, exc))
-
-
-
+	print J
 	# Now the dissipators and there associated rates are are given by:
 	gam_p_emm = rate_down(lam_p, EM_temp, gamma, J, w1)
 	L1_emission = lin_construct(Alam_p)
@@ -125,11 +132,10 @@ def	EM_dissipator(states, wXX, w2, eps, V, mu, gamma, EM_temp, J, N, exc):
 	gam_bi_m_abs = rate_up(wXX-lam_m, EM_temp, gamma, J, w1)
 	L4_absorption = lin_construct(Alam_m_bi.dag())
 
-
 	#So the Liouvillian
 	Li = gam_p_emm * L1_emission + gam_p_abs * L1_absorption
 	Li = Li + gam_m_emm * L2_emission + gam_m_abs * L2_absorption
 	Li = Li + gam_bi_p_emm * L3_emission + gam_bi_p_abs * L3_absorption
 	Li = Li + gam_bi_m_emm * L4_emission + gam_bi_m_abs * L4_absorption
 
-	return 2*Li
+	return Li

@@ -92,7 +92,7 @@ def L_nonsecular_par(H_vib, A, args):
     L+= spre(A.dag()*X3)-sprepost(X3, A.dag())+spost(X4*A.dag())-sprepost(A.dag(), X4)
     #print np.sum(X1.full()), np.sum(X2.full()), np.sum(X3.full()), np.sum(X4.full())
     print "It took ", time.time()-ti, " seconds to build the Non-secular RWA Liouvillian"
-    return -0.5*L
+    return -0.25*L
 
 def L_nonsecular(H_vib, A, args):
     Gamma, T, w_1, J = args['alpha_EM'], args['T_EM'], args['w_1'],args['J']
@@ -129,7 +129,7 @@ def L_nonsecular(H_vib, A, args):
     L+= spre(A.dag()*X3)-sprepost(X3, A.dag())+spost(X4*A.dag())-sprepost(A.dag(), X4)
     #print np.sum(X1.full()), np.sum(X2.full()), np.sum(X3.full()), np.sum(X4.full())
     print "It took ", time.time()-ti, " seconds to build the Non-secular RWA Liouvillian"
-    return -0.5*L
+    return -0.25*L
 
 
 
@@ -150,8 +150,8 @@ def L_secular_par(H_vib, A, args):
     L = par.parfor(secular_function, sorted(l), l,
                                             num_cpus=num_cpus, **kwargs)
 
-    print "It took ", time.time()-ti, " seconds to build the vibronic Lindblad Liouvillian"
-    return -np.sum(L)
+    print "It took ", time.time()-ti, " seconds to build the secular RWA Liouvillian"
+    return -np.sum(L)*0.5
 
 def L_phenom(states, energies, I, args):
     ti = time.time()
@@ -175,7 +175,7 @@ def L_phenom(states, energies, I, args):
     L += rate_down(w_xx-lp, T, gamma, J, w_1)*lin_construct(A_wxx_lp)
     L += rate_down(w_xx-lm, T, gamma, J, w_1)*lin_construct(A_wxx_lm)
     print "It took {} seconds to build the phenomenological Liouvillian".format(time.time()-ti)
-    return 2*L
+    return L
 
 if __name__ == "__main__":
     ev_to_inv_cm = 8065.5

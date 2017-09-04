@@ -102,12 +102,24 @@ def RCfunction(eps, V, Temp, wc, alpha, N, propto, stepsize):
 
 
 
+def exciton_states(w_1, w_2, V, bias):
+    v_p, v_m = 0, 0
+    eta = sqrt(4*(V**2)+bias**2)
+    lam_p = w_2+(bias+eta)*0.5
+    lam_m = w_2+(bias-eta)*0.5
+    v_m = array([0., -(w_1-lam_p)/V, -1, 0.])
+    #v_p/= /(1+(V/(w_2-lam_m))**2)
+    v_m/= sqrt(dot(v_m, v_m))
+    v_p = array([0, V/(w_2-lam_m),1., 0.])
+
+    v_p /= sqrt(dot(v_p, v_p))
+    #print  np.dot(v_p, v_m) < 1E-15
+    return [lam_m, lam_p], [Qobj(v_m), Qobj(v_p)]
 
 
-
-def RCdimerfunction_ENR(wXX, w2, eps, V, Temp, wc, alpha, gam_op, N, excitations, propto, stepsize):
-#
-# 	"""
+def RCdimerfunction_ENR(wXX, w2, eps, V, RC_temp, EM_temp, wc, alpha, gam_op, N, excitations, propto, stepsize, initial):
+# wXX, w2, eps, V, T, T_EM, wc, alpha_1, alpha_EM, N, excitations, propto, no_steps, inDim
+# 	"""wXX, w2, eps, V, T, T_EM, wc, alpha, gamma, N, excitations, propto, no_steps, inDim
 # 	A function to calculate the RC dynamics using the excitation number restricted basis,
 # 	for Dimer/two RC model. We assume that both environments are identical.
 # 	The important definition to us are:
@@ -130,9 +142,8 @@ def RCdimerfunction_ENR(wXX, w2, eps, V, Temp, wc, alpha, gam_op, N, excitations
 	ground = Qobj(array([0., 0.,0.,1.]))
 
 
-
 	# define inverse temperature
-	beta = 1. / (0.695 * Temp)
+	beta = 1. / (0.695 * RC_temp)
 
 
 
@@ -191,12 +202,14 @@ def RCdimerfunction_ENR(wXX, w2, eps, V, Temp, wc, alpha, gam_op, N, excitations
 	eta = sqrt(eps ** 2. + 4. * V ** 2.)
 	psi1 = (sqrt(eta + eps) * site1 + sqrt(eta - eps) * site2) / sqrt(2 * eta)
 	psi2 = - ( - sqrt(eta - eps) * site1 + sqrt(eta + eps) * site2) / sqrt(2 * eta)
-	energies, states = HDim.eigenstates()
-	psi1, psi2 = states[1], states[2]
+	energies, states = exciton_states(w2+eps, w2, V, eps)
+	psi1, psi2 = states[0], states[1]
 	expeclist = [grgrd] #[s1s1d, s2s2d, grgrd, bibid]
+	expeclist = expeclist + [s1s1d]
+	expeclist = expeclist + [s2s2d]
+	expeclist = expeclist + [bibid]
 	expeclist = expeclist + [tensor(excres.enr_unit(dims,excitations), psi1 * psi1.dag())]#coherence between ground and dark state
 	expeclist = expeclist + [tensor(excres.enr_unit(dims,excitations), psi2 * psi2.dag())]#coherence between ground and bright
-	expeclist = expeclist + [bibid]
 	expeclist = expeclist + [tensor(excres.enr_unit(dims,excitations), psi1 * psi2.dag())]#coherence between dark and biexc
 
 	#Hamiltonian for the TLS and RC:
@@ -205,8 +218,10 @@ def RCdimerfunction_ENR(wXX, w2, eps, V, Temp, wc, alpha, gam_op, N, excitations
 
  	#call function that constructs the dissipator
 	st = time.time()
-	EM_temp = 5700.0
+	#print w2, eps, wXX, V, gam_op, EM_temp
  	#LRC = twolio.Liou((b1 + bd1), (b2 + bd2), gamma1, gamma2, beta, dimHil, HamRC)
+	print NHil, gamma, beta
+	print wXX, w2, eps, V, 0, gam_op, EM_temp, N, excitations
 	LRC = enrlio.enr_Liouvillian(HamRC, a, NHil, gamma, beta)
 	LOP = opli.EM_dissipator(wXX, w2, eps, V, 0, gam_op, EM_temp, N, excitations)
 	en = time.time()
@@ -216,8 +231,8 @@ def RCdimerfunction_ENR(wXX, w2, eps, V, Temp, wc, alpha, gam_op, N, excitations
 
  	# Now we need initial states:
  	#Dimer
-	inDim=grgrd
-
+	init_states = [grgrd, s1s1d, s2s2d, bibid]
+	inDim = init_states[initial]
  	#RCs initial states
 	RCnb = (1 / (exp( beta * wRC)-1))
 	print 'began'
