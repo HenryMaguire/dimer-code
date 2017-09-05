@@ -57,7 +57,7 @@ def data_maker(w2, eps, V, T_EM, alpha_EM, alpha_1, alpha_2, N, propto, figure_n
 	wc = 53.08
 	excitations = N*2
 	if N>4:
-		excitations = N/2
+		excitations = N
 
 	# the eigenstate splitting is given by:
 	eta = sqrt(eps ** 2. + 4. * V ** 2.)
@@ -142,12 +142,12 @@ def data_maker(w2, eps, V, T_EM, alpha_EM, alpha_1, alpha_2, N, propto, figure_n
 if __name__ == "__main__":
     '''figure 2'''
 
-    data_maker(100., 0., 20, 50, 1., 0., 0., 2, 1, '2a', 1,  make_new_data=True)
-    data_maker(100., 10., 20, 50, 1., 0., 0., 2, 10, '2b', 1, make_new_data=True)
+    #data_maker(100., 0., 20, 50, 1., 0., 0., 2, 1, '2a', 1,  make_new_data=True)
+    #data_maker(100., 10., 20, 50, 1., 0., 0., 2, 10, '2b', 1, make_new_data=True)
 
     '''figure 4'''
-    data_maker(1500., 50., 100., 5700., 0.1, 2., 2., 4, 1, '4ab', 0, make_new_data=True)
-    data_maker(1500., 50., 100., 5700., 0.1, 2., 2., 4, 4, '4cd', 0, make_new_data=True)
+    #data_maker(1500., 50., 100., 5700., 0.1, 2., 2., 4, 1, '4ab', 0, make_new_data=True)
+    #data_maker(1500., 50., 100., 5700., 0.1, 2., 2., 4, 4, '4cd', 0, make_new_data=True)
     '''figure 5'''
     data_maker(1500., 50., 100, 5700, 0.1, 100/pi, 100/pi, 5, 1, '5ab-p', 0, make_new_data=True)
     data_maker(1500., 50., 100, 5700, 0.1, 100/pi, 100/pi, 5, 4, '5cd-p', 0, make_new_data=True)

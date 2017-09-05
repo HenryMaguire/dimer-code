@@ -52,6 +52,7 @@ def secular_function(i,j, eVals=[], eVecs=[], A=0, w_1=8000., Gamma=1.,T=0., J=J
     lam_ij_sq = lam_ij*lam_ij.conjugate()
     eps_ij = abs(eVals[i]-eVals[j])
     if lam_ij_sq>0:
+        i+= 1
         IJ = eVecs[i]*eVecs[j].dag()
         JI = eVecs[j]*eVecs[i].dag()
         JJ = eVecs[j]*eVecs[j].dag()
@@ -153,15 +154,20 @@ def L_secular_par(H_vib, A, args):
     print "It took ", time.time()-ti, " seconds to build the secular RWA Liouvillian"
     return -np.sum(L)*0.5
 
-def L_phenom(states, energies, I, args):
+def L_phenom(I, args):
     ti = time.time()
     eps, V, w_xx = args['bias'], args['V'], args['w_xx']
     mu, gamma, w_1, J, T = args['mu'], args['alpha_EM'], args['w_1'], args['J'], args['T_EM']
-    dark, lm = states[0], energies[0]
-    bright, lp = states[1], energies[1]
+    H_sub = qt.Qobj([[0,0,0,0],[0,w_1,V,0],[0,V,w_1-eps,0],[0,0,0,2*w_1+eps]])
+    #print H_sub
+    energies, states = H_sub.eigenstates()
+    dark, lm = states[1], energies[1]
+    bright, lp = states[2], energies[2]
+    print dark*bright.dag()
     OO = basis(4,0)
     XX = basis(4,3)
     eta = np.sqrt(4*V**2+eps**2)
+    print "Mu is : {}".format(mu)
     pre_p = (sqrt(eta-eps)+mu*sqrt(eta+eps))/sqrt(2*eta)
     pre_m = -(sqrt(eta+eps)-mu*sqrt(eta-eps))/sqrt(2*eta)
     A_lp, A_wxx_lp = pre_p*tensor(OO*bright.dag(), I),  pre_p*tensor(bright*XX.dag(),I)

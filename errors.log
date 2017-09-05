@@ -1,19 +1,15 @@
 Traceback (most recent call last):
-  File "/home/henry/Work/phd-work/vibronic-dimer/QHE_notes_figures.py", line 246, in <module>
-    PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 2., 2., 4, 1, '4ab', 0, make_new_data=True)
-  File "/home/henry/Work/phd-work/vibronic-dimer/QHE_notes_figures.py", line 211, in data_maker
+  File "QHE_notes_figures.py", line 261, in <module>
+    PARAMS = data_maker(100., 10., 20, 50, 1., 0., 0., 2, 10, '2b', 1, make_new_data=True)
+  File "QHE_notes_figures.py", line 225, in data_maker
     make_new_data=make_new_data)
-  File "/home/henry/Work/phd-work/vibronic-dimer/QHE_notes_figures.py", line 71, in named_plot_creator
+  File "QHE_notes_figures.py", line 73, in named_plot_creator
     DATA = qt.mesolve(H_0, rho_0, timelist, [L_full], e_ops=expects, progress_bar=True, options=opts)
   File "/home/henry/anaconda2/envs/qutip/lib/python2.7/site-packages/qutip/mesolve.py", line 284, in mesolve
     progress_bar)
   File "/home/henry/anaconda2/envs/qutip/lib/python2.7/site-packages/qutip/mesolve.py", line 790, in _mesolve_const
     return _generic_ode_solve(r, rho0, tlist, e_ops, opt, progress_bar)
-  File "/home/henry/anaconda2/envs/qutip/lib/python2.7/site-packages/qutip/mesolve.py", line 1023, in _generic_ode_solve
-    r.integrate(r.t + dt[t_idx])
-  File "/home/henry/anaconda2/envs/qutip/lib/python2.7/site-packages/scipy/integrate/_ode.py", line 408, in integrate
-    self.f_params, self.jac_params)
-  File "/home/henry/anaconda2/envs/qutip/lib/python2.7/site-packages/scipy/integrate/_ode.py", line 865, in run
-    y1, t, istate = self.runner(*args)
+  File "/home/henry/anaconda2/envs/qutip/lib/python2.7/site-packages/qutip/mesolve.py", line 1020, in _generic_ode_solve
+    r.y, 1)
 KeyboardInterrupt
 
