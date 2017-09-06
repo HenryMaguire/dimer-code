@@ -167,7 +167,6 @@ def L_phenom(I, args):
     OO = basis(4,0)
     XX = basis(4,3)
     eta = np.sqrt(4*V**2+eps**2)
-    print "Mu is : {}".format(mu)
     pre_p = (sqrt(eta-eps)+mu*sqrt(eta+eps))/sqrt(2*eta)
     pre_m = -(sqrt(eta+eps)-mu*sqrt(eta-eps))/sqrt(2*eta)
     A_lp, A_wxx_lp = pre_p*tensor(OO*bright.dag(), I),  pre_p*tensor(bright*XX.dag(),I)

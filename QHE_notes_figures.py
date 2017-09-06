@@ -38,10 +38,11 @@ def named_plot_creator(rho_0, L_RC, H_0, SIGMA_1, SIGMA_2, expects, PARAMS, time
         PARAMS.update({'J':J_flat})
     else:
         mu = (PARAMS['w_2']*PARAMS['dipole_2'])/(PARAMS['w_1']*PARAMS['dipole_1'])
-        print "Mu is  {}".format(mu)
+        #print "Mu is  {}".format(mu)
         PARAMS.update({'mu':mu})
         PARAMS.update({'J':J_minimal})
     I = qt.enr_identity([PARAMS['N_1'],PARAMS['N_2']], PARAMS['exc'])
+    print PARAMS
     A_EM = tensor(SIGMA_1+PARAMS['mu']*SIGMA_2, I)
     opts = qt.Options(num_cpus=PARAMS['num_cpus'], nsteps=6000)
     ''' define names for files, we'll need these in every if statement'''
@@ -49,7 +50,6 @@ def named_plot_creator(rho_0, L_RC, H_0, SIGMA_1, SIGMA_2, expects, PARAMS, time
         if EM_approx=='ns':
             L = EM.L_nonsecular(H_0, A_EM, PARAMS)
         elif EM_approx=='s':
-            print PARAMS
             L = EM.L_secular_par(H_0, A_EM, PARAMS)
         elif EM_approx=='p':
             L = EM.L_phenom(I, PARAMS)
@@ -134,13 +134,11 @@ def data_maker(w_2, bias, V, T_EM, alpha_EM, alpha_1, alpha_2, N, end_time, figu
     wc = 1*53.08 # Ind.-Boson frame phonon cutoff freq
     w0_2, w0_1 = 500., 500. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1
-    print w_2+bias, w_2, w_xx, V, alpha_EM, alpha_1, T_1, wc
     N_1, N_2 = N,N # set Hilbert space sizes
     exc = N_1+N_2
     if N_1>4:
         exc= N_1
-    print "There are {} excitations".format(exc)
-    num_cpus = 4
+    num_cpus = 2
     J = J_minimal
 
     PARAM_names = ['w_1', 'w_2', 'V', 'bias', 'w_xx', 'T_1', 'T_2', 'wc',
@@ -153,8 +151,8 @@ def data_maker(w_2, bias, V, T_EM, alpha_EM, alpha_1, alpha_2, N, end_time, figu
     bright_vec = states[1]
     dark_vec = states[0]
 
-    bright_vec = states_n[2]
-    dark_vec = states_n[1]
+    #bright_vec = states_n[2]
+    #dark_vec = states_n[1]
     #print "Dark state overlap with numerical dark:{}".format(dark_vec.dag()*dark_vec_n)
     #print "Dark state overlap with numerical brgith:{}".format(dark_vec.dag()*bright_vec_n)
     #print "brigtht state overlap with numerical brgith:{}".format(bright_vec.dag()*dark_vec_n)
@@ -209,21 +207,22 @@ def data_maker(w_2, bias, V, T_EM, alpha_EM, alpha_1, alpha_2, N, end_time, figu
     #                        timelist, EM_approx='j', figure_num =  figure_num,
     #                        l ='flat_', make_new_data=make_new_data)
     #del DATA_J
-    """
-    DATA_P = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
-                            timelist, EM_approx='p', figure_num =  figure_num,
-                            make_new_data=make_new_data)
+
+    #DATA_P = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
+    #                        timelist, EM_approx='p', figure_num =  figure_num,
+    #                        make_new_data=make_new_data)
     DATA_P = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
                             timelist, l ='flat_', EM_approx='p', figure_num =  figure_num,
                             make_new_data=make_new_data)
-    del DATA_P"""
-    DATA_S = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
-                            timelist, EM_approx='s', figure_num =  figure_num,
-                            make_new_data=make_new_data)
+    del DATA_P
+    #DATA_S = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
+    #                        timelist, EM_approx='s', figure_num =  figure_num,
+    #                        make_new_data=make_new_data)
     DATA_S = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
                             timelist, l ='flat_', EM_approx='s', figure_num =  figure_num,
                             make_new_data=make_new_data)
     del DATA_S
+    """
     DATA_NS = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
                             timelist, EM_approx='ns', figure_num =  figure_num,
                             make_new_data=make_new_data)
@@ -232,6 +231,7 @@ def data_maker(w_2, bias, V, T_EM, alpha_EM, alpha_1, alpha_2, N, end_time, figu
                             timelist, l ='flat_', EM_approx='ns', figure_num =  figure_num,
                             make_new_data=make_new_data)
     del DATA_NS
+    """
 
     save_params(PARAMS, figure_num, 'flat_')
     return PARAMS
@@ -261,8 +261,9 @@ if __name__ == "__main__":
         PARAMS = data_maker(100., 10., 20, 50, 1., 0., 0., 2, 10, '2b', 1, make_new_data=True)
 
         #figure 4
-        #PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 2., 2., 4, 1, '4ab', 0, make_new_data=True)
         """
+        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 2., 2., 4, 1, '4ab', 0, make_new_data=True)
+
         PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 2., 2., 4, 4, '4cd', 0, make_new_data=True)
 
         #figure 5
@@ -270,9 +271,11 @@ if __name__ == "__main__":
         PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100/pi, 100/pi, N, 1, '5ab-p', 0, make_new_data=True)
         PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100/pi, 100/pi, N, 4, '5cd-p', 0, make_new_data=True)
         PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100, 100, N, 1, '5ab', 0, make_new_data=True)
-        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100, 100, N, 4, '5cd', 0, make_new_data=True)"""
+        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100, 100, N, 4, '5cd', 0, make_new_data=True)
+        """
     except:
         var = traceback.format_exc()
+        print var
         f = open('errors.log', 'w')
         f.write(var+'\n')
         f.close()

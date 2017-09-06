@@ -1,15 +1,9 @@
 Traceback (most recent call last):
   File "QHE_notes_figures.py", line 261, in <module>
     PARAMS = data_maker(100., 10., 20, 50, 1., 0., 0., 2, 10, '2b', 1, make_new_data=True)
-  File "QHE_notes_figures.py", line 225, in data_maker
+  File "QHE_notes_figures.py", line 223, in data_maker
     make_new_data=make_new_data)
-  File "QHE_notes_figures.py", line 73, in named_plot_creator
-    DATA = qt.mesolve(H_0, rho_0, timelist, [L_full], e_ops=expects, progress_bar=True, options=opts)
-  File "/home/henry/anaconda2/envs/qutip/lib/python2.7/site-packages/qutip/mesolve.py", line 284, in mesolve
-    progress_bar)
-  File "/home/henry/anaconda2/envs/qutip/lib/python2.7/site-packages/qutip/mesolve.py", line 790, in _mesolve_const
-    return _generic_ode_solve(r, rho0, tlist, e_ops, opt, progress_bar)
-  File "/home/henry/anaconda2/envs/qutip/lib/python2.7/site-packages/qutip/mesolve.py", line 1020, in _generic_ode_solve
-    r.y, 1)
-KeyboardInterrupt
+  File "QHE_notes_figures.py", line 53, in named_plot_creator
+    L = EM.L_secular(H_0, A_EM, PARAMS)
+AttributeError: 'module' object has no attribute 'L_secular'
 

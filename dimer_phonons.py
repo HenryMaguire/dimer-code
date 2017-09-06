@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from utils import *
 
 
-def dimer_ham_RC(w_1, w_2, w_xx, V, mu, Omega_1,
+def dimer_ham_RC(w_1, w_2, w_xx, V, Omega_1,
                 Omega_2, kap_1, kap_2, N_1, N_2, exc):
     """ Builds RC Hamiltonian in excitation restricted subspace
 
@@ -195,7 +195,7 @@ def RC_mapping_OD(args):
 
     # we define all of the RC parameters by the underdamped spectral density
     w_1, w_2, w_xx, V = args['w_1'], args['w_2'], args['w_xx'], args['V']
-    T_1, T_2, mu = args['T_1'], args['T_2'], args['mu']
+    T_1, T_2 = args['T_1'], args['T_2']
     wRC_1, wRC_2, alpha_1, alpha_2, wc = args['w0_1'], args['w0_2'], args['alpha_1'], args['alpha_2'], args['wc']
     N_1, N_2, exc = args['N_1'], args['N_2'], args['exc']
     gamma_1, gamma_2 = 2, 2
@@ -203,7 +203,7 @@ def RC_mapping_OD(args):
     kappa_1, kappa_2 = np.sqrt(pi*alpha_1*wRC_1/2.), np.sqrt(pi*alpha_2*wRC_2/2.)
     print gamma_1, wRC_1, kappa_1
     print "****************************************************************"
-    H_0, A_1, A_2, SIGMA_1, SIGMA_2 = dimer_ham_RC(w_1, w_2, w_xx, V, mu, wRC_1, wRC_2, kappa_1, kappa_2, N_1, N_2, exc)
+    H_0, A_1, A_2, SIGMA_1, SIGMA_2 = dimer_ham_RC(w_1, w_2, w_xx, V, wRC_1, wRC_2, kappa_1, kappa_2, N_1, N_2, exc)
     L_RC =  liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2, T_1, T_2, num_cpus=args['num_cpus'])
     full_size = (4*N_1*N_1)**2
     print "It is {}by{}. The full basis would be {}by{}".format(L_RC.shape[0], L_RC.shape[0], full_size, full_size)
@@ -227,7 +227,7 @@ def RC_mapping_UD(args):
     kappa_2 = np.sqrt(np.pi * alpha_2 * wRC_2 / 2.)
     print "****************************************************************"
     #print args
-    H_0, A_1, A_2, SIGMA_1, SIGMA_2 = dimer_ham_RC(w_1, w_2, w_xx, V, mu, wRC_1, wRC_2, kappa_1, kappa_2, N_1, N_2, exc)
+    H_0, A_1, A_2, SIGMA_1, SIGMA_2 = dimer_ham_RC(w_1, w_2, w_xx, V, wRC_1, wRC_2, kappa_1, kappa_2, N_1, N_2, exc)
     L_RC =  liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2, T_1, T_2, num_cpus=args['num_cpus'])
     full_size = (4*N_1*N_1)**2
     print "It is {}by{}. The full basis would be {}by{}".format(L_RC.shape[0], L_RC.shape[0], full_size, full_size)
