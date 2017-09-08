@@ -7,7 +7,7 @@ T_1: 	 300.0
 num_cpus: 	 4 
 w_xx: 	 200.0 
 wc: 	 53.08 
-J: 	 <function J_minimal at 0x7f78a63f0578> 
+J: 	 <function J_minimal at 0x7fdc630585f0> 
 w0_1: 	 500.0 
 w0_2: 	 500.0 
 V: 	 20 

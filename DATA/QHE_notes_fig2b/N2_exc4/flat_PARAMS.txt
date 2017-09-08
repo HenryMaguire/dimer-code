@@ -7,7 +7,7 @@ T_1: 	 300.0
 num_cpus: 	 4 
 w_xx: 	 210.0 
 wc: 	 53.08 
-J: 	 <function J_flat at 0x7f4db1dde5f0> 
+J: 	 <function J_minimal at 0x7f308c79db90> 
 w0_1: 	 500.0 
 w0_2: 	 500.0 
 V: 	 20 
@@ -19,4 +19,4 @@ exc: 	 4
 alpha_EM: 	 1.0 
 N_1: 	 2 
 N_2: 	 2 
-mu: 	 1 
+mu: 	 0.909090909091 
