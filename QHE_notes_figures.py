@@ -38,10 +38,6 @@ def named_plot_creator(rho_0, L_RC, H_0, SIGMA_1, SIGMA_2, expects, PARAMS, time
         PARAMS.update({'J':J_flat})
     else:
         mu = (PARAMS['w_2']*PARAMS['dipole_2'])/(PARAMS['w_1']*PARAMS['dipole_1'])
-<<<<<<< HEAD
-        #print "Mu is  {}".format(mu)
-=======
->>>>>>> eigen-bug-fixes
         PARAMS.update({'mu':mu})
         PARAMS.update({'J':J_minimal})
     I = qt.enr_identity([PARAMS['N_1'],PARAMS['N_2']], PARAMS['exc'])
@@ -53,13 +49,8 @@ def named_plot_creator(rho_0, L_RC, H_0, SIGMA_1, SIGMA_2, expects, PARAMS, time
         if EM_approx=='ns':
             L = EM.L_nonsecular_par(H_0, A_EM, PARAMS)
         elif EM_approx=='s':
-<<<<<<< HEAD
-=======
-            print "Secular {} parameters are {}".format(l, PARAMS)
->>>>>>> eigen-bug-fixes
             L = EM.L_secular_par(H_0, A_EM, PARAMS)
         elif EM_approx=='p':
-            print "Phenom {} parameters are {}".format(l, PARAMS)
             L = EM.L_phenom(I, PARAMS)
         elif EM_approx =='j':
             energies, states = check.exciton_states(PARAMS)
@@ -111,8 +102,8 @@ def named_plot_creator(rho_0, L_RC, H_0, SIGMA_1, SIGMA_2, expects, PARAMS, time
         except Exception as err:
             DATA = None
             print 'Could not plot the data because:\n {}'.format(err)
-    #J_DATA = load_obj("DATA/QHE_notes_fig{}/N{}_exc{}/jake_data".format(figure_num, PARAMS['N_1'], PARAMS['exc']))
-    J_DATA = load_obj("DATA/QHE_notes_fig{}/N{}_exc{}/jake_data".format(figure_num, 2, 4))
+    J_DATA = load_obj("DATA/QHE_notes_fig{}/N{}_exc{}/p_flat_data".format(figure_num, PARAMS['N_1'], PARAMS['exc']))
+    #J_DATA = load_obj("DATA/QHE_notes_fig{}/N{}_exc{}/p_{}.data".format(figure_num, 2, 4))
     ax1.plot(timelist, J_DATA.expect[0], linestyle='--')
     ax1.plot(timelist, J_DATA.expect[4], linestyle='--')
     ax1.plot(timelist, J_DATA.expect[5], linestyle='--')
@@ -179,7 +170,8 @@ def data_maker(w_2, bias, V, T_EM, alpha_EM, alpha_1, alpha_2, N, end_time, figu
     opts = qt.Options(num_cpus=num_cpus, store_states=True)
     ncolors = len(plt.rcParams['axes.prop_cycle'])
     ''' generate the RC liouvillian'''
-    L_RC, H_0, A_1, A_2, SIG_1, SIG_2, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_OD(PARAMS)
+    L_RC, H_0, A_1, A_2, SIG_1, SIG_2, PARAMS = RC.RC_mapping_OD(PARAMS) # Got the mapped parameters back
+    wRC_1, wRC_2, kappa_1, kappa_2 = PARAMS['w0_1'], PARAMS['w0_2'], PARAMS['kappa_1'],PARAMS['kappa_2']
     ''' make the RC observable operators '''
     atemp = enr_destroy([N_1,N_2], exc)
     n_RC_1 = Occupation(wRC_1, T_1)
@@ -197,9 +189,9 @@ def data_maker(w_2, bias, V, T_EM, alpha_EM, alpha_1, alpha_2, N, end_time, figu
     ''' initial density operator state'''
     rho_0 = tensor(basis(4,initial)*basis(4,initial).dag(),thermal_RCs)
 
-    ops = [OO, XO, OX, XX, site_coherence]
+    ops = [OO, XO, OX, XX]
     # Expectation values and time increments needed to calculate the dynamics
-    expects = ops + [dark, bright, exciton_coherence]
+    expects = ops + [dark, bright, exciton_coherence, site_coherence]
     expects +=[Phonon_1, Phonon_2, disp_1, disp_2]
 
     timelist = np.linspace(0,end_time,4000*end_time)
@@ -267,11 +259,10 @@ if __name__ == "__main__":
 
 
         #figure 4
-
-        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 2., 2., 4, 1, '4ab', 0, make_new_data=True)
-
-        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 2., 2., 4, 4, '4cd', 0, make_new_data=True)
         """
+        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 2., 2., 4, 1, '4ab', 0, make_new_data=True)
+        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 2., 2., 4, 4, '4cd', 0, make_new_data=True)
+
         #figure 5
         N = 5
         PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100/pi, 100/pi, N, 1, '5ab-p', 0, make_new_data=True)
