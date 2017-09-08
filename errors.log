@@ -1,4 +1,5 @@
 Traceback (most recent call last):
+<<<<<<< HEAD
   File "QHE_notes_figures.py", line 261, in <module>
     PARAMS = data_maker(100., 10., 20, 50, 1., 0., 0., 2, 10, '2b', 1, make_new_data=True)
   File "QHE_notes_figures.py", line 223, in data_maker
@@ -6,4 +7,11 @@ Traceback (most recent call last):
   File "QHE_notes_figures.py", line 53, in named_plot_creator
     L = EM.L_secular(H_0, A_EM, PARAMS)
 AttributeError: 'module' object has no attribute 'L_secular'
+=======
+  File "/home/henry/Work/phd-work/vibronic-dimer/QHE_notes_figures.py", line 262, in <module>
+    PARAMS =  data_maker(100., 0., 20, 50, 1., 0., 0., 2, 1, '2a', 1,  make_new_data=True)
+  File "/home/henry/Work/phd-work/vibronic-dimer/QHE_notes_figures.py", line 211, in data_maker
+    del DATA_J
+UnboundLocalError: local variable 'DATA_J' referenced before assignment
+>>>>>>> eigen-bug-fixes
 

@@ -38,7 +38,10 @@ def named_plot_creator(rho_0, L_RC, H_0, SIGMA_1, SIGMA_2, expects, PARAMS, time
         PARAMS.update({'J':J_flat})
     else:
         mu = (PARAMS['w_2']*PARAMS['dipole_2'])/(PARAMS['w_1']*PARAMS['dipole_1'])
+<<<<<<< HEAD
         #print "Mu is  {}".format(mu)
+=======
+>>>>>>> eigen-bug-fixes
         PARAMS.update({'mu':mu})
         PARAMS.update({'J':J_minimal})
     I = qt.enr_identity([PARAMS['N_1'],PARAMS['N_2']], PARAMS['exc'])
@@ -48,10 +51,15 @@ def named_plot_creator(rho_0, L_RC, H_0, SIGMA_1, SIGMA_2, expects, PARAMS, time
     ''' define names for files, we'll need these in every if statement'''
     if make_new_data:
         if EM_approx=='ns':
-            L = EM.L_nonsecular(H_0, A_EM, PARAMS)
+            L = EM.L_nonsecular_par(H_0, A_EM, PARAMS)
         elif EM_approx=='s':
+<<<<<<< HEAD
+=======
+            print "Secular {} parameters are {}".format(l, PARAMS)
+>>>>>>> eigen-bug-fixes
             L = EM.L_secular_par(H_0, A_EM, PARAMS)
         elif EM_approx=='p':
+            print "Phenom {} parameters are {}".format(l, PARAMS)
             L = EM.L_phenom(I, PARAMS)
         elif EM_approx =='j':
             energies, states = check.exciton_states(PARAMS)
@@ -103,8 +111,8 @@ def named_plot_creator(rho_0, L_RC, H_0, SIGMA_1, SIGMA_2, expects, PARAMS, time
         except Exception as err:
             DATA = None
             print 'Could not plot the data because:\n {}'.format(err)
-    J_DATA = load_obj("DATA/QHE_notes_fig{}/N{}_exc{}/jake_data".format(figure_num, PARAMS['N_1'], PARAMS['exc']))
-    #J_DATA = load_obj("DATA/QHE_notes_fig{}/N{}_exc{}/jake_data".format(figure_num, 5, 10))
+    #J_DATA = load_obj("DATA/QHE_notes_fig{}/N{}_exc{}/jake_data".format(figure_num, PARAMS['N_1'], PARAMS['exc']))
+    J_DATA = load_obj("DATA/QHE_notes_fig{}/N{}_exc{}/jake_data".format(figure_num, 2, 4))
     ax1.plot(timelist, J_DATA.expect[0], linestyle='--')
     ax1.plot(timelist, J_DATA.expect[4], linestyle='--')
     ax1.plot(timelist, J_DATA.expect[5], linestyle='--')
@@ -135,7 +143,7 @@ def data_maker(w_2, bias, V, T_EM, alpha_EM, alpha_1, alpha_2, N, end_time, figu
     w0_2, w0_1 = 500., 500. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1
     N_1, N_2 = N,N # set Hilbert space sizes
-    exc = N_1+N_2
+    exc = N_1 + N_2
     if N_1>4:
         exc= N_1
     num_cpus = 2
@@ -143,26 +151,37 @@ def data_maker(w_2, bias, V, T_EM, alpha_EM, alpha_1, alpha_2, N, end_time, figu
 
     PARAM_names = ['w_1', 'w_2', 'V', 'bias', 'w_xx', 'T_1', 'T_2', 'wc',
                     'w0_1', 'w0_2', 'alpha_1', 'alpha_2', 'N_1', 'N_2', 'exc', 'T_EM', 'alpha_EM','mu', 'num_cpus', 'J', 'dipole_1','dipole_2']
-    scope = locals()
+    scope = locals() # Lets eval below use local variables, not global
     PARAMS = dict((name, eval(name, scope)) for name in PARAM_names)
     H_dim = w_1*XO*XO.dag() + w_2*OX*OX.dag() + w_xx*XX*XX.dag() + V*(XO*OX.dag() + OX*XO.dag())
     energies, states = check.exciton_states(PARAMS)
-    energies_n, states_n = H_dim.eigenstates()
     bright_vec = states[1]
     dark_vec = states[0]
+    energies_n, states_n = H_dim.eigenstates()
 
+
+    print energies_n, energies
+    dark_vec_n = states_n[1]
+    bright_vec_n = states_n[2]
+
+<<<<<<< HEAD
     #bright_vec = states_n[2]
     #dark_vec = states_n[1]
     #print "Dark state overlap with numerical dark:{}".format(dark_vec.dag()*dark_vec_n)
     #print "Dark state overlap with numerical brgith:{}".format(dark_vec.dag()*bright_vec_n)
     #print "brigtht state overlap with numerical brgith:{}".format(bright_vec.dag()*dark_vec_n)
     #print "Brgight state overlap with numerical vector:{}".format(bright_vec.dag()*bright_vec_n)
+=======
+    print "Dark state overlap with numerical dark:{}".format(dark_vec.dag()*dark_vec_n)
+    print "Dark state overlap with numerical brgith:{}".format(dark_vec.dag()*bright_vec_n)
+    print "brigtht state overlap with numerical dark:{}".format(bright_vec.dag()*dark_vec_n)
+    print "Brgight state overlap with numerical bright:{}".format(bright_vec.dag()*bright_vec_n)
+>>>>>>> eigen-bug-fixes
     I_dimer = qeye(4)
     I = enr_identity([N_1,N_2], exc)
     dark = tensor(dark_vec*dark_vec.dag(), I)
     bright = tensor(bright_vec*bright_vec.dag(), I)
     exciton_coherence = tensor(dark_vec*bright_vec.dag(), I)
-
 
     '''Defining DM states'''
     site_coherence = tensor(OX*XO.dag(), I)
@@ -204,22 +223,35 @@ def data_maker(w_2, bias, V, T_EM, alpha_EM, alpha_1, alpha_2, N, end_time, figu
     timelist = np.linspace(0,end_time,4000*end_time)
 
     #DATA_J = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
-    #                        timelist, EM_approx='j', figure_num =  figure_num,
-    #                        l ='flat_', make_new_data=make_new_data)
+    #                        timelist, EM_approx='j', figure_num =  figure_num, make_new_data=make_new_data)
     #del DATA_J
 
+<<<<<<< HEAD
     #DATA_P = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
     #                        timelist, EM_approx='p', figure_num =  figure_num,
     #                        make_new_data=make_new_data)
+=======
+    DATA_P = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
+                            timelist, EM_approx='p', figure_num =  figure_num,
+                            make_new_data=make_new_data)
+
+>>>>>>> eigen-bug-fixes
     DATA_P = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
                             timelist, l ='flat_', EM_approx='p', figure_num =  figure_num,
                             make_new_data=make_new_data)
     del DATA_P
+<<<<<<< HEAD
     #DATA_S = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
     #                        timelist, EM_approx='s', figure_num =  figure_num,
     #                        make_new_data=make_new_data)
+=======
     DATA_S = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
                             timelist, l ='flat_', EM_approx='s', figure_num =  figure_num,
+                            make_new_data=make_new_data)
+
+>>>>>>> eigen-bug-fixes
+    DATA_S = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
+                            timelist, EM_approx='s', figure_num =  figure_num,
                             make_new_data=make_new_data)
     del DATA_S
     """
@@ -231,9 +263,12 @@ def data_maker(w_2, bias, V, T_EM, alpha_EM, alpha_1, alpha_2, N, end_time, figu
                             timelist, l ='flat_', EM_approx='ns', figure_num =  figure_num,
                             make_new_data=make_new_data)
     del DATA_NS
+<<<<<<< HEAD
     """
+=======
+    #save_params(PARAMS, figure_num, 'flat_')
+>>>>>>> eigen-bug-fixes
 
-    save_params(PARAMS, figure_num, 'flat_')
     return PARAMS
 
 def save_params(PARAMS, fig, l):
@@ -257,11 +292,15 @@ if __name__ == "__main__":
     try:
         # Plot batch 1: flat spectrum, fully converged, overlay jake's data on the top
         #figure 2
-        #PARAMS =  data_maker(100., 0., 20, 50, 1., 0., 0., 2, 1, '2a', 1,  make_new_data=True)
+        PARAMS =  data_maker(100., 0., 20, 50, 1., 0., 0., 2, 1, '2a', 1,  make_new_data=True)
         PARAMS = data_maker(100., 10., 20, 50, 1., 0., 0., 2, 10, '2b', 1, make_new_data=True)
 
+
         #figure 4
+<<<<<<< HEAD
         """
+=======
+>>>>>>> eigen-bug-fixes
         PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 2., 2., 4, 1, '4ab', 0, make_new_data=True)
 
         PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 2., 2., 4, 4, '4cd', 0, make_new_data=True)
@@ -272,7 +311,10 @@ if __name__ == "__main__":
         PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100/pi, 100/pi, N, 4, '5cd-p', 0, make_new_data=True)
         PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100, 100, N, 1, '5ab', 0, make_new_data=True)
         PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100, 100, N, 4, '5cd', 0, make_new_data=True)
+<<<<<<< HEAD
         """
+=======
+>>>>>>> eigen-bug-fixes
     except:
         var = traceback.format_exc()
         print var

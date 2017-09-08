@@ -201,7 +201,7 @@ def RC_mapping_OD(args):
     gamma_1, gamma_2 = 2, 2
     wRC_1, wRC_2 = 2*pi*wc*gamma_1, 2*pi*wc*gamma_2
     kappa_1, kappa_2 = np.sqrt(pi*alpha_1*wRC_1/2.), np.sqrt(pi*alpha_2*wRC_2/2.)
-    print gamma_1, wRC_1, kappa_1
+    print "RC frame params: gamma: {}\twRC: {}\tkappa{}".format(gamma_1, wRC_1, kappa_1)
     print "****************************************************************"
     H_0, A_1, A_2, SIGMA_1, SIGMA_2 = dimer_ham_RC(w_1, w_2, w_xx, V, wRC_1, wRC_2, kappa_1, kappa_2, N_1, N_2, exc)
     L_RC =  liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2, T_1, T_2, num_cpus=args['num_cpus'])

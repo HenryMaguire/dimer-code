@@ -69,8 +69,17 @@ def get_coh_ops(args, biases, I):
         coh = tensor(coh, I)
         coh_ops.append(coh)
     save_obj(coh_ops, 'DATA/zoomed_coherence_ops_N{}_wRC{}'.format(args['N_1'], int(args['w0_1'])))
-
 def exciton_states(PARS):
+    w_1, w_2, V, eps = PARS['w_1'], PARS['w_2'],PARS['V'], PARS['bias']
+    eta = np.sqrt(eps**2 + 4*V**2)
+    lam_m = ((w_2+eps)+w_2-eta)*0.5
+    lam_p = ((w_2+eps)+w_2+eta)*0.5
+    v_p = qt.Qobj(np.array([0., np.sqrt(eta+eps), np.sqrt(eta-eps), 0.]))/np.sqrt(2*eta)
+    v_m = qt.Qobj(np.array([0., np.sqrt(eta-eps), -np.sqrt(eta+eps), 0.]))/np.sqrt(2*eta)
+
+    return [lam_m, lam_p], [v_m, v_p]
+
+def exciton_states_old(PARS):
     w_1, w_2, V, bias = PARS['w_1'], PARS['w_2'],PARS['V'], PARS['bias']
     v_p, v_m = 0, 0
     eta = np.sqrt(4*(V**2)+bias**2)

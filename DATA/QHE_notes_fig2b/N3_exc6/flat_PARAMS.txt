@@ -1,0 +1,22 @@
+T_EM: 	 50 
+bias: 	 10.0 
+alpha_2: 	 0.0 
+alpha_1: 	 0.0 
+T_2: 	 300.0 
+T_1: 	 300.0 
+num_cpus: 	 4 
+w_xx: 	 210.0 
+wc: 	 53.08 
+J: 	 <function J_minimal at 0x7f308c79db90> 
+w0_1: 	 500.0 
+w0_2: 	 500.0 
+V: 	 20 
+w_1: 	 110.0 
+w_2: 	 100.0 
+dipole_2: 	 1.0 
+dipole_1: 	 1.0 
+exc: 	 6 
+alpha_EM: 	 1.0 
+N_1: 	 3 
+N_2: 	 3 
+mu: 	 0.909090909091 
