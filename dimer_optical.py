@@ -165,6 +165,7 @@ def L_secular_par(H_vib, A, args):
                                             num_cpus=num_cpus, **kwargs)
     print "It took ", time.time()-ti, " seconds to build the secular RWA Liouvillian"
     return -np.sum(L)*0.25
+
 def L_phenom(I, args):
     ti = time.time()
     eps, V, w_xx = args['bias'], args['V'], args['w_xx']
