@@ -55,8 +55,6 @@ def secular_function(i,j, eVals=[], eVecs=[], A=0, w_1=0., Gamma=1.,T=0., J=J_mi
     eps_ij = abs(eVals[i]-eVals[j])
     r_up = 0
     r_down = 0
-    #if i>11 or j>11: # 11 is where the 1 phonon manifold ends
-    #    pass       # Spectrum converges here
     if abs(lam_ij_sq)>0:
         IJ = eVecs[i]*eVecs[j].dag()
         JI = eVecs[j]*eVecs[i].dag()
