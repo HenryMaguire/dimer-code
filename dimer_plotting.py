@@ -1,7 +1,10 @@
 """
 Plotting module for the dimer dynamics
 """
-
+import os
+import dimer_phonons as RC
+import dimer_optical as EM
+import optical_liouvillian_J as JAKE
 from qutip import steadystate, Qobj
 import qutip as qt
 import matplotlib.pyplot as plt
@@ -9,6 +12,9 @@ import numpy as np
 import matplotlib
 import time
 matplotlib.style.use('ggplot')
+reload(JAKE)
+reload(RC)
+reload(EM)
 
 from utils import *
 
@@ -90,6 +96,7 @@ def plot_dynamics(DATA, timelist, exp_ops, ax, title='', ss_dm = False):
     ax.set_ylabel("Site populations")
     ax.set_xlabel("Time (ps)")
     ax.legend(loc='best')
+    ax.set_xlim(0,timelist[-1])
     #ax.title(title)
     #p_file_name = "Notes/Images/Dynamics/Pop_a{:d}_Tph{:d}_Tem{:d}_w0{:d}.pdf".format(int(alpha_ph), int(T_ph), int(T_EM), int(w0))
     #plt.savefig(p_file_name)
@@ -97,26 +104,29 @@ def plot_dynamics(DATA, timelist, exp_ops, ax, title='', ss_dm = False):
 def plot_eig_dynamics(DATA, timelist, exp_ops, ax, title='', ss_dm = False):
     """ Docstring here please
     """
-    labels = [r'Ground', r'Anti-Symm.', r'Symmetric', r'Biexciton']
+    labels = [r'Ground', r'Dark.', r'Bright', r'Biexciton']
     colors = [i['color'] for i in list(plt.rcParams['axes.prop_cycle'])][0:4]
-    info = zip([0,4,5,3], labels, colors) # expval id, etc., etc.
+    info = zip([0,5,6,3], labels, colors) # expval id, etc., etc.
     #ax.title(title)
     linewidth = 1.5
     linestyle = '-'
+
     for i, l, c in info:
         ax.plot(timelist, DATA.expect[i].real, label=l, color=c, linewidth=linewidth, linestyle=linestyle)
         if ss_dm:
             ax.axhline((ss_dm*exp_ops[i]).tr().real, color=c, ls='--')
     ax.set_ylabel("Eigenstate population")
     ax.set_xlabel("Time (ps)")
+    #ax.set_ylim(0,0.6)
+    ax.set_xlim(0,timelist[-1])
     ax.legend()
     #p_file_name = "Notes/Images/Dynamics/Pop_a{:d}_Tph{:d}_Tem{:d}_w0{:d}.pdf".format(int(alpha_ph), int(T_ph), int(T_EM), int(w0))
     #plt.savefig(p_file_name)
 def plot_coherences(DATA, timelist, exp_ops, ax, title='', ss_dm = False):
     labels = [r'Real part', 'Imaginary part']
     colors = [i['color'] for i in list(plt.rcParams['axes.prop_cycle'])][0:2]
-    coh = DATA.expect[6]
-    ss = (ss_dm*exp_ops[6]).tr()
+    coh = DATA.expect[7]
+    ss = (ss_dm*exp_ops[7]).tr()
     info = zip([ss.real, ss.imag],[coh.real, coh.imag], labels, colors)
 
     #ax.title(r"$\alpha_{ph}=$""%i"r"$cm^{-1}$, $T_{EM}=$""%i K" %(alpha_1, T_EM))
@@ -128,8 +138,9 @@ def plot_coherences(DATA, timelist, exp_ops, ax, title='', ss_dm = False):
             ax.axhline(s, color=c, ls='--')
     #ax.title(title)
     ax.legend(loc='lower right')
-    ax.set_ylabel("Symm./Anti-symm. Eigenstate Coherence")
+    ax.set_ylabel("Eigenstate Coherence")
     ax.set_xlabel("Time (ps)")
+    ax.set_xlim(0,timelist[-1])
     #file_name = "Notes/Images/Dynamics/Coh_a{:d}_Tph{:d}_Tem{:d}_w0{:d}.pdf".format(int(alpha_1), int(T_1), int(T_EM), int(w0_1))
     #plt.savefig(file_name)
     #plt.close()
@@ -210,40 +221,90 @@ def plot_observable(DATA, timelist, ax, things):
         if things['show_steadystates']:
             ax.axhline(SS)
 
+def exciton_states(PARS):
+    w_1, w_2, V, bias = PARS['w_1'], PARS['w_2'],PARS['V'], PARS['bias']
+    v_p, v_m = 0, 0
+    eta = np.sqrt(4*(V**2)+bias**2)
+    lam_p = w_2+(bias+eta)*0.5
+    lam_m = w_2+(bias-eta)*0.5
+    v_m = np.array([0., -(w_1-lam_p)/V, -1, 0.])
+    #v_p/= /(1+(V/(w_2-lam_m))**2)
+    v_m/= np.sqrt(np.dot(v_m, v_m))
+    v_p = np.array([0, V/(w_2-lam_m),1., 0.])
 
-def calculate_dynamics():
-    assert PARAMS['w_1'] != PARAMS['w_2']
+    v_p /= np.sqrt(np.dot(v_p, v_p))
+    #print  np.dot(v_p, v_m) < 1E-15
+    return [lam_m, lam_p], [qt.Qobj(v_m), qt.Qobj(v_p)]
+
+def calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, timelist, EM_approx='s', l=''):
+    L=0
+    mu = PARAMS['mu']
+    if l == 'flat_':
+        PARAMS.update({'mu':1})
+        PARAMS.update({'J':J_flat})
+    else:
+        PARAMS.update({'mu':mu})
+        PARAMS.update({'J':J_minimal})
+    if EM_approx=='ns':
+        L = EM.L_nonsecular_par(H_0, A_EM, PARAMS)
+    elif EM_approx=='s':
+        L = EM.L_secular_par(H_0, A_EM, PARAMS)
+    elif EM_approx=='p':
+        I = qt.enr_identity([PARAMS['N_1'],PARAMS['N_2']], PARAMS['exc'])
+        energies, states = exciton_states(PARAMS)
+        L = EM.L_phenom(states, energies, I, PARAMS)
+    elif EM_approx =='j':
+        energies, states = exciton_states(PARAMS)
+        L = JAKE.EM_dissipator(states, PARAMS['w_xx'], PARAMS['w_2'], PARAMS['bias'],
+                                            PARAMS['V'], PARAMS['mu'], PARAMS['alpha_EM'], PARAMS['T_EM'], PARAMS['J'],
+                                            PARAMS['N_1'], PARAMS['exc'])
+    else:
+        raise KeyError
+    L_full = L_RC+L
+    ss_dm = False
+    """
     try:
-        timelist = np.linspace(0,20.0,5000)*0.188
-        L_ns = EM.L_nonsecular(H_0, A_EM, PARAMS)
-        L_full = L_RC+L_ns
-
-        DATA_ns = mesolve(H_0, rho_0, timelist, [L_full], expects, options=opts, progress_bar=True)
-        ss_dm = 0
-        try:
-            ss_dm = qt.steadystate(H_0, [L_full])
-        except Exception as err:
-            print "Warning: steady state density matrix didn't converge. Probably"
-            print "\t due to some problem with excitation restriction. \n"
-            print err
-
-        timelist=timelist/0.188 # Convert from cm to picoseconds
-        #DATA_ns = load_obj("DATA_N7_exc8")
-        #fig = plt.figure(figsize=(12,6))
-        fig = plt.figure()
-        ax1 = fig.add_subplot(111)
-        title = 'Eigenstate population'
-        #title = title + r"$\omega_0=$""%i"r"$cm^{-1}$, $\alpha_{ph}=$""%f"r"$cm^{-1}$, $T_{EM}=$""%i K" %(w0_1, alpha_1, T_EM)
-        fig = plt.figure()
-        vis.plot_eig_dynamics(DATA_ns, timelist, expects, ax1, ss_dm=ss_dm)
-        ax2 = fig.add_subplot(111)
-        vis.plot_coherences(DATA_ns, timelist, expects, ax2, ss_dm=ss_dm)
-        plt.savefig("Notes/dynamics.png")
-        print (ss_dm*exciton_coherence).tr()
-        print 'Plotting worked!'
-        return L_full
+        ss_dm = qt.steadystate(H_0, [L_full])
     except Exception as err:
-        print "Could not get non-secular-driving dynamics because ",err
+        print "Warning: steady state density matrix didn't converge. Probably"
+        print "\t due to some problem with excitation restriction. \n"
+        print err
+    """
+    #print ENR_ptrace(ss_dm, 0, [4, PARAMS['N_1'],PARAMS['N_2']], PARAMS['exc'] )
+    opts = qt.Options(num_cpus=PARAMS['num_cpus'], store_final_state=True, nsteps=100000, method='bdf')
+    try:
+        DATA = qt.mesolve(H_0, rho_0, timelist, [L_full], e_ops=expects, progress_bar=True, options=opts)
+        lab='wc'
+        if PARAMS['alpha_1']>PARAMS['w_1']/500.:
+            lab = 'sc'
+        data_dir = "DATA/Dynamics_J{}_N{}_exc{}".format(lab, PARAMS['N_1'], PARAMS['exc'])
+        if not os.path.exists(data_dir):
+            os.makedirs(data_dir)
+        data_name = data_dir+"/{}_{}data".format(EM_approx, l)
+        plot_name = data_dir+"/{}_{}dynamics.pdf".format(EM_approx, l)
+        fig = plt.figure(figsize=(12,10))
+        ax1 = fig.add_subplot(211)
+        title = 'Eigenstate dynamics'
+        #title = title + r"$\omega_0=$""%i"r"$cm^{-1}$, $\alpha_{ph}=$""%f"r"$cm^{-1}$, $T_{EM}=$""%i K" %(w0_1, alpha_1, T_EM)
+        plot_eig_dynamics(DATA, timelist, expects, ax1, ss_dm=ss_dm)
+        ax2 = fig.add_subplot(212)
+        plot_coherences(DATA, timelist, expects, ax2, ss_dm=ss_dm)
+        plt.savefig(plot_name)
+        print "plot saved at: {}".format(plot_name)
+        save_obj(DATA, data_name)
+        plt.close()
+    except Exception as err:
+        DATA = None
+        print "could not calculate dynamics because:\n {}".format(err)
+
+    #timelist=timelist/0.188 # Convert from cm to picoseconds
+    #DATA_ns = load_obj("DATA_N7_exc8")
+    #fig = plt.figure(figsize=(12,6))
+    return ss_dm, DATA
+
+
+
+
 
 def steadystate_coherence_plot(args, alpha_list, biases):
     main_dir = "DATA/bias_dependence_wRC{}_N{}_V{}_wc{}/".format(int(args['w0_1']), args['N_1'], int(args['V']), int(args['wc']))
@@ -260,6 +321,7 @@ def steadystate_coherence_plot(args, alpha_list, biases):
     for k, alpha in enumerate(alpha_list):
         #p_ss_dms = load_obj(p_dm_dir+'steadystate_DMs_alpha{}'.format(int(alpha)))
         ns_ss_dms = load_obj(ns_dm_dir+'steadystate_DMs_pialpha{}'.format(int(pi*alpha)))
+        print len(ns_ss_dms), len(coh_ops)
         assert len(ns_ss_dms) == len(coh_ops)
         #p_coh_list = []
         ns_coh_list = []
@@ -361,10 +423,11 @@ def steadystate_darkbright_plot(args, alpha_list, biases):
     for k, alpha in enumerate(alpha_list):
         #p_ss_dms = load_obj(p_dm_dir+'steadystate_DMs_alpha{}'.format(int(alpha)))
         ns_ss_dms = load_obj(ns_dm_dir+'steadystate_DMs_pialpha{}'.format(int(pi*alpha)))
-        assert len(ns_ss_dms) == len(bright_ops)
+        #assert len(ns_ss_dms) == len(bright_ops)
         dark_list = []
         bright_list = []
         ground_list = []
+
         for i in range(len(ns_ss_dms)):
             d_obs = (ns_ss_dms[i]*dark_ops[i]).tr()
             b_obs = (ns_ss_dms[i]*bright_ops[i]).tr()
@@ -373,12 +436,13 @@ def steadystate_darkbright_plot(args, alpha_list, biases):
             dark_list.append(d_obs)
             bright_list.append(b_obs)
         #ax.plot(biases, np.array(p_coh_list).real, linestyle='--', linewidth=1.2, color=colors[k])
+        print bright_list
         label = r"$\pi\alpha =$"+ "{}".format(int(pi*alpha))
-        ax.plot(biases, ((np.array(ground_list)-np.array(bright_list))/(np.array(ground_list)-np.array(dark_list))).real, label=label, color=colors[k])
+        ax.plot(biases, (np.array(dark_list)/(np.array(ground_list)+np.array(bright_list))).real, label=label, color=colors[k])
     #print energy_differences[int(len(energy_differences)/2)::]
     #print -1*(np.array(bright_list)-np.array(dark_list))[int(len(energy_differences)/2)::]
     ax.set_xlabel(r'Bias $cm^{-1}$')
-    ax.set_ylabel('Eigenstate Population ratio (pop from ground)')
+    ax.set_ylabel('Relative Dark Population ratio (dark/(bright+ground))')
     ax.legend()
     #ax.set_xlim(-2000, 2000)
     plt.savefig(main_dir+'darkbrightdiff_bias_dependence.pdf')

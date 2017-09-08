@@ -1,0 +1,5 @@
+We see that the secular and phenomenological dynamics behave identically in the absence of phonon coupling. This is expected for the same reasons outlined in the observations of fig2a.
+The non-secular now has population oscillations at short times, which have a frequency equal to the exciton splitting. The oscillations appear to be mainly between the dark and ground state, possibly since the bright state is deexciting quickly to the ground state so the oscillations may be damped out/transferred to the ground state population. It would be good to analytically show which coherences and states are actually coupled to one another.
+
+Comparing linear to flat spectrum:
+The bright state decays more quickly to the ground state, so for shorter times the ground state has higher population in linear vs. flat. However, for some reason the dark state decays more slowly in the linear case (assuming mu =1).

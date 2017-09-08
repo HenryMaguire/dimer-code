@@ -1,4 +1,5 @@
 import sys
+import os
 from numpy import pi
 import numpy as np
 
@@ -45,7 +46,7 @@ if __name__ == "__main__":
     sigma_m2 = XO*XX.dag() + OO*OX.dag()
     sigma_x1 = sigma_m1+sigma_m1.dag()
     sigma_x2 = sigma_m2+sigma_m2.dag()
-
+    """
     w_2 = 1.4*ev_to_inv_cm
     V = 92 #0.01*8065.5
     bias = 0 #1*V #0.01*ev_to_inv_cm
@@ -58,16 +59,31 @@ if __name__ == "__main__":
     T_1, T_2 = 300., 300. # Phonon bath temperature
 
     wc = 1*53. # Ind.-Boson frame phonon cutoff freq
-    w0_2, w0_1 = 400., 400. # underdamped SD parameter omega_0
+    w0_2, w0_1 = 500., 500. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1
+    """
+    w_2 = 1500
+    V = 100 #0.01*8065.5
+    bias = 50 #1*V #0.01*ev_to_inv_cm
+    w_1 = w_2 + bias
+    dipole_1, dipole_2 = 1., 1.
+    T_EM = 6000. # Optical bath temperature
+    alpha_EM = 0.1 #0.3*inv_ps_to_inv_cm # Optical S-bath strength (from inv. ps to inv. cm)(larger than a real decay rate because dynamics are more efficient this way)
+    mu = w_2*dipole_2/(w_1*dipole_1)
+
+    T_1, T_2 = 300., 300. # Phonon bath temperature
+
+    wc = 1*53. # Ind.-Boson frame phonon cutoff freq
+    w0_2, w0_1 = 500., 500. # underdamped SD parameter omega_0
+    w_xx = w_2 + w_1
+
     alpha_1, alpha_2 = 100/pi, 100/pi # Ind.-Boson frame coupling
-    N_1, N_2 = 3,3 # set Hilbert space sizes
-    exc = int((N_1+N_2)*0.6)
+    N_1, N_2 = 4,4 # set Hilbert space sizes
+    exc = 5
     num_cpus = 4
     J = J_minimal
 
     H_dim = w_1*XO*XO.dag() + w_2*OX*OX.dag() + w_xx*XX*XX.dag() + V*(XO*OX.dag() + OX*XO.dag())
-    num_energies, num_states = H_dim.eigenstates()
     PARAM_names = ['w_1', 'w_2', 'V', 'bias', 'w_xx', 'T_1', 'T_2', 'wc',
                     'w0_1', 'w0_2', 'alpha_1', 'alpha_2', 'N_1', 'N_2', 'exc', 'T_EM', 'alpha_EM','mu', 'num_cpus', 'J']
     PARAMS = dict((name, eval(name)) for name in PARAM_names)
@@ -124,46 +140,62 @@ if __name__ == "__main__":
     # electromagnetic bath liouvillians
 
     #print sys.getsizeof(L_ns)
-    opts = qt.Options(num_cpus=num_cpus)
+    opts = qt.Options(num_cpus=num_cpus, store_states=True)
     ncolors = len(plt.rcParams['axes.prop_cycle'])
 
-    L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_UD(PARAMS)
-    L_ns = EM.L_nonsecular(H_0, A_EM, PARAMS)
-    L_s = EM.L_secular(H_0, A_EM, PARAMS)
-    print "L_s calculated"
-    #L_p = EM.L_phenom(states, energies, I, PARAMS)
     thermal_RCs = enr_thermal_dm([N_1,N_2], exc, [n_RC_1, n_RC_2])
     rho_0 = tensor(basis(4,0)*basis(4,0).dag(),thermal_RCs)
-    timelist = np.linspace(0,3,1000)
-
-    #DATA_p = mesolve(H_0, rho_0, timelist, [L_ns], expects, options=opts, progress_bar=True)
-    DATA_ns = mesolve(H_0, rho_0, timelist, [L_RC+L_ns], expects, options=opts, progress_bar=True)
-    try:
-        DATA_s = mesolve(H_0, rho_0, timelist, [L_RC+L_s], expects, options=opts, progress_bar=True)
-    except Exception as e:
-        print "didn't work due to ", e
-
-
-    fig = plt.figure()
-    ax1 = fig.add_subplot(211)
-    ax2 = fig.add_subplot(212)
+    #timelist = np.linspace(0,3,1000)
+    L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_OD(PARAMS)
+    timelist = np.linspace(0,1,7000)
+    #DATA_J = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='j')
+    DATA_P = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, timelist, EM_approx='p')
+    DATA_S = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, timelist, EM_approx='s')
+    DATA_NS = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, timelist, EM_approx='ns')
+    #PARAMS.update({'exc': 5})
+    #PARAMS.update({'N_1': 5, 'N_2': 5, 'alpha_1':50/pi, 'alpha_2': 50/pi})
+    #PARAMS.update({'N_2': 6, 'N_1': 6})
+    """
+    PARAMS.update({'J': J_flat})
+    #DATA_J = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='j', l='flat_')
+    DATA_P = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='p', l='flat_')
+    DATA_S = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='s', l='flat_')
+    DATA_NS = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='ns', l='flat_')"""
 
     """
-    ax1.plot(timelist, DATA_ns.expect[7].real, label='real eig. coherence')
-    ax1.plot(timelist, DATA_ns.expect[7].imag, label='imag. eig. coherence')
-    ax2.plot(timelist, DATA_ns.expect[8]-DATA_ns.expect[9], label='Phonon occupation diff.')
+    mut_inf_d1 = []
+    mut_inf_d2 = []
+    mut_inf_12 = []
+    for i in DATA_ns.states:
+        dimer_MI = dimer_mutual_information(i, PARAMS)
+        mut_inf_d1.append(dimer_MI[1])
+        mut_inf_d2.append(dimer_MI[2])
+        mut_inf_12.append(dimer_MI[0])
+    plt.plot(timelist, mut_inf_12, label='b1 & b2')
+    plt.plot(timelist, mut_inf_d2, label='dimer & b2')
+    plt.plot(timelist, mut_inf_d1, label='dimer & b1')
+    plt.legend()
+    plt.show()
+    #fig = plt.figure()
+    #ax1 = fig.add_subplot(211)
+    #ax2 = fig.add_subplot(212)
+    """
+
+    #ax1.plot(timelist, DATA_ns.expect[7].real, label='real eig. coherence')
+    #ax1.plot(timelist, DATA_ns.expect[7].imag, label='imag. eig. coherence')
+    #ax2.plot(timelist, DATA_ns.expect[8]-DATA_ns.expect[9], label='Phonon occupation diff.')
     #ax2.plot(timelist, DATA_ns.expect[1], label='site 1', linestyle="--")
     #ax2.plot(timelist, DATA_ns.expect[2], label='site 2', linestyle="--")
     #ax2.plot(timelist, DATA_ns.expect[0]+ DATA_ns.expect[5]+ DATA_ns.expect[6]+ DATA_ns.expect[3], label='nsb')
-    ax1.plot(timelist, DATA_s.expect[7].real, linestyle="--",label='secular')
+    #ax1.plot(timelist, DATA_s.expect[7].real, linestyle="--",label='secular')
     #ax1.plot(timelist, DATA_s.expect[7].imag, linestyle="--", label='pbc imag')
     #ax2.plot(timelist, DATA_ns.expect[5], linestyle="-",label='dark', color ='r')
     #ax2.plot(timelist, DATA_ns.expect[6], linestyle="-", label='bright', color ='b')
     #ax2.plot(timelist, DATA_ns.expect[3], linestyle="-", label='exc')
     #ax2.plot(timelist, DATA_s.expect[5], linestyle="-",label='p dark')
     #ax2.plot(timelist, DATA_s.expect[6], linestyle="-", label='p bright')
-    method= 'direct' #'iterative-lgmres'
-    """
+    #method= 'direct' #'iterative-lgmres'
+
     """
     plt.figure()
     plt.plot(timelist, DATA_ns.expect[5], linestyle="-",label='dark', color ='r')
@@ -242,96 +274,102 @@ if __name__ == "__main__":
     #check.get_coh_ops(PARAMS, biases, I)
     #
     """
-
-    alpha_ph = np.array([0.1, 1, 10, 100, 500])/pi
+    """
+    alpha_ph = np.array([0.1, 1., 10., 100., 500.])/pi
     #alpha_ph=np.array([0])
     biases = np.linspace(0, 0.03, 50)*ev_to_inv_cm
     #biases = np.array([0, 0.01*ev_to_inv_cm])
 
     PARAMS.update({'N_1':2, 'N_2':2, 'exc': 3})
-    I = enr_identity([2,2], 3)
     PARAMS.update({'V':0.25*92.})
+    '''
     for alpha in alpha_ph:
         PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
-        check.bias_dependence(biases, PARAMS, I, ops)
+        check.bias_dependence(biases, PARAMS, ops)
     vis.steadystate_ground_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_coherence_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_dark_plot(PARAMS, alpha_ph, biases)
-    vis.steadystate_bright_plot(PARAMS, alpha_ph, biases)
-    vis.steadystate_darkbright_plot(PARAMS, alpha_ph, biases)
+    vis.steadystate_bright_plot(PARAMS, alpha_ph, biases)'''
+    #vis.steadystate_darkbright_plot(PARAMS, alpha_ph, biases)
 
     PARAMS.update({'V':0.5*92.})
+    '''
     for alpha in alpha_ph:
         PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
         check.bias_dependence(biases, PARAMS, I, ops)
     vis.steadystate_ground_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_coherence_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_dark_plot(PARAMS, alpha_ph, biases)
-    vis.steadystate_bright_plot(PARAMS, alpha_ph, biases)
-    vis.steadystate_darkbright_plot(PARAMS, alpha_ph, biases)
+    vis.steadystate_bright_plot(PARAMS, alpha_ph, biases)'''
+    #vis.steadystate_darkbright_plot(PARAMS, alpha_ph, biases)
     PARAMS.update({'V':1*92.})
+    '''
     for alpha in alpha_ph:
         PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
         check.bias_dependence(biases, PARAMS, I, ops)
     vis.steadystate_ground_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_coherence_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_dark_plot(PARAMS, alpha_ph, biases)
-    vis.steadystate_bright_plot(PARAMS, alpha_ph, biases)
+    vis.steadystate_bright_plot(PARAMS, alpha_ph, biases)'''
     vis.steadystate_darkbright_plot(PARAMS, alpha_ph, biases)
 
     PARAMS.update({'V':2*92.})
+    '''
     for alpha in alpha_ph:
         PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
         check.bias_dependence(biases, PARAMS, I, ops)
     vis.steadystate_ground_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_coherence_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_dark_plot(PARAMS, alpha_ph, biases)
-    vis.steadystate_bright_plot(PARAMS, alpha_ph, biases)
+    vis.steadystate_bright_plot(PARAMS, alpha_ph, biases)'''
     vis.steadystate_darkbright_plot(PARAMS, alpha_ph, biases)
-
 
     PARAMS.update({'N_1':4, 'N_2':4, 'exc': 5})
 
     I = enr_identity([4,4], 5)
     PARAMS.update({'V':0.25*92.})
+    '''
     for alpha in alpha_ph:
         PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
         check.bias_dependence(biases, PARAMS, I, ops)
     vis.steadystate_ground_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_coherence_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_dark_plot(PARAMS, alpha_ph, biases)
-    vis.steadystate_bright_plot(PARAMS, alpha_ph, biases)
+    vis.steadystate_bright_plot(PARAMS, alpha_ph, biases)'''
     vis.steadystate_darkbright_plot(PARAMS, alpha_ph, biases)
 
     PARAMS.update({'V':0.5*92.})
+    '''
     for alpha in alpha_ph:
         PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
         check.bias_dependence(biases, PARAMS, I, ops)
     vis.steadystate_ground_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_coherence_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_dark_plot(PARAMS, alpha_ph, biases)
-    vis.steadystate_bright_plot(PARAMS, alpha_ph, biases)
+    vis.steadystate_bright_plot(PARAMS, alpha_ph, biases)'''
     vis.steadystate_darkbright_plot(PARAMS, alpha_ph, biases)
     PARAMS.update({'V':1*92.})
+    '''
     for alpha in alpha_ph:
         PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
         check.bias_dependence(biases, PARAMS, I, ops)
     vis.steadystate_ground_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_coherence_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_dark_plot(PARAMS, alpha_ph, biases)
-    vis.steadystate_bright_plot(PARAMS, alpha_ph, biases)
+    vis.steadystate_bright_plot(PARAMS, alpha_ph, biases)'''
     vis.steadystate_darkbright_plot(PARAMS, alpha_ph, biases)
 
     PARAMS.update({'V':2*92.})
+    '''
     for alpha in alpha_ph:
         PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
         check.bias_dependence(biases, PARAMS, I, ops)
     vis.steadystate_ground_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_coherence_plot(PARAMS, alpha_ph, biases)
     vis.steadystate_dark_plot(PARAMS, alpha_ph, biases)
-    vis.steadystate_bright_plot(PARAMS, alpha_ph, biases)
+    vis.steadystate_bright_plot(PARAMS, alpha_ph, biases)'''
     vis.steadystate_darkbright_plot(PARAMS, alpha_ph, biases)
-
+    """
     #del L_ns
     #L_s = EM.L_secular(H_0, A_EM, eps, alpha_EM, T_EM, J, num_cpus=num_cpus)
     #L_naive = EM_lind.electronic_lindblad(w_xx, w_1, eps, V, mu, alpha_EM, T_EM, N_1, N_2, exc)

@@ -1,7 +1,7 @@
 import numpy as np
 from numpy import pi
 import scipy as sp
-from qutip import spre, spost, sprepost
+from qutip import spre, spost, sprepost, tensor, basis
 import qutip as qt
 import pickle
 
@@ -21,7 +21,7 @@ def ENR_ptrace(rho,sel,dims,excitations):
     #dimensions
     ####################
     #enr stuff for the original state
-    nstates, state2idx, idx2state = enr_state_dictionaries(dims, excitations)
+    nstates, state2idx, idx2state = qt.enr_state_dictionaries(dims, excitations)
 
 
 
@@ -31,7 +31,7 @@ def ENR_ptrace(rho,sel,dims,excitations):
     #
     drho=rho.dims[0]
     dims_short= np.asarray(drho).take(sel)
-    nstates2, state2idx2, idx2state2 = enr_state_dictionaries(dims_short.tolist(), excitations)
+    nstates2, state2idx2, idx2state2 = qt.enr_state_dictionaries(dims_short.tolist(), excitations)
 
 
     # this is a list of the dimensions of the system one has traced out
@@ -57,15 +57,17 @@ def ENR_ptrace(rho,sel,dims,excitations):
     rho1_dims = [dims_kept0.tolist(), dims_kept1.tolist()]
     rho1_shape = [nstates2, nstates2]
 
-    return Qobj(rhout,rho1_dims,rho1_shape)
+    return qt.Qobj(rhout,rho1_dims,rho1_shape)
 
 def dimer_mutual_information(rho, args):
     N, exc = args['N_1'], args['exc']
-    sel = [1,2]
-    vn12 = qt.entropy_vn(ENR_ptrace(rho,sel,[4,N,N],exc))
+    vn12 = qt.entropy_vn(ENR_ptrace(rho,[1,2],[4,N,N],exc))
     vn1 = qt.entropy_vn(ENR_ptrace(rho,1,[4,N,N],exc))
     vn2 = qt.entropy_vn(ENR_ptrace(rho,2,[4,N,N],exc))
-    return vn1+ vn2 -vn12
+    vnd = qt.entropy_vn(ENR_ptrace(rho,0,[4,N,N],exc))
+    vnd1 = qt.entropy_vn(ENR_ptrace(rho,[0,1],[4,N,N],exc))
+    vnd2 = qt.entropy_vn(ENR_ptrace(rho,[0,2],[4,N,N],exc))
+    return [vn1+ vn2 -vn12, vnd+ vn1 -vnd1, vnd+ vn2 -vnd2]
 
 ev_to_inv_cm = 8065.5
 inv_ps_to_inv_cm = 5.309
@@ -113,16 +115,54 @@ def Occupation(omega, T):
     return n
 
 
+def get_dimer_info(rho, I):
+    # must be a density matrix
+    e1e2 = tensor(basis(4,1)*basis(4,2).dag(), I)
+    e2e1 = tensor(basis(4,2)*basis(4,1).dag(), I)
+    OO = basis(4,0)
+    XO = basis(4,1)
+    OX = basis(4,2)
+    XX = basis(4,3)
+    OO = tensor(OO*OO.dag(), I)
+    XO = tensor(XO*XO.dag(), I)
+    OX = tensor(OX*OX.dag(), I)
+    XX = tensor(XX*XX.dag(), I)
+
+    g = (rho*OO).tr()
+    e1 = (rho*XO).tr()
+    e2 = (rho*OX).tr()
+
+    e1e2 = (rho*e1e2).tr()
+    e2e1 = (rho*e2e1).tr()
+    print g
+    print e1, e1e2
+    xx = (rho*XX).tr()
+    return qt.Qobj([[g.real, 0,0,0], [0, e1.real,e1e2.real,0],[0, e2e1.real,e2.real,0],[0, 0,0,xx.real]])#/(g+e1+e2+xx)
+
+
+
+
 def J_multipolar(omega, Gamma, omega_0):
     return Gamma*(omega**3)/(2*np.pi*(omega_0**3))
 
 def J_minimal(omega, Gamma, omega_0):
-    return Gamma*omega/(2*np.pi*omega_0)
+    return Gamma*omega/(omega_0) #2*np.pi*
 
 def J_flat(omega, Gamma, omega_0):
-    return Gamma/2*np.pi
-def J_overdamped(omega, alpha, Gamma, omega_0):
+    return Gamma#/(2*np.pi)
+
+def J_underdamped(omega, alpha, Gamma, omega_0):
     return alpha*Gamma*pow(omega_0,2)*omega/(pow(pow(omega_0,2)-pow(omega,2),2)+(Gamma**2 *omega**2))
+
+def J_overdamped(omega, alpha, wc):
+    return alpha*wc*omega/(omega**2 +wc**2)
+def J_OD_to_UD(omega, gamma, Omega, kappa):
+    # kappa is  referred to as lambda
+    # in J. Chem. Phys. 144, 044110 (2016)
+    n = 4*gamma*omega*(Omega**2)*(kappa**2)
+    d1= (Omega**2-omega**2)**2
+    d2 = (2*np.pi*gamma*Omega*omega)**2
+    return n/ (d1 + d2)
 
 def rate_up(w, T, gamma, J, w_0):
     n = Occupation(w, T)

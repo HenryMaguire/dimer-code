@@ -16,6 +16,7 @@ import qutip.parallel as par
 
 from utils import *
 import dimer_phonons as RC
+import dimer_tests as check
 
 reload(RC)
 
@@ -45,13 +46,18 @@ def nonsecular_function(i,j, eVals=[], eVecs=[], w_1=8000., A=0,  Gamma=1.,T=0.,
         X2= r_down*A_ji*JI
     return Qobj(X1), Qobj(X2), Qobj(X3), Qobj(X4)
 
-def secular_function(i,j, eVals=[], eVecs=[], A=0, w_1=8000., Gamma=1.,T=0., J=J_minimal):
+def secular_function(i,j, eVals=[], eVecs=[], A=0, w_1=0., Gamma=1.,T=0., J=J_minimal):
     L = 0
     lam_ij = A.matrix_element(eVecs[i].dag(), eVecs[j])
+    lam_ji = A.dag().matrix_element(eVecs[j].dag(), eVecs[i])
     #lam_mn = (A.dag()).matrix_element(eVecs[n].dag(), eVecs[m])
-    lam_ij_sq = lam_ij*lam_ij.conjugate()
+    lam_ij_sq = lam_ij*lam_ji
     eps_ij = abs(eVals[i]-eVals[j])
-    if lam_ij_sq>0:
+    r_up = 0
+    r_down = 0
+    #if i>11 or j>11: # 11 is where the 1 phonon manifold ends
+    #    pass       # Spectrum converges here
+    if abs(lam_ij_sq)>0:
         IJ = eVecs[i]*eVecs[j].dag()
         JI = eVecs[j]*eVecs[i].dag()
         JJ = eVecs[j]*eVecs[j].dag()
@@ -61,21 +67,27 @@ def secular_function(i,j, eVals=[], eVecs=[], A=0, w_1=8000., Gamma=1.,T=0., J=J
         r_up = 0
         r_down = 0
         if eps_ij == 0:
+            print "EPS_{}{} =0".format(i, j)
+            # THis can't be the error
             JN = Gamma/(2*pi*w_1*beta_f(T))
             r_up = 2*pi*JN
             r_down = 2*pi*JN
         else:
+            print "EPS_ij={}, w_1={}, Gamma={}".format(eps_ij,  w_1, Gamma)
             r_up = 2*pi*J(eps_ij, Gamma, w_1)*Occ
             r_down = 2*pi*J(eps_ij, Gamma, w_1)*(Occ+1)
 
-        T1 = r_up*spre(II)+r_down*spre(JJ)
-        T2 = r_up.conjugate()*spost(II)+r_down.conjugate()*spost(JJ)
-        T3 = (r_up*sprepost(JI, IJ)+r_down*sprepost(IJ,JI))
-        L = lam_ij_sq*(0.5*(T1 + T2) - T3)
+        #T1 = r_up*spre(II)+r_down*spre(JJ)
+        #T2 = r_up.conjugate()*spost(II)+r_down.conjugate()*spost(JJ)
+        #T3 = r_up*sprepost(JI, IJ)+r_down*sprepost(IJ,JI)
+        #L = lam_ij_sq*((T1 + T2) - T3)
+        #print i,j, 0.5*lam_ij_sq*r_up, 0.5*lam_ij_sq*r_down
+        s1 = r_up*(spre(II) + spost(II) - 2*sprepost(JI, IJ))
+        s2 = r_down*(spost(JJ)+ spre(JJ) - 2*sprepost(IJ,JI))
+        L = lam_ij_sq*(s1+s2)
     return Qobj(L)
 
-
-def L_nonsecular(H_vib, A, args):
+def L_nonsecular_par(H_vib, A, args):
     Gamma, T, w_1, J, num_cpus = args['alpha_EM'], args['T_EM'], args['w_1'],args['J'], args['num_cpus']
     #Construct non-secular liouvillian
     ti = time.time()
@@ -93,10 +105,48 @@ def L_nonsecular(H_vib, A, args):
     L+= spre(A.dag()*X3)-sprepost(X3, A.dag())+spost(X4*A.dag())-sprepost(A.dag(), X4)
     #print np.sum(X1.full()), np.sum(X2.full()), np.sum(X3.full()), np.sum(X4.full())
     print "It took ", time.time()-ti, " seconds to build the Non-secular RWA Liouvillian"
-    return -0.5*L
+    return -0.25*L
+
+def L_nonsecular(H_vib, A, args):
+    Gamma, T, w_1, J = args['alpha_EM'], args['T_EM'], args['w_1'],args['J']
+    #Construct non-secular liouvillian
+    ti = time.time()
+    dim_ham = H_vib.shape[0]
+    eVals, eVecs = H_vib.eigenstates()
+    l = dim_ham*range(dim_ham) # Perform two loops in one
+    X1, X2, X3, X4 = 0,0,0,0
+    for i,j in zip(sorted(l), l):
+        eps_ij = abs(eVals[i]-eVals[j])
+        A_ij = A.matrix_element(eVecs[i].dag(), eVecs[j])
+        A_ji = (A.dag()).matrix_element(eVecs[j].dag(), eVecs[i])
+
+        # 0.5*np.pi*alpha*(N+1)
+        if abs(A_ij)>0 or abs(A_ji)>0:
+            Occ = Occupation(eps_ij, T)
+            IJ = eVecs[i]*eVecs[j].dag()
+            JI = eVecs[j]*eVecs[i].dag()
+            r_up = 0
+            r_down = 0
+            if eps_ij == 0:
+                JN = Gamma/(2*pi*w_1*beta_f(T))
+                r_up = 2*pi*JN
+                r_down = 2*pi*JN
+            else:
+                r_up = 2*pi*J(eps_ij, Gamma, w_1)*Occ
+                r_down = 2*pi*J(eps_ij, Gamma, w_1)*(Occ+1)
+            X3+= r_down*A_ij*IJ
+            X4+= r_up*A_ij*IJ
+            X1+= r_up*A_ji*JI
+            X2+= r_down*A_ji*JI
+    L = spre(A*X1) -sprepost(X1,A)+spost(X2*A)-sprepost(A,X2)
+    L+= spre(A.dag()*X3)-sprepost(X3, A.dag())+spost(X4*A.dag())-sprepost(A.dag(), X4)
+    #print np.sum(X1.full()), np.sum(X2.full()), np.sum(X3.full()), np.sum(X4.full())
+    print "It took ", time.time()-ti, " seconds to build the Non-secular RWA Liouvillian"
+    return -0.25*L
 
 
-def L_secular(H_vib, A, args):
+
+def L_secular_par(H_vib, A, args):
     '''
     Initially assuming that the vibronic eigenstructure has no
     degeneracy and the secular approximation has been made
@@ -105,6 +155,7 @@ def L_secular(H_vib, A, args):
     Gamma, T, w_1, J, num_cpus = args['alpha_EM'], args['T_EM'], args['w_1'],args['J'], args['num_cpus']
     dim_ham = H_vib.shape[0]
     eVals, eVecs = H_vib.eigenstates()
+    #print [(i, ev) for i, ev in enumerate(eVals)] # Understanding manifold structure
     names = ['eVals', 'eVecs', 'A', 'w_1', 'Gamma', 'T', 'J']
     kwargs = dict()
     for name in names:
@@ -112,14 +163,46 @@ def L_secular(H_vib, A, args):
     l = dim_ham*range(dim_ham)
     L = par.parfor(secular_function, sorted(l), l,
                                             num_cpus=num_cpus, **kwargs)
+    print "It took ", time.time()-ti, " seconds to build the secular RWA Liouvillian"
+    return -np.sum(L)*0.25
 
-    print "It took ", time.time()-ti, " seconds to build the vibronic Lindblad Liouvillian"
-    return -np.sum(L)
-
-def L_phenom(states, energies, I, args):
+def L_phenom(I, args):
     ti = time.time()
     eps, V, w_xx = args['bias'], args['V'], args['w_xx']
     mu, gamma, w_1, J, T = args['mu'], args['alpha_EM'], args['w_1'], args['J'], args['T_EM']
+    H_sub = qt.Qobj([[0,0,0,0],[0,w_1,V,0],[0,V,w_1-eps,0],[0,0,0,(2*(w_1-eps))+eps]])
+    energies, states = check.exciton_states(args)
+    dark, lm = states[0], energies[0]
+    bright, lp = states[1], energies[1]
+    OO = basis(4,0)
+    XX = basis(4,3)
+    eta = np.sqrt(4*V**2+eps**2)
+    pre_1 = (sqrt(eta-eps)+mu*sqrt(eta+eps))/sqrt(2*eta) # A_wxx_lp
+    pre_2 = -(sqrt(eta+eps)-mu*sqrt(eta-eps))/sqrt(2*eta) # A_wxx_lm
+    pre_3 = (sqrt(eta+eps)+mu*sqrt(eta-eps))/sqrt(2*eta) # A_lp
+    pre_4 = (sqrt(eta-eps)-mu*sqrt(eta+eps))/sqrt(2*eta) # A_lm
+    #print pre_p, pre_p
+    A_lp, A_wxx_lp = pre_3*tensor(OO*bright.dag(), I),  pre_1*tensor(bright*XX.dag(),I)
+    A_lm, A_wxx_lm = pre_4*tensor(OO*dark.dag(), I),  pre_2*tensor(dark*XX.dag(),I)
+    L = rate_up(lp, T, gamma, J, w_1)*lin_construct(A_lp.dag())
+    L += rate_up(lm, T, gamma, J, w_1)*lin_construct(A_lm.dag())
+    L += rate_down(lp, T, gamma, J, w_1)*lin_construct(A_lp)
+    L += rate_down(lm, T, gamma, J, w_1)*lin_construct(A_lm)
+    L += rate_up(w_xx-lp, T, gamma, J, w_1)*lin_construct(A_wxx_lp.dag())
+    L += rate_up(w_xx-lm, T, gamma, J, w_1)*lin_construct(A_wxx_lm.dag())
+    L += rate_down(w_xx-lp, T, gamma, J, w_1)*lin_construct(A_wxx_lp)
+    L += rate_down(w_xx-lm, T, gamma, J, w_1)*lin_construct(A_wxx_lm)
+    #print [(i, cf) for i, cf in enumerate(coeffs)]
+
+    print "It took {} seconds to build the phenomenological Liouvillian".format(time.time()-ti)
+    return L
+
+def L_phenom_old(I, args):
+    ti = time.time()
+    eps, V, w_xx = args['bias'], args['V'], args['w_xx']
+    mu, gamma, w_1, J, T = args['mu'], args['alpha_EM'], args['w_1'], args['J'], args['T_EM']
+    H_sub = qt.Qobj([[0,0,0,0],[0,w_1,V,0],[0,V,w_1-eps,0],[0,0,0,(2*(w_1-eps))+eps]])
+    energies, states = check.exciton_states(args)
     dark, lm = states[0], energies[0]
     bright, lp = states[1], energies[1]
     OO = basis(4,0)
@@ -127,18 +210,28 @@ def L_phenom(states, energies, I, args):
     eta = np.sqrt(4*V**2+eps**2)
     pre_p = (sqrt(eta-eps)+mu*sqrt(eta+eps))/sqrt(2*eta)
     pre_m = -(sqrt(eta+eps)-mu*sqrt(eta-eps))/sqrt(2*eta)
+    pre_p = (sqrt(eta-eps)+mu*sqrt(eta+eps))/sqrt(2*eta)
+    pre_m = -(sqrt(eta+eps)-mu*sqrt(eta-eps))/sqrt(2*eta)
+    #print pre_p, pre_p
     A_lp, A_wxx_lp = pre_p*tensor(OO*bright.dag(), I),  pre_p*tensor(bright*XX.dag(),I)
     A_lm, A_wxx_lm = pre_m*tensor(OO*dark.dag(), I),  pre_m*tensor(dark*XX.dag(),I)
-    L = 0.5*rate_up(lp, T, gamma, J, w_1)*lin_construct(A_lp.dag())
-    L += 0.5*rate_up(lm, T, gamma, J, w_1)*lin_construct(A_lm.dag())
-    L += 0.5*rate_down(lp, T, gamma, J, w_1)*lin_construct(A_lp)
-    L += 0.5*rate_down(lm, T, gamma, J, w_1)*lin_construct(A_lm)
-    L += 0.5*rate_up(w_xx-lp, T, gamma, J, w_1)*lin_construct(A_wxx_lp.dag())
-    L += 0.5*rate_up(w_xx-lm, T, gamma, J, w_1)*lin_construct(A_wxx_lm.dag())
-    L += 0.5*rate_down(w_xx-lp, T, gamma, J, w_1)*lin_construct(A_wxx_lp)
-    L += 0.5*rate_down(w_xx-lm, T, gamma, J, w_1)*lin_construct(A_wxx_lm)
+    L = rate_up(lp, T, gamma, J, w_1)*lin_construct(A_lp.dag())
+    L += rate_up(lm, T, gamma, J, w_1)*lin_construct(A_lm.dag())
+    L += rate_down(lp, T, gamma, J, w_1)*lin_construct(A_lp)
+    L += rate_down(lm, T, gamma, J, w_1)*lin_construct(A_lm)
+    L += rate_up(w_xx-lp, T, gamma, J, w_1)*lin_construct(A_wxx_lp.dag())
+    L += rate_up(w_xx-lm, T, gamma, J, w_1)*lin_construct(A_wxx_lm.dag())
+    L += rate_down(w_xx-lp, T, gamma, J, w_1)*lin_construct(A_wxx_lp)
+    L += rate_down(w_xx-lm, T, gamma, J, w_1)*lin_construct(A_wxx_lm)
+    coeffs = [pre_m*rate_up(lm, T, gamma, J, w_1), pre_m*rate_down(lm, T, gamma, J, w_1),
+                    pre_p*rate_up(lp, T, gamma, J, w_1), pre_p*rate_down(lp, T, gamma, J, w_1),
+                    pre_m*rate_up(w_xx-lm, T, gamma, J, w_1),pre_m*rate_down(w_xx-lm, T, gamma, J, w_1),
+                    pre_p*rate_up(w_xx-lp, T, gamma, J, w_1), pre_p*rate_down(w_xx-lp, T, gamma, J, w_1)
+                    ]
+    #print [(i, cf) for i, cf in enumerate(coeffs)]
+
     print "It took {} seconds to build the phenomenological Liouvillian".format(time.time()-ti)
-    return 2*L
+    return L
 
 if __name__ == "__main__":
     ev_to_inv_cm = 8065.5
