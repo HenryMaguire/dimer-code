@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "/home/henry/Work/phd-work/vibronic-dimer/QHE_notes_figures.py", line 267, in <module>
+  File "/home/henry/Work/phd-work/vibronic-dimer/QHE_notes_figures.py", line 223, in data_maker
+  File "/home/henry/Work/phd-work/vibronic-dimer/QHE_notes_figures.py", line 106, in named_plot_creator
+  File "/home/henry/Work/phd-work/vibronic-dimer/utils.py", line 75, in load_obj
+IOError: [Errno 2] No such file or directory: 'DATA/QHE_notes_fig4ab/N4_exc8/jake_data.pickle'
+
