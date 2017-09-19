@@ -101,32 +101,38 @@ def plot_dynamics(DATA, timelist, exp_ops, ax, title='', ss_dm = False):
     #p_file_name = "Notes/Images/Dynamics/Pop_a{:d}_Tph{:d}_Tem{:d}_w0{:d}.pdf".format(int(alpha_ph), int(T_ph), int(T_EM), int(w0))
     #plt.savefig(p_file_name)
 
-def plot_eig_dynamics(DATA, timelist, exp_ops, ax, title='', ss_dm = False):
+def plot_eig_dynamics(DATA, timelist, exp_ops, ax, title='', ss_dm = 0):
     """ Docstring here please
     """
+    plot_ss = False
+    if type(ss_dm) == type(exp_ops[0]):
+        plot_ss=True
     labels = [r'Ground', r'Dark.', r'Bright', r'Biexciton']
     colors = [i['color'] for i in list(plt.rcParams['axes.prop_cycle'])][0:4]
-    info = zip([0,5,6,3], labels, colors) # expval id, etc., etc.
+    info = zip([0,4,5,3], labels, colors) # expval id, etc., etc.
     #ax.title(title)
     linewidth = 1.5
     linestyle = '-'
 
     for i, l, c in info:
         ax.plot(timelist, DATA.expect[i].real, label=l, color=c, linewidth=linewidth, linestyle=linestyle)
-        if ss_dm:
-            ax.axhline((ss_dm*exp_ops[i]).tr().real, color=c, ls='--')
+        if plot_ss:
+            if i==0:
+                ax.axhline((ss_dm*exp_ops[i]).tr().real, color='k', ls='dashed')
     ax.set_ylabel("Eigenstate population")
     ax.set_xlabel("Time (ps)")
     #ax.set_ylim(0,0.6)
     ax.set_xlim(0,timelist[-1])
     ax.legend()
+
     #p_file_name = "Notes/Images/Dynamics/Pop_a{:d}_Tph{:d}_Tem{:d}_w0{:d}.pdf".format(int(alpha_ph), int(T_ph), int(T_EM), int(w0))
     #plt.savefig(p_file_name)
+
 def plot_coherences(DATA, timelist, exp_ops, ax, title='', ss_dm = False):
     labels = [r'Real part', 'Imaginary part']
     colors = [i['color'] for i in list(plt.rcParams['axes.prop_cycle'])][0:2]
-    coh = DATA.expect[7]
-    ss = (ss_dm*exp_ops[7]).tr()
+    coh = DATA.expect[6]
+    ss = (ss_dm*exp_ops[6]).tr()
     info = zip([ss.real, ss.imag],[coh.real, coh.imag], labels, colors)
 
     #ax.title(r"$\alpha_{ph}=$""%i"r"$cm^{-1}$, $T_{EM}=$""%i K" %(alpha_1, T_EM))
@@ -134,8 +140,8 @@ def plot_coherences(DATA, timelist, exp_ops, ax, title='', ss_dm = False):
     linestyle = '-'
     for s, d, l, c in info:
         ax.plot(timelist, d, label=l, color=c,linewidth=linewidth, linestyle=linestyle)
-        if ss_dm:
-            ax.axhline(s, color=c, ls='--')
+        #if ss_dm:
+        #    ax.axhline(s, color=c, ls='--')
     #ax.title(title)
     ax.legend(loc='lower right')
     ax.set_ylabel("Eigenstate Coherence")

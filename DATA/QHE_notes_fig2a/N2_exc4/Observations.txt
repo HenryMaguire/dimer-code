@@ -1,4 +1,0 @@
-These plots are for a homodimer in the zero exciton-phonon coupling regime. This means that the Secular and phenomenological versions behave identically, regardless of spectral density, since they are both Lindblads for the various transitions in the (strictly electronic) Hilbert space.
-The non-secular dynamics also behave identically - in the unbiased regime there are not meant to be any couplings between excitonic populations and coherences (Lim, Plenio JCP146,024109(2017)) and we observe this in the data.
-
-A linear spectrum just increases the coupling of the bright state to the optical field and so the population of the ground state and evolution toward the steady state is quicker. Even though it is higher in energy, we observe a slight doubly excited state "bleach" as the enhanced dipole of the bright state means that population preferentially decays to the ground state over the doubly excited state through stimulated and spontaneous emission.

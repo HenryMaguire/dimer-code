@@ -27,12 +27,12 @@ reload(check)
 
 
 
-def named_plot_creator(rho_0, L_RC, H_0, SIGMA_1, SIGMA_2, expects, PARAMS, timelist, EM_approx='s', figure_num = '2', l ='', make_new_data=False):
-    ss_dm = False
+def named_plot_creator(rho_0, L_RC, H_0, SIGMA_1, SIGMA_2, expects, PARAMS, timelist, EM_approx='s', figure_num = '2', l ='', make_new_data=False, plot_ss=False):
+    ss_dm = 0
     L=0
     data_dir = "DATA/QHE_notes_fig{}/N{}_exc{}".format(figure_num, PARAMS['N_1'], PARAMS['exc'])
     data_name = data_dir+"/{}_{}data".format(EM_approx, l)
-    plot_name = data_dir+"/{}_{}dynamics.pdf".format(EM_approx, l)
+    plot_name = data_dir+"/{}_{}dynamics2.pdf".format(EM_approx, l)
     if l == 'flat_':
         PARAMS.update({'mu':1})
         PARAMS.update({'J':J_flat})
@@ -41,9 +41,9 @@ def named_plot_creator(rho_0, L_RC, H_0, SIGMA_1, SIGMA_2, expects, PARAMS, time
         PARAMS.update({'mu':mu})
         PARAMS.update({'J':J_minimal})
     I = qt.enr_identity([PARAMS['N_1'],PARAMS['N_2']], PARAMS['exc'])
-    print PARAMS
+    print "Parameters for {} are: {}".format(plot_name, PARAMS)
     A_EM = tensor(SIGMA_1+PARAMS['mu']*SIGMA_2, I)
-    opts = qt.Options(num_cpus=PARAMS['num_cpus'], nsteps=6000)
+    opts = qt.Options(num_cpus=1, nsteps=6000)
     ''' define names for files, we'll need these in every if statement'''
     if make_new_data:
         if EM_approx=='ns':
@@ -51,6 +51,7 @@ def named_plot_creator(rho_0, L_RC, H_0, SIGMA_1, SIGMA_2, expects, PARAMS, time
         elif EM_approx=='s':
             L = EM.L_secular_par(H_0, A_EM, PARAMS)
         elif EM_approx=='p':
+            plot_ss = True
             L = EM.L_phenom(I, PARAMS)
         elif EM_approx =='j':
             energies, states = check.exciton_states(PARAMS)
@@ -60,14 +61,21 @@ def named_plot_creator(rho_0, L_RC, H_0, SIGMA_1, SIGMA_2, expects, PARAMS, time
         else:
             raise KeyError
         L_full = L_RC+L
-        '''
-        try:
-            ss_dm = qt.steadystate(H_0, [L_full])
-        except Exception as err:
-            print "Warning: steady state density matrix didn't converge. Probably"
-            print "\t due to some problem with excitation restriction. \n"
-            print err
-        '''
+        # Calculate steady states if needed
+        if plot_ss:
+            try:
+                ti = time.time()
+                if (PARAMS['N_1'] + PARAMS['N_2'])>3:
+                    ss_dm = qt.steadystate(H_0, [L_full], method='iterative-lgmres', use_precond=True)
+                else:
+                    ss_dm = qt.steadystate(H_0, [L_full])
+                save_obj(ss_dm, data_dir+"/ss_{}_{}data".format(EM_approx, l))
+                print "It took {} seconds to calculate steady states.".format(time.time()-ti)
+            except Exception as err:
+                print "Warning: steady state density matrix didn't converge. Probably"
+                print "\t due to some problem with excitation restriction. \n"
+                print err
+
         try:
             DATA = qt.mesolve(H_0, rho_0, timelist, [L_full], e_ops=expects, progress_bar=True, options=opts)
             if not os.path.exists(data_dir):
@@ -103,16 +111,18 @@ def named_plot_creator(rho_0, L_RC, H_0, SIGMA_1, SIGMA_2, expects, PARAMS, time
             DATA = None
             print 'Could not plot the data because:\n {}'.format(err)
     J_DATA = load_obj("DATA/QHE_notes_fig{}/N{}_exc{}/p_flat_data".format(figure_num, PARAMS['N_1'], PARAMS['exc']))
-    #J_DATA = load_obj("DATA/QHE_notes_fig{}/N{}_exc{}/p_{}.data".format(figure_num, 2, 4))
+    J_ss= load_obj("DATA/QHE_notes_fig{}/N{}_exc{}/ss_p_flat_data".format(figure_num, PARAMS['N_1'], PARAMS['exc']))
     ax1.plot(timelist, J_DATA.expect[0], linestyle='--')
     ax1.plot(timelist, J_DATA.expect[4], linestyle='--')
+    #print ENR_ptrace(ss_dm,0,[4,PARAMS['N_1'],PARAMS['N_2']],PARAMS['exc'])
+    if plot_ss:
+        ax1.axhline(((J_ss*expects[0]).tr()), linestyle='dotted', color='k')
     ax1.plot(timelist, J_DATA.expect[5], linestyle='--')
     ax1.plot(timelist, J_DATA.expect[3], linestyle='--')
     ax2.plot(timelist, J_DATA.expect[6].real, linestyle='--')
     ax2.plot(timelist, J_DATA.expect[6].imag, linestyle='--')
     plt.savefig(plot_name)
     plt.close()
-
     return ss_dm, DATA
 
 def data_maker(w_2, bias, V, T_EM, alpha_EM, alpha_1, alpha_2, N, end_time, figure_num, initial, make_new_data=False):
@@ -134,10 +144,10 @@ def data_maker(w_2, bias, V, T_EM, alpha_EM, alpha_1, alpha_2, N, end_time, figu
     w0_2, w0_1 = 500., 500. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1
     N_1, N_2 = N,N # set Hilbert space sizes
-    exc = N_1 + N_2
+    exc = N_1
     if N_1>4:
         exc= N_1
-    num_cpus = 2
+    num_cpus = 1
     J = J_minimal
 
     PARAM_names = ['w_1', 'w_2', 'V', 'bias', 'w_xx', 'T_1', 'T_2', 'wc',
@@ -167,7 +177,7 @@ def data_maker(w_2, bias, V, T_EM, alpha_EM, alpha_1, alpha_2, N, end_time, figu
 
     # electromagnetic bath liouvillians
 
-    opts = qt.Options(num_cpus=num_cpus, store_states=True)
+    opts = qt.Options(num_cpus=1, store_states=True)
     ncolors = len(plt.rcParams['axes.prop_cycle'])
     ''' generate the RC liouvillian'''
     L_RC, H_0, A_1, A_2, SIG_1, SIG_2, PARAMS = RC.RC_mapping_OD(PARAMS) # Got the mapped parameters back
@@ -200,35 +210,33 @@ def data_maker(w_2, bias, V, T_EM, alpha_EM, alpha_1, alpha_2, N, end_time, figu
     #                        timelist, EM_approx='j', figure_num =  figure_num, make_new_data=make_new_data)
     #del DATA_J
 
-
     DATA_P = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
-                            timelist, EM_approx='p', figure_num =  figure_num,
-                            make_new_data=make_new_data)
-
+                                timelist, l ='flat_', EM_approx='p', figure_num =  figure_num,
+                                make_new_data=make_new_data)
     DATA_P = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
-                            timelist, l ='flat_', EM_approx='p', figure_num =  figure_num,
-                            make_new_data=make_new_data)
-    del DATA_P
+                                timelist, EM_approx='p', figure_num =  figure_num,
+                                make_new_data=make_new_data)
+
+    #del DATA_P
 
     DATA_S = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
-                            timelist, l ='flat_', EM_approx='s', figure_num =  figure_num,
-                            make_new_data=make_new_data)
-
-    DATA_S = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
-                            timelist, EM_approx='s', figure_num =  figure_num,
-                            make_new_data=make_new_data)
+                                timelist, l ='flat_', EM_approx='s', figure_num =  figure_num,
+                                make_new_data=make_new_data)
     del DATA_S
 
+    DATA_S = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
+                                timelist, EM_approx='s', figure_num =  figure_num,
+                                make_new_data=make_new_data)
+    del DATA_S
     DATA_NS = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
-                            timelist, EM_approx='ns', figure_num =  figure_num,
-                            make_new_data=make_new_data)
+                                timelist, EM_approx='ns', figure_num =  figure_num,
+                                make_new_data=make_new_data, plot_ss=True)
     save_params(PARAMS, figure_num, '')
     DATA_NS = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
-                            timelist, l ='flat_', EM_approx='ns', figure_num =  figure_num,
-                            make_new_data=make_new_data)
+                                timelist, l ='flat_', EM_approx='ns',
+                                figure_num =  figure_num, make_new_data=make_new_data, plot_ss=True)
     del DATA_NS
     save_params(PARAMS, figure_num, 'flat_')
-
 
     return PARAMS
 
@@ -236,7 +244,6 @@ def save_params(PARAMS, fig, l):
     block = ''
     fn = 'DATA/QHE_notes_fig{}/N{}_exc{}/{}PARAMS.txt'.format(fig,
                                             PARAMS['N_1'], PARAMS['exc'], l)
-    print fn
     f = 0
     f = open(fn, 'w')
     for key, value in PARAMS.items():
@@ -253,23 +260,22 @@ if __name__ == "__main__":
     try:
         # Plot batch 1: flat spectrum, fully converged, overlay jake's data on the top
         #figure 2
+
+        #PARAMS =  data_maker(100., 0., 20, 50, 1., 0., 0., 2, 1, '2a', 1,  make_new_data=True)
+        PARAMS = data_maker(100., 20., 20, 50, 1., 0., 0., 2, 3, '2b', 1, make_new_data=True)
         """
-        PARAMS =  data_maker(100., 0., 20, 50, 1., 0., 0., 2, 1, '2a', 1,  make_new_data=True)
-        PARAMS = data_maker(100., 10., 20, 50, 1., 0., 0., 2, 10, '2b', 1, make_new_data=True)
-
-
         #figure 4
-        """
-        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 2., 2., 4, 1, '4ab', 0, make_new_data=True)
-        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 2., 2., 4, 4, '4cd', 0, make_new_data=True)
+        N = 3
+        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 2., 2., N, 1, '4ab', 0, make_new_data=True)
+        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 2., 2., N, 4, '4cd', 0, make_new_data=True)
 
         #figure 5
-        N = 5
+
         PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100/pi, 100/pi, N, 1, '5ab-p', 0, make_new_data=True)
         PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100/pi, 100/pi, N, 4, '5cd-p', 0, make_new_data=True)
         PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100, 100, N, 1, '5ab', 0, make_new_data=True)
         PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100, 100, N, 4, '5cd', 0, make_new_data=True)
-
+        """
     except:
         var = traceback.format_exc()
         print var

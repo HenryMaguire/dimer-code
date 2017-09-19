@@ -1,25 +1,9 @@
 Traceback (most recent call last):
-<<<<<<< HEAD
-  File "/home/henry/Work/phd-work/vibronic-dimer/QHE_notes_figures.py", line 267, in <module>
-  File "/home/henry/Work/phd-work/vibronic-dimer/QHE_notes_figures.py", line 223, in data_maker
-  File "/home/henry/Work/phd-work/vibronic-dimer/QHE_notes_figures.py", line 106, in named_plot_creator
-  File "/home/henry/Work/phd-work/vibronic-dimer/utils.py", line 75, in load_obj
-IOError: [Errno 2] No such file or directory: 'DATA/QHE_notes_fig4ab/N4_exc8/jake_data.pickle'
-=======
-<<<<<<< HEAD
-  File "QHE_notes_figures.py", line 261, in <module>
-    PARAMS = data_maker(100., 10., 20, 50, 1., 0., 0., 2, 10, '2b', 1, make_new_data=True)
-  File "QHE_notes_figures.py", line 223, in data_maker
+  File "/home/henry/Work/phd-work/vibronic-dimer/QHE_notes_figures.py", line 265, in <module>
+    PARAMS = data_maker(100., 20., 20, 50, 1., 0., 0., 2, 3, '2b', 1, make_new_data=True)
+  File "/home/henry/Work/phd-work/vibronic-dimer/QHE_notes_figures.py", line 215, in data_maker
     make_new_data=make_new_data)
-  File "QHE_notes_figures.py", line 53, in named_plot_creator
-    L = EM.L_secular(H_0, A_EM, PARAMS)
-AttributeError: 'module' object has no attribute 'L_secular'
-=======
-  File "/home/henry/Work/phd-work/vibronic-dimer/QHE_notes_figures.py", line 262, in <module>
-    PARAMS =  data_maker(100., 0., 20, 50, 1., 0., 0., 2, 1, '2a', 1,  make_new_data=True)
-  File "/home/henry/Work/phd-work/vibronic-dimer/QHE_notes_figures.py", line 211, in data_maker
-    del DATA_J
-UnboundLocalError: local variable 'DATA_J' referenced before assignment
->>>>>>> eigen-bug-fixes
->>>>>>> parallel-bias-dep
+  File "/home/henry/Work/phd-work/vibronic-dimer/QHE_notes_figures.py", line 122, in named_plot_creator
+    ax2.plot(timelist, J_DATA.expect[6].real, linestyle='--')
+UnboundLocalError: local variable 'ax2' referenced before assignment
 

@@ -7,7 +7,8 @@ The four electromagnetic liouvillians I am studying for the vibronic dimer are:
 
 """
 import time
-
+import multiprocessing
+from functools import partial
 import numpy as np
 from numpy import sqrt
 from numpy import pi
@@ -20,19 +21,25 @@ import dimer_tests as check
 
 reload(RC)
 
-def nonsecular_function(i,j, eVals=[], eVecs=[], w_1=8000., A=0,  Gamma=1.,T=0., J=J_minimal):
-    X1, X2, X3, X4 = 0, 0, 0, 0
+def nonsecular_function(args, **kwargs):
+    i, j = args[0], args[1]
+    A = kwargs['A']
+    eVecs = kwargs['eVecs']
+    eVals = kwargs['eVals']
+    T = kwargs['T_EM']
+    w_1, Gamma, J = kwargs['w_1'], kwargs['alpha_EM'], kwargs['J']
     eps_ij = abs(eVals[i]-eVals[j])
+
     A_ij = A.matrix_element(eVecs[i].dag(), eVecs[j])
     A_ji = (A.dag()).matrix_element(eVecs[j].dag(), eVecs[i])
     Occ = Occupation(eps_ij, T)
+    zero = 0*A
 
     # 0.5*np.pi*alpha*(N+1)
     if abs(A_ij)>0 or abs(A_ji)>0:
         IJ = eVecs[i]*eVecs[j].dag()
         JI = eVecs[j]*eVecs[i].dag()
-        r_up = 0
-        r_down = 0
+
         if eps_ij == 0:
             JN = Gamma/(2*pi*w_1*beta_f(T))
             r_up = 2*pi*JN
@@ -40,69 +47,65 @@ def nonsecular_function(i,j, eVals=[], eVecs=[], w_1=8000., A=0,  Gamma=1.,T=0.,
         else:
             r_up = 2*pi*J(eps_ij, Gamma, w_1)*Occ
             r_down = 2*pi*J(eps_ij, Gamma, w_1)*(Occ+1)
-        X3= r_down*A_ij*IJ
-        X4= r_up*A_ij*IJ
-        X1= r_up*A_ji*JI
-        X2= r_down*A_ji*JI
-    return Qobj(X1), Qobj(X2), Qobj(X3), Qobj(X4)
+        return Qobj(r_up*A_ji*JI), Qobj(r_down*A_ji*JI), Qobj(r_down*A_ij*IJ), Qobj(r_up*A_ij*IJ)
+    else:
+        return zero, zero, zero, zero
 
-def secular_function(i,j, eVals=[], eVecs=[], A=0, w_1=0., Gamma=1.,T=0., J=J_minimal):
+def secular_function(args, **kwargs):
+    i = args[0]
+    j = args[1]
+    A = kwargs['A']
+    eVecs = kwargs['eVecs']
+    eVals = kwargs['eVals']
+    T = kwargs['T_EM']
+    w_1, Gamma, J = kwargs['w_1'], kwargs['alpha_EM'], kwargs['J']
     L = 0
     lam_ij = A.matrix_element(eVecs[i].dag(), eVecs[j])
     lam_ji = A.dag().matrix_element(eVecs[j].dag(), eVecs[i])
     #lam_mn = (A.dag()).matrix_element(eVecs[n].dag(), eVecs[m])
     lam_ij_sq = lam_ij*lam_ji
     eps_ij = abs(eVals[i]-eVals[j])
-    r_up = 0
-    r_down = 0
+
     if abs(lam_ij_sq)>0:
         IJ = eVecs[i]*eVecs[j].dag()
         JI = eVecs[j]*eVecs[i].dag()
         JJ = eVecs[j]*eVecs[j].dag()
         II = eVecs[i]*eVecs[i].dag()
-
         Occ = Occupation(eps_ij, T)
-        r_up = 0
-        r_down = 0
         if eps_ij == 0:
-            print "EPS_{}{} =0".format(i, j)
-            # THis can't be the error
             JN = Gamma/(2*pi*w_1*beta_f(T))
             r_up = 2*pi*JN
             r_down = 2*pi*JN
+            L = Qobj(lam_ij_sq*(r_up*(spre(II) + spost(II) - 2*sprepost(JI, IJ))+r_down*(spost(JJ)+ spre(JJ) - 2*sprepost(IJ,JI))))
         else:
-            print "EPS_ij={}, w_1={}, Gamma={}".format(eps_ij,  w_1, Gamma)
             r_up = 2*pi*J(eps_ij, Gamma, w_1)*Occ
             r_down = 2*pi*J(eps_ij, Gamma, w_1)*(Occ+1)
-
-        #T1 = r_up*spre(II)+r_down*spre(JJ)
-        #T2 = r_up.conjugate()*spost(II)+r_down.conjugate()*spost(JJ)
-        #T3 = r_up*sprepost(JI, IJ)+r_down*sprepost(IJ,JI)
-        #L = lam_ij_sq*((T1 + T2) - T3)
-        #print i,j, 0.5*lam_ij_sq*r_up, 0.5*lam_ij_sq*r_down
-        s1 = r_up*(spre(II) + spost(II) - 2*sprepost(JI, IJ))
-        s2 = r_down*(spost(JJ)+ spre(JJ) - 2*sprepost(IJ,JI))
-        L = lam_ij_sq*(s1+s2)
-    return Qobj(L)
+            L = Qobj(lam_ij_sq*(r_up*(spre(II) + spost(II) - 2*sprepost(JI, IJ))+r_down*(spost(JJ)+ spre(JJ) - 2*sprepost(IJ,JI))))
+    return L
 
 def L_nonsecular_par(H_vib, A, args):
     Gamma, T, w_1, J, num_cpus = args['alpha_EM'], args['T_EM'], args['w_1'],args['J'], args['num_cpus']
     #Construct non-secular liouvillian
     ti = time.time()
     dim_ham = H_vib.shape[0]
+
     eVals, eVecs = H_vib.eigenstates()
-    names = ['eVals', 'eVecs', 'A', 'w_1', 'Gamma', 'T', 'J']
-    kwargs = dict() # Hacky way to get parameters to the parallel for loop
-    for name in names:
-        kwargs[name] = eval(name)
+    kwargs = dict(args)
+    kwargs.update({'eVals':eVals, 'eVecs':eVecs, 'A':A})
     l = dim_ham*range(dim_ham) # Perform two loops in one
-    X1, X2, X3, X4 = par.parfor(nonsecular_function, sorted(l), l,
-                                            num_cpus=num_cpus, **kwargs)
-    X1, X2, X3, X4 = np.sum(X1), np.sum(X2), np.sum(X3), np.sum(X4)
+    i_j_gen = ((i,j) for i,j in zip(sorted(l), l))
+    pool = multiprocessing.Pool(num_cpus)
+    Out = pool.imap_unordered(partial(nonsecular_function,**kwargs), i_j_gen)
+    pool.close()
+    pool.join()
+    X_ops = np.sum(np.array([x for x in Out]), axis=0)
+    X1, X2, X3, X4 = X_ops[0], X_ops[1], X_ops[2], X_ops[3]
+
     L = spre(A*X1) -sprepost(X1,A)+spost(X2*A)-sprepost(A,X2)
     L+= spre(A.dag()*X3)-sprepost(X3, A.dag())+spost(X4*A.dag())-sprepost(A.dag(), X4)
     #print np.sum(X1.full()), np.sum(X2.full()), np.sum(X3.full()), np.sum(X4.full())
     print "It took ", time.time()-ti, " seconds to build the Non-secular RWA Liouvillian"
+
     return -0.25*L
 
 def L_nonsecular(H_vib, A, args):
@@ -150,18 +153,23 @@ def L_secular_par(H_vib, A, args):
     degeneracy and the secular approximation has been made
     '''
     ti = time.time()
-    Gamma, T, w_1, J, num_cpus = args['alpha_EM'], args['T_EM'], args['w_1'],args['J'], args['num_cpus']
+    num_cpus = args['num_cpus']
     dim_ham = H_vib.shape[0]
     eVals, eVecs = H_vib.eigenstates()
     #print [(i, ev) for i, ev in enumerate(eVals)] # Understanding manifold structure
-    names = ['eVals', 'eVecs', 'A', 'w_1', 'Gamma', 'T', 'J']
-    kwargs = dict()
-    for name in names:
-        kwargs[name] = eval(name)
+    #names = ['eVals', 'eVecs', 'A', 'w_1', 'Gamma', 'T', 'J']
+    kwargs = dict(args)
+    kwargs.update({'eVals':eVals, 'eVecs':eVecs, 'A':A})
+    #for name in names:
+    #    kwargs[name] = eval(name)
     l = dim_ham*range(dim_ham)
-    L = par.parfor(secular_function, sorted(l), l,
-                                            num_cpus=num_cpus, **kwargs)
+    i_j_gen = ((i,j) for i,j in zip(sorted(l), l))
+    pool = multiprocessing.Pool(num_cpus)
+    L = pool.imap_unordered(partial(secular_function,**kwargs), i_j_gen)
+    pool.close()
+    pool.join()
     print "It took ", time.time()-ti, " seconds to build the secular RWA Liouvillian"
+    L = [l for l in L]
     return -np.sum(L)*0.25
 
 def L_phenom(I, args):
