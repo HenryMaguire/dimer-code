@@ -117,7 +117,7 @@ def plot_eig_dynamics(DATA, timelist, exp_ops, ax, title='', ss_dm = 0):
     for i, l, c in info:
         ax.plot(timelist, DATA.expect[i].real, label=l, color=c, linewidth=linewidth, linestyle=linestyle)
         if plot_ss:
-            if i==0:
+            if i==4:
                 ax.axhline((ss_dm*exp_ops[i]).tr().real, color='k', ls='dotted')
     ax.set_ylabel("Eigenstate population")
     ax.set_xlabel("Time (ps)")

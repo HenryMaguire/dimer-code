@@ -137,7 +137,7 @@ def named_plot_creator(rho_0, L_RC, H_0, SIGMA_1, SIGMA_2, expects, PARAMS,
     ax1.plot(timelist, J_DATA.expect[4], linestyle='--')
     #print ENR_ptrace(ss_dm,0,[4,PARAMS['N_1'],PARAMS['N_2']],PARAMS['exc'])
     if plot_ss:
-        ax1.axhline(((J_ss*expects[0]).tr()), linestyle='dashed', color='k')
+        ax1.axhline(((J_ss*expects[4]).tr()).real, linestyle='dashed', color='k')
         if plt_type == 1 and EM_approx=='s':
             print "COHERENCE : {}".format((ss_dm*expects[6]).tr())
             ax2.axhline(((ss_dm*expects[6]).tr()).real, linestyle='dotted', color='k')
@@ -318,7 +318,7 @@ if __name__ == "__main__":
         PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100, 100, N, 4, '5cd', 0,
         make_new_data=mnd, pt=plot_type, plt_ss=True)
 
-
+        """
         plot_type = 1
         PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 2., 2., N, 1, '4ab', 0,
         make_new_data=mnd, pt=plot_type, plt_ss=True)
@@ -333,7 +333,7 @@ if __name__ == "__main__":
         make_new_data=mnd, pt=plot_type, plt_ss=True)
         PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100, 100, N, 4, '5cd', 0,
         make_new_data=mnd, pt=plot_type, plt_ss=True)
-        """
+
         plot_type = 2
         PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 2., 2., N, 1, '4ab', 0,
         make_new_data=mnd, pt=plot_type, plt_ss=True)
@@ -348,7 +348,7 @@ if __name__ == "__main__":
         make_new_data=mnd, pt=plot_type, plt_ss=True)
         PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100, 100, N, 4, '5cd', 0,
         make_new_data=mnd, pt=plot_type, plt_ss=True)
-        
+
     except:
         var = traceback.format_exc()
         print var
