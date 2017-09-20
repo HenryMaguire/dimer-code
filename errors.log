@@ -1,9 +1,19 @@
 Traceback (most recent call last):
-  File "/home/henry/Work/phd-work/vibronic-dimer/QHE_notes_figures.py", line 265, in <module>
-    PARAMS = data_maker(100., 20., 20, 50, 1., 0., 0., 2, 3, '2b', 1, make_new_data=True)
-  File "/home/henry/Work/phd-work/vibronic-dimer/QHE_notes_figures.py", line 215, in data_maker
-    make_new_data=make_new_data)
-  File "/home/henry/Work/phd-work/vibronic-dimer/QHE_notes_figures.py", line 122, in named_plot_creator
-    ax2.plot(timelist, J_DATA.expect[6].real, linestyle='--')
-UnboundLocalError: local variable 'ax2' referenced before assignment
+  File "/home/henry/Work/phd-work/vibronic-dimer/QHE_notes_figures.py", line 331, in <module>
+    make_new_data=mnd, pt=plot_type, plt_ss=True)
+  File "/home/henry/Work/phd-work/vibronic-dimer/QHE_notes_figures.py", line 208, in data_maker
+    L_RC, H_0, A_1, A_2, SIG_1, SIG_2, PARAMS = RC.RC_mapping_OD(PARAMS) # Got the mapped parameters back
+  File "/home/henry/Work/phd-work/vibronic-dimer/dimer_phonons.py", line 209, in RC_mapping_OD
+    L_RC =  liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2, T_1, T_2, num_cpus=args['num_cpus'])
+  File "/home/henry/Work/phd-work/vibronic-dimer/dimer_phonons.py", line 160, in liouvillian_build
+    H_0, Chi_1, Xi_1,Chi_2, Xi_2  = RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus=num_cpus)
+  File "/home/henry/Work/phd-work/vibronic-dimer/dimer_phonons.py", line 115, in RCME_operators
+    A_jk_1 = A_1.matrix_element(eVecs[j].dag(), eVecs[k])
+  File "/home/henry/anaconda2/envs/qutip/lib/python2.7/site-packages/qutip/qobj.py", line 1435, in matrix_element
+    return (bra.data * self.data * ket.data)[0, 0]
+  File "/home/henry/anaconda2/envs/qutip/lib/python2.7/site-packages/scipy/sparse/csr.py", line 289, in __getitem__
+    return self._get_single_element(row, col)
+  File "/home/henry/anaconda2/envs/qutip/lib/python2.7/site-packages/scipy/sparse/compressed.py", line 889, in _get_single_element
+    start = self.indptr[major_index]
+KeyboardInterrupt
 
