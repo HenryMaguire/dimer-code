@@ -107,9 +107,10 @@ def plot_eig_dynamics(DATA, timelist, exp_ops, ax, title='', ss_dm = 0):
     plot_ss = False
     if type(ss_dm) == type(exp_ops[0]):
         plot_ss=True
-    labels = [r'Ground', r'Dark.', r'Bright', r'Biexciton']
+    #labels = [r'Ground', r'Dark.', r'Bright', r'Biexciton']
+    labels = [ r'Dark.', r'Bright', r'Biexciton']
     colors = [i['color'] for i in list(plt.rcParams['axes.prop_cycle'])][0:4]
-    info = zip([0,4,5,3], labels, colors) # expval id, etc., etc.
+    info = zip([4,5,3], labels, colors) # expval id, etc., etc.
     #ax.title(title)
     linewidth = 1.5
     linestyle = '-'

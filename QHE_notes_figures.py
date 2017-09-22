@@ -32,11 +32,13 @@ def named_plot_creator(rho_0, L_RC, H_0, SIGMA_1, SIGMA_2, expects, PARAMS,
                        make_new_data=False, plot_ss=True, plt_type=100):
     ss_dm = 0
     L=0
-    data_dir = "DATA/QHE_notes_fig{}/N{}_exc{}".format(figure_num, PARAMS['N_1'], PARAMS['exc'])
+    data_dir = "DATA/QHE_O1notes_fig{}/N{}_exc{}".format(figure_num, PARAMS['N_1'], PARAMS['exc'])
     if not os.path.exists(data_dir):
         os.makedirs(data_dir)
     plot_name = data_dir+"/{}_{}dynamics{}.pdf".format(EM_approx, l, plt_type)
     data_dir+='/data'
+    if not os.path.exists(data_dir):
+        os.makedirs(data_dir)
     data_name = data_dir+"/{}_{}data".format(EM_approx, l)
 
     if l == 'flat_':
@@ -133,7 +135,7 @@ def named_plot_creator(rho_0, L_RC, H_0, SIGMA_1, SIGMA_2, expects, PARAMS,
         # compare each dataset to the flat, phenomenological version
         J_DATA = load_obj(data_dir+"/p_flat_data")
         J_ss= load_obj(data_dir+"/p_flat_ss_data")
-    ax1.plot(timelist, J_DATA.expect[0], linestyle='--')
+    #ax1.plot(timelist, J_DATA.expect[0], linestyle='--')
     ax1.plot(timelist, J_DATA.expect[4], linestyle='--')
     #print ENR_ptrace(ss_dm,0,[4,PARAMS['N_1'],PARAMS['N_2']],PARAMS['exc'])
     if plot_ss:
@@ -247,12 +249,10 @@ def data_maker(w_2, bias, V, T_EM, alpha_EM, alpha_1, alpha_2, N, end_time, figu
                                 make_new_data=make_new_data, plt_type=pt, plot_ss=plt_ss)
 
     del DATA_P
-
     DATA_S = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
                                 timelist, l ='flat_', EM_approx='s', figure_num =  figure_num,
-                                make_new_data=make_new_data, plt_type=pt
-                                , plot_ss=plt_ss)
-    del DATA_S
+                                make_new_data=make_new_data, plt_type=pt,
+                                plot_ss=plt_ss)
 
     DATA_S = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
                                 timelist, EM_approx='s', figure_num =  figure_num,
@@ -260,21 +260,23 @@ def data_maker(w_2, bias, V, T_EM, alpha_EM, alpha_1, alpha_2, N, end_time, figu
                                 , plot_ss=plt_ss)
     del DATA_S
     DATA_NS = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
-                                timelist, EM_approx='ns', figure_num =  figure_num,
-                                make_new_data=make_new_data, plt_type=pt, plot_ss=plt_ss)
-    save_params(PARAMS, figure_num, '')
-    DATA_NS = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
                                 timelist, l ='flat_', EM_approx='ns',
                                 figure_num =  figure_num, make_new_data=make_new_data,
                                 plt_type=pt, plot_ss=plt_ss)
-    del DATA_NS
     save_params(PARAMS, figure_num, 'flat_')
+    DATA_NS = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
+                                timelist, EM_approx='ns', figure_num =  figure_num,
+                                make_new_data=make_new_data, plt_type=pt, plot_ss=plt_ss)
+    save_params(PARAMS, figure_num, '')
+
+    del DATA_NS
+
 
     return PARAMS
 
 def save_params(PARAMS, fig, l):
     block = ''
-    fn = 'DATA/QHE_notes_fig{}/N{}_exc{}/{}PARAMS.txt'.format(fig,
+    fn = 'DATA/QHE_O1notes_fig{}/N{}_exc{}/{}PARAMS.txt'.format(fig,
                                             PARAMS['N_1'], PARAMS['exc'], l)
     f = 0
     f = open(fn, 'w')
@@ -292,62 +294,81 @@ if __name__ == "__main__":
     try:
         # Plot batch 1: flat spectrum, fully converged, overlay jake's data on the top
         #figure 2
-        mnd = False
-        plot_type = 3
-        #PARAMS =  data_maker(100., 0., 20, 50, 1., 0., 0., 2, 1, '2a', 1,
-        #make_new_data=mnd, pt=plot_type, plt_ss=True)
-        #PARAMS = data_maker(100., 20., 20, 50, 1., 0., 0., 2, 3, '2b', 1,
-        #make_new_data=mnd, pt=plot_type, plt_ss=True)
 
-        #figure 4
-        mnd = False
-        N = 3
-
+        w_2, bias, V, alpha_EM = 12400, 200, 100, 5
+        mnd = True
+        N = 5
         plot_type = 0
-        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 2., 2., N, 1, '4ab', 0,
-        make_new_data=mnd, pt=plot_type, plt_ss=True)
-        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 2., 2., N, 4, '4cd', 0,
-        make_new_data=mnd, pt=plot_type, plt_ss=True)
+        """
+        PARAMS =  data_maker(w_2, 0, V, 77, alpha_EM, 0., 0., 2, 1, '2a', 1,
+                            make_new_data=mnd, pt=plot_type, plt_ss=True)
+        PARAMS = data_maker(w_2, bias, V, 77, 1., 0., 0., 2, 3, '2b', 1,
+                            make_new_data=mnd, pt=plot_type, plt_ss=True)
+        """
+        #figure 4
+        PARAMS = data_maker(w_2, bias, V, 5700, alpha_EM, 2., 2., N, 1, '4ab', 0,
+                            make_new_data=mnd, pt=plot_type, plt_ss=True)
+        PARAMS = data_maker(w_2, bias, V, 5700, alpha_EM, 2., 2., N, 4, '4cd', 0,
+                            make_new_data=mnd, pt=plot_type, plt_ss=True)
         #figure 5
-        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100/pi, 100/pi, N, 1, '5ab-p', 0,
-        make_new_data=mnd, pt=plot_type, plt_ss=True)
-        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100/pi, 100/pi, N, 4, '5cd-p', 0,
-        make_new_data=mnd, pt=plot_type, plt_ss=True)
-        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100, 100, N, 1, '5ab', 0,
-        make_new_data=mnd, pt=plot_type, plt_ss=True)
-        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100, 100, N, 4, '5cd', 0,
-        make_new_data=mnd, pt=plot_type, plt_ss=True)
+        #PARAMS = data_maker(1500., 50., 100, 5700, alpha_EM, 100/pi, 100/pi, N, 1, '5ab-p', 0,
+        #make_new_data=mnd, pt=plot_type, plt_ss=True)
+        #PARAMS = data_maker(1500., 50., 100, 5700, alpha_EM, 100/pi, 100/pi, N, 4, '5cd-p', 0,
+        #make_new_data=mnd, pt=plot_type, plt_ss=True)
+        PARAMS = data_maker(w_2, bias, V, 5700, alpha_EM, 100, 100, N, 1, '5ab', 0,
+                            make_new_data=mnd, pt=plot_type, plt_ss=True)
+        PARAMS = data_maker(w_2, bias, V, 5700, alpha_EM, 100, 100, N, 4, '5cd', 0,
+                            make_new_data=mnd, pt=plot_type, plt_ss=True)
 
 
+        mnd=False
         plot_type = 1
-        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 2., 2., N, 1, '4ab', 0,
-        make_new_data=mnd, pt=plot_type, plt_ss=True)
-        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 2., 2., N, 4, '4cd', 0,
-        make_new_data=mnd, pt=plot_type, plt_ss=True)
-        #figure 5
-        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100/pi, 100/pi, N, 1, '5ab-p', 0,
-        make_new_data=mnd, pt=plot_type, plt_ss=True)
-        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100/pi, 100/pi, N, 4, '5cd-p', 0,
-        make_new_data=mnd, pt=plot_type, plt_ss=True)
-        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100, 100, N, 1, '5ab', 0,
-        make_new_data=mnd, pt=plot_type, plt_ss=True)
-        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100, 100, N, 4, '5cd', 0,
-        make_new_data=mnd, pt=plot_type, plt_ss=True)
+        """
+        PARAMS =  data_maker(w_2, 0, V, 77, alpha_EM, 0., 0., 2, 1, '2a', 1,
+                            make_new_data=mnd, pt=plot_type, plt_ss=True)
+        PARAMS = data_maker(w_2, bias, V, 77, 1., 0., 0., 2, 3, '2b', 1,
+                            make_new_data=mnd, pt=plot_type, plt_ss=True)
+        """
+        #figure 4
 
-        plot_type = 2
-        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 2., 2., N, 1, '4ab', 0,
-        make_new_data=mnd, pt=plot_type, plt_ss=True)
-        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 2., 2., N, 4, '4cd', 0,
-        make_new_data=mnd, pt=plot_type, plt_ss=True)
+        PARAMS = data_maker(w_2, bias, V, 5700, alpha_EM, 2., 2., N, 1, '4ab', 0,
+                            make_new_data=mnd, pt=plot_type, plt_ss=True)
+        PARAMS = data_maker(w_2, bias, V, 5700, 0.1, 2., 2., N, 4, '4cd', 0,
+                            make_new_data=mnd, pt=plot_type, plt_ss=True)
         #figure 5
-        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100/pi, 100/pi, N, 1, '5ab-p', 0,
-        make_new_data=mnd, pt=plot_type, plt_ss=True)
-        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100/pi, 100/pi, N, 4, '5cd-p', 0,
-        make_new_data=mnd, pt=plot_type, plt_ss=True)
-        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100, 100, N, 1, '5ab', 0,
-        make_new_data=mnd, pt=plot_type, plt_ss=True)
-        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100, 100, N, 4, '5cd', 0,
-        make_new_data=mnd, pt=plot_type, plt_ss=True)
+        #PARAMS = data_maker(1500., 50., 100, 5700, alpha_EM, 100/pi, 100/pi, N, 1, '5ab-p', 0,
+        #make_new_data=mnd, pt=plot_type, plt_ss=True)
+        #PARAMS = data_maker(1500., 50., 100, 5700, alpha_EM, 100/pi, 100/pi, N, 4, '5cd-p', 0,
+        #make_new_data=mnd, pt=plot_type, plt_ss=True)
+
+        PARAMS = data_maker(w_2, bias, V, 5700, alpha_EM, 100, 100, N, 1, '5ab', 0,
+                            make_new_data=mnd, pt=plot_type, plt_ss=True)
+        PARAMS = data_maker(w_2, bias, V, 5700, alpha_EM, 100, 100, N, 4, '5cd', 0,
+                            make_new_data=mnd, pt=plot_type, plt_ss=True)
+
+        mnd = False
+        plot_type = 2
+        """
+        PARAMS =  data_maker(w_2, 0, V, 77, alpha_EM, 0., 0., 2, 1, '2a', 1,
+                            make_new_data=mnd, pt=plot_type, plt_ss=True)
+        PARAMS = data_maker(w_2, bias, V, 77, 1., 0., 0., 2, 3, '2b', 1,
+                            make_new_data=mnd, pt=plot_type, plt_ss=True)
+        """
+        #figure 4
+
+        PARAMS = data_maker(w_2, bias, V, 5700, alpha_EM, 2., 2., N, 1, '4ab', 0,
+                            make_new_data=mnd, pt=plot_type, plt_ss=True)
+        PARAMS = data_maker(w_2, bias, V, 5700, 0.1, 2., 2., N, 4, '4cd', 0,
+                            make_new_data=mnd, pt=plot_type, plt_ss=True)
+        #figure 5
+        #PARAMS = data_maker(1500., 50., 100, 5700, alpha_EM, 100/pi, 100/pi, N, 1, '5ab-p', 0,
+        #make_new_data=mnd, pt=plot_type, plt_ss=True)
+        #PARAMS = data_maker(1500., 50., 100, 5700, alpha_EM, 100/pi, 100/pi, N, 4, '5cd-p', 0,
+        #make_new_data=mnd, pt=plot_type, plt_ss=True)
+        PARAMS = data_maker(w_2, bias, V, 5700, alpha_EM, 100, 100, N, 1, '5ab', 0,
+                            make_new_data=mnd, pt=plot_type, plt_ss=True)
+        PARAMS = data_maker(w_2, bias, V, 5700, alpha_EM, 100, 100, N, 4, '5cd', 0,
+                            make_new_data=mnd, pt=plot_type, plt_ss=True)
 
     except:
         var = traceback.format_exc()

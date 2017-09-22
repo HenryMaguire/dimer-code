@@ -1,11 +1,15 @@
 Traceback (most recent call last):
-  File "/home/henry/Work/phd-work/vibronic-dimer/QHE_notes_figures.py", line 324, in <module>
+  File "QHE_notes_figures.py", line 304, in <module>
     make_new_data=mnd, pt=plot_type, plt_ss=True)
-  File "/home/henry/Work/phd-work/vibronic-dimer/QHE_notes_figures.py", line 244, in data_maker
-    make_new_data=make_new_data, plt_type=pt, plot_ss=plt_ss)
-  File "/home/henry/Work/phd-work/vibronic-dimer/QHE_notes_figures.py", line 140, in named_plot_creator
-    ax1.axhline(((J_ss*expects[4]).tr()), linestyle='dashed', color='k')
-  File "/home/henry/anaconda2/envs/qutip/lib/python2.7/site-packages/matplotlib/axes/_axes.py", line 722, in axhline
-    scaley = (yy < ymin) or (yy > ymax)
-TypeError: no ordering relation is defined for complex numbers
+  File "QHE_notes_figures.py", line 255, in data_maker
+    plot_ss=plt_ss)
+  File "QHE_notes_figures.py", line 88, in named_plot_creator
+    DATA = qt.mesolve(H_0, rho_0, timelist, [L_full], e_ops=expects, progress_bar=True, options=opts)
+  File "/home/henry/anaconda2/envs/qutip/lib/python2.7/site-packages/qutip/mesolve.py", line 284, in mesolve
+    progress_bar)
+  File "/home/henry/anaconda2/envs/qutip/lib/python2.7/site-packages/qutip/mesolve.py", line 790, in _mesolve_const
+    return _generic_ode_solve(r, rho0, tlist, e_ops, opt, progress_bar)
+  File "/home/henry/anaconda2/envs/qutip/lib/python2.7/site-packages/qutip/mesolve.py", line 1020, in _generic_ode_solve
+    r.y, 1)
+KeyboardInterrupt
 
