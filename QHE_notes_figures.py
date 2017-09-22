@@ -302,7 +302,7 @@ if __name__ == "__main__":
         #figure 4
         mnd = False
         N = 3
-        """
+
         plot_type = 0
         PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 2., 2., N, 1, '4ab', 0,
         make_new_data=mnd, pt=plot_type, plt_ss=True)
@@ -318,7 +318,7 @@ if __name__ == "__main__":
         PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100, 100, N, 4, '5cd', 0,
         make_new_data=mnd, pt=plot_type, plt_ss=True)
 
-        """
+
         plot_type = 1
         PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 2., 2., N, 1, '4ab', 0,
         make_new_data=mnd, pt=plot_type, plt_ss=True)
