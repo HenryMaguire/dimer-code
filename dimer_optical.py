@@ -51,37 +51,7 @@ def nonsecular_function(args, **kwargs):
     else:
         return zero, zero, zero, zero
 
-def secular_function(args, **kwargs):
-    i = args[0]
-    j = args[1]
-    A = kwargs['A']
-    eVecs = kwargs['eVecs']
-    eVals = kwargs['eVals']
-    T = kwargs['T_EM']
-    w_1, Gamma, J = kwargs['w_1'], kwargs['alpha_EM'], kwargs['J']
-    L = 0
-    lam_ij = A.matrix_element(eVecs[i].dag(), eVecs[j])
-    lam_ji = A.dag().matrix_element(eVecs[j].dag(), eVecs[i])
-    #lam_mn = (A.dag()).matrix_element(eVecs[n].dag(), eVecs[m])
-    lam_ij_sq = lam_ij*lam_ji
-    eps_ij = abs(eVals[i]-eVals[j])
 
-    if abs(lam_ij_sq)>0:
-        IJ = eVecs[i]*eVecs[j].dag()
-        JI = eVecs[j]*eVecs[i].dag()
-        JJ = eVecs[j]*eVecs[j].dag()
-        II = eVecs[i]*eVecs[i].dag()
-        Occ = Occupation(eps_ij, T)
-        if eps_ij == 0:
-            JN = Gamma/(2*pi*w_1*beta_f(T))
-            r_up = 2*pi*JN
-            r_down = 2*pi*JN
-            L = Qobj(lam_ij_sq*(r_up*(spre(II) + spost(II) - 2*sprepost(JI, IJ))+r_down*(spost(JJ)+ spre(JJ) - 2*sprepost(IJ,JI))))
-        else:
-            r_up = 2*pi*J(eps_ij, Gamma, w_1)*Occ
-            r_down = 2*pi*J(eps_ij, Gamma, w_1)*(Occ+1)
-            L = Qobj(lam_ij_sq*(r_up*(spre(II) + spost(II) - 2*sprepost(JI, IJ))+r_down*(spost(JJ)+ spre(JJ) - 2*sprepost(IJ,JI))))
-    return L
 
 def L_nonsecular_par(H_vib, A, args):
     Gamma, T, w_1, J, num_cpus = args['alpha_EM'], args['T_EM'], args['w_1'],args['J'], args['num_cpus']
@@ -145,7 +115,47 @@ def L_nonsecular(H_vib, A, args):
     print "It took ", time.time()-ti, " seconds to build the Non-secular RWA Liouvillian"
     return -0.25*L
 
+def L_secular(H_vib, A, args):
+    '''
+    Initially assuming that the vibronic eigenstructure has no
+    degeneracy and the secular approximation has been made
+    '''
+    ti = time.time()
+    num_cpus = args['num_cpus']
+    dim_ham = H_vib.shape[0]
+    eVals, eVecs = H_vib.eigenstates()
+    #print [(i, ev) for i, ev in enumerate(eVals)] # Understanding manifold structure
+    #names = ['eVals', 'eVecs', 'A', 'w_1', 'Gamma', 'T', 'J']
+    T = args['T_EM']
+    w_1, Gamma, J = args['w_1'], args['alpha_EM'], args['J']
+    l = dim_ham*range(dim_ham)
+    i_j_gen = ((i,j) for i,j in zip(sorted(l), l))
+    L = 0
+    for i, j in i_j_gen:
+        lam_ij = A.matrix_element(eVecs[i].dag(), eVecs[j])
+        lam_ji = A.dag().matrix_element(eVecs[j].dag(), eVecs[i])
+        #lam_mn = (A.dag()).matrix_element(eVecs[n].dag(), eVecs[m])
+        lam_ij_sq = lam_ij*lam_ji
+        if abs(lam_ij_sq)>0:
+            eps_ij = abs(eVals[i]-eVals[j])
+            IJ = eVecs[i]*eVecs[j].dag()
+            JI = eVecs[j]*eVecs[i].dag()
+            JJ = eVecs[j]*eVecs[j].dag()
+            II = eVecs[i]*eVecs[i].dag()
+            Occ = Occupation(eps_ij, T)
+            r_up = 0
+            r_down = 0
+            if eps_ij == 0:
+                JN = Gamma/(2*pi*w_1*beta_f(T))
+                r_up = 2*pi*JN
+                r_down = 2*pi*JN
+            else:
+                r_up = 2*pi*J(eps_ij, Gamma, w_1)*Occ
+                r_down = 2*pi*J(eps_ij, Gamma, w_1)*(Occ+1)
+            L += Qobj(lam_ij_sq*(r_up*(spre(II) + spost(II) - 2*sprepost(JI, IJ))+r_down*(spost(JJ)+ spre(JJ) - 2*sprepost(IJ,JI))))
+    print "It took ", time.time()-ti, " seconds to build the secular RWA Liouvillian"
 
+    return -np.sum(L)*0.25
 
 def L_secular_par(H_vib, A, args):
     '''
