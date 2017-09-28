@@ -121,7 +121,7 @@ def L_secular(H_vib, A, args):
     degeneracy and the secular approximation has been made
     '''
     ti = time.time()
-    num_cpus = args['num_cpus']
+    #num_cpus = args['num_cpus']
     dim_ham = H_vib.shape[0]
     eVals, eVecs = H_vib.eigenstates()
     #print [(i, ev) for i, ev in enumerate(eVals)] # Understanding manifold structure
