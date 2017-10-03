@@ -1,7 +1,9 @@
 Traceback (most recent call last):
-  File "QHE_notes_figures.py", line 344, in <module>
-    check.bias_dependence(biases, PARAMS, I)
-  File "/home/henry/Work/phd-work/vibronic-dimer/dimer_tests.py", line 197, in bias_dependence
-    bias_dependence_function, biases, kwargs=args)
-TypeError: 'NoneType' object is not iterable
+  File "QHE_notes_figures.py", line 349, in <module>
+    vis.plot_bias_dependence(ax, dark_states, biases, PARAMS)
+  File "/home/henry/Work/phd-work/vibronic-dimer/dimer_plotting.py", line 74, in plot_bias_dependence
+    in zip(p_data, observables)])
+  File "/home/henry/anaconda2/envs/qutip/lib/python2.7/site-packages/qutip/qobj.py", line 509, in __mul__
+    raise TypeError("Incompatible Qobj shapes")
+TypeError: Incompatible Qobj shapes
 

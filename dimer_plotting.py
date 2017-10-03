@@ -59,26 +59,41 @@ def get_bias_dependence(observable, biases, alpha):
     data = load_obj(name)
     return np.array([(ss_dm*observable).tr() for ss_dm in data])
 
-def plot_bias_dependence(ax, observables, biases, alpha, color, x_label='', y_label =True, linestyle='-', linewidth=1.0,legend_on=True):
-    p_name = main_dir+'phenom/steadystate_DMs_alpha{}'.format('alpha')
-    #ns_name =
+def plot_bias_dependence(ax, observables, biases, PARAMS, x_label='',
+                        y_label =True, linestyle='-', linewidth=1.0,
+                        legend_on=True):
+    wRC, N, V, wc, alpha = int(PARAMS['w0_1']), PARAMS['N_1'], int(PARAMS['V']), int(PARAMS['wc']), int(PARAMS['alpha_1'])
+    main_dir = "DATA/bias_dependence_wRC{}_N{}_V{}_wc{}/".format(wRC, N, V, wc)
+    p_name = main_dir+'phenom/steadystate_DMs_alpha{}'.format(alpha)
+    ns_name = main_dir+'nonsecular/steadystate_DMs_alpha{}'.format(alpha)
+    s_name = main_dir+'secular/steadystate_DMs_alpha{}'.format(alpha)
     p_data = load_obj(p_name)
-    #ns_data = load_obj(ns_name)
-    #for ss_dm, obs in zip(data, observables):
-    #    print ss_dm
-    ss_data = np.array([(ss_dm*obs).tr() for ss_dm, obs in zip(p_data, observables)])
-    label = r'$\pi\alpha=$'+'{}'.format(int(alpha*np.pi))+r'$cm^{-1}$'
+    ns_data = load_obj(ns_name)
+    s_data = load_obj(s_name)
+    p_ss_data = np.array([(ss_dm*obs).tr() for ss_dm, obs
+                                                in zip(p_data, observables)])
+    ns_ss_data = np.array([(ss_dm*obs).tr() for ss_dm, obs
+                                                in zip(ns_data, observables)])
+    s_ss_data = np.array([(ss_dm*obs).tr() for ss_dm, obs
+                                                in zip(s_data, observables)])
+    label = r'$\pi\alpha=$'+'{}'.format(int(alpha))+r'$cm^{-1}$'
     if not legend_on:
         label = None
     if y_label:
-        ax.set_ylabel(r"Bias ($cm^{-1}$)")
-    ax.plot(ss_values.real, biases, label=label, color=color, ls=linestyle, linewidth=linewidth)
+        ax.set_xlabel(r"Bias ($cm^{-1}$)")
+    colors = [i['color'] for i in list(plt.rcParams['axes.prop_cycle'])][0:3]
+    for p, c, l in zip([p_ss_data, s_ss_data, ns_ss_data], colors, ['Phenom.',
+                                                    'Secular', 'Non-sec.']):
+        ax.plot(biases, p.real,label=l, color=c, ls=linestyle,
+                                                    linewidth=linewidth)
+
     #plt.scatter(biases, np.array(data).imag, marker='^', color=color)
     #ax.set_ylim(-0.1, 0.0001)
     #ax.set_xlim(0, 1000.0001)
-    ax.set_xlabel(x_label)
-    plt.legend(loc='lower left')
-    return ss_values
+    ax.set_ylabel("SS Dark State Population")
+    plt.legend(loc='upper right')
+    plt.savefig(main_dir+"steadystate_alpha{}.pdf".format(alpha))
+    return None
 
 
 

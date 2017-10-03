@@ -333,15 +333,22 @@ if __name__ == "__main__":
         f.close()
     try:
         w_2, bias, V, alpha_EM = 12400, 0, 100, 5
-        alpha_ph = [0.1, 1, 10, 50, 100]
+        alpha_ph = [0.1, 1, 5, 10, 25, 50, 100]
         biases = np.linspace(0,300,10)
-        N = 2
+        N = 5
         I = enr_identity([N,N], N)
+
         for alpha in alpha_ph:
             PARAMS, expects = data_maker(w_2, bias, V, 5700, alpha_EM, alpha, alpha, N, None,
                             None, None, make_dynamics=False)
-            #PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
             check.bias_dependence(biases, PARAMS, I)
+
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+            dark_states = load_obj("DATA/bias_dependence_wRC667_N{}_V100_wc53/operators/dark_ops".format(N))
+            vis.plot_bias_dependence(ax, dark_states, biases, PARAMS)
+            #PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
+
     except:
         var = traceback.format_exc()
         print var

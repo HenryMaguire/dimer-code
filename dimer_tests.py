@@ -160,7 +160,7 @@ def bias_dependence(biases, args, I):
     print int(args['w0_1']), args['N_1'], int(args['V']), int(args['wc'])
     main_dir = enc_dir+'bias_dependence_wRC{}_N{}_V{}_wc{}/'.format(int(args['w0_1']), args['N_1'], int(args['V']), int(args['wc']))
     ops_dir = main_dir+'operators/'
-    test_file = main_dir+'nonsecular/steadystate_DMs_pialpha{}.pickle'.format(int(pi*args['alpha_1']))
+    test_file = main_dir+'nonsecular/steadystate_DMs_alpha{}.pickle'.format(int(args['alpha_1']))
     coh_ops = []
     bright_ops = []
     dark_ops = []
