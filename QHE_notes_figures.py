@@ -27,20 +27,12 @@ reload(check)
 
 
 
-def named_plot_creator(rho_0, L_RC, H_0, SIGMA_1, SIGMA_2, expects, PARAMS,
-                       timelist, EM_approx='s', figure_num = '2', l ='',
-                       make_new_data=False, plot_ss=True, plt_type=100):
+def named_plot_creator(rho_0, L_RC, H_0, SIGMA_1, SIGMA_2, expects, PARAMS, timelist, EM_approx='s', figure_num = '2', l ='', make_new_data=False, plot_ss=False):
     ss_dm = 0
     L=0
-    data_dir = "DATA/QHE_O1notes_fig{}/N{}_exc{}".format(figure_num, PARAMS['N_1'], PARAMS['exc'])
-    if not os.path.exists(data_dir):
-        os.makedirs(data_dir)
-    plot_name = data_dir+"/{}_{}dynamics{}.pdf".format(EM_approx, l, plt_type)
-    data_dir+='/data'
-    if not os.path.exists(data_dir):
-        os.makedirs(data_dir)
+    data_dir = "DATA/QHE_notes_fig{}/N{}_exc{}".format(figure_num, PARAMS['N_1'], PARAMS['exc'])
     data_name = data_dir+"/{}_{}data".format(EM_approx, l)
-
+    plot_name = data_dir+"/{}_{}dynamics2.pdf".format(EM_approx, l)
     if l == 'flat_':
         PARAMS.update({'mu':1})
         PARAMS.update({'J':J_flat})
@@ -50,15 +42,16 @@ def named_plot_creator(rho_0, L_RC, H_0, SIGMA_1, SIGMA_2, expects, PARAMS,
         PARAMS.update({'J':J_minimal})
     I = qt.enr_identity([PARAMS['N_1'],PARAMS['N_2']], PARAMS['exc'])
     print "Parameters for {} are: {}".format(plot_name, PARAMS)
-    A_EM = SIGMA_1+PARAMS['mu']*SIGMA_2#, I)
+    A_EM = tensor(SIGMA_1+PARAMS['mu']*SIGMA_2, I)
     opts = qt.Options(num_cpus=1, nsteps=6000)
     ''' define names for files, we'll need these in every if statement'''
     if make_new_data:
         if EM_approx=='ns':
-            L = EM.L_nonsecular(H_0, A_EM, PARAMS)
+            L = EM.L_nonsecular_par(H_0, A_EM, PARAMS)
         elif EM_approx=='s':
-            L = EM.L_secular(H_0, A_EM, PARAMS)
+            L = EM.L_secular_par(H_0, A_EM, PARAMS)
         elif EM_approx=='p':
+            plot_ss = True
             L = EM.L_phenom(I, PARAMS)
         elif EM_approx =='j':
             energies, states = check.exciton_states(PARAMS)
@@ -76,8 +69,7 @@ def named_plot_creator(rho_0, L_RC, H_0, SIGMA_1, SIGMA_2, expects, PARAMS,
                     ss_dm = qt.steadystate(H_0, [L_full], method='iterative-lgmres', use_precond=True)
                 else:
                     ss_dm = qt.steadystate(H_0, [L_full])
-                ss_fn =data_dir+"/{}_{}ss_data".format(EM_approx, l)
-                save_obj(ss_dm, ss_fn)
+                save_obj(ss_dm, data_dir+"/ss_{}_{}data".format(EM_approx, l))
                 print "It took {} seconds to calculate steady states.".format(time.time()-ti)
             except Exception as err:
                 print "Warning: steady state density matrix didn't converge. Probably"
@@ -86,7 +78,9 @@ def named_plot_creator(rho_0, L_RC, H_0, SIGMA_1, SIGMA_2, expects, PARAMS,
 
         try:
             DATA = qt.mesolve(H_0, rho_0, timelist, [L_full], e_ops=expects, progress_bar=True, options=opts)
-            save_obj(DATA, data_name) # save data in the subdirectory .../data
+            if not os.path.exists(data_dir):
+                os.makedirs(data_dir)
+            save_obj(DATA, data_name)
 
             fig = plt.figure(figsize=(10,8))
             ax1 = fig.add_subplot(211)
@@ -109,7 +103,6 @@ def named_plot_creator(rho_0, L_RC, H_0, SIGMA_1, SIGMA_2, expects, PARAMS,
             ax1 = fig.add_subplot(211)
             title = 'Eigenstate dynamics'
             #title = title + r"$\omega_0=$""%i"r"$cm^{-1}$, $\alpha_{ph}=$""%f"r"$cm^{-1}$, $T_{EM}=$""%i K" %(w0_1, alpha_1, T_EM)
-            ss_dm = load_obj(data_dir+"/{}_{}ss_data".format(EM_approx, l))
             vis.plot_eig_dynamics(DATA, timelist, expects, ax1, ss_dm=ss_dm)
             ax2 = fig.add_subplot(212)
             vis.plot_coherences(DATA, timelist, expects, ax2, ss_dm=ss_dm)
@@ -117,37 +110,13 @@ def named_plot_creator(rho_0, L_RC, H_0, SIGMA_1, SIGMA_2, expects, PARAMS,
         except Exception as err:
             DATA = None
             print 'Could not plot the data because:\n {}'.format(err)
-    J_DATA = 0
-    J_ss = 0
-    if plt_type == 0:
-        # compare each set of data to the flat version of itself
-        J_DATA = load_obj(data_dir+"/{}_flat_data".format(EM_approx))
-        J_ss= load_obj(data_dir+"/{}_flat_ss_data".format( EM_approx))
-    elif plt_type == 1:
-        # compare each set of data to the phenom version, preserving SD
-        J_DATA = load_obj(data_dir+"/p_{}data".format( l))
-        J_ss= load_obj(data_dir+"/p_{}ss_data".format( l))
-    elif plt_type == 2:
-        # compare each set of data to the secular version, preserving SD
-        J_DATA = load_obj(data_dir+"/s_{}data".format(l))
-        J_ss= load_obj(data_dir+"/s_{}ss_data".format( l))
-    else:
-        # compare each dataset to the flat, phenomenological version
-        J_DATA = load_obj(data_dir+"/p_flat_data")
-        J_ss= load_obj(data_dir+"/p_flat_ss_data")
-    #ax1.plot(timelist, J_DATA.expect[0], linestyle='--')
+    J_DATA = load_obj("DATA/QHE_notes_fig{}/N{}_exc{}/p_flat_data".format(figure_num, PARAMS['N_1'], PARAMS['exc']))
+    J_ss= load_obj("DATA/QHE_notes_fig{}/N{}_exc{}/ss_p_flat_data".format(figure_num, PARAMS['N_1'], PARAMS['exc']))
+    ax1.plot(timelist, J_DATA.expect[0], linestyle='--')
     ax1.plot(timelist, J_DATA.expect[4], linestyle='--')
     #print ENR_ptrace(ss_dm,0,[4,PARAMS['N_1'],PARAMS['N_2']],PARAMS['exc'])
     if plot_ss:
-        ax1.axhline(((J_ss*expects[4]).tr()).real, linestyle='dashed', color='k')
-        if plt_type == 1 and EM_approx=='s':
-            print "COHERENCE : {}".format((ss_dm*expects[6]).tr())
-            ax2.axhline(((ss_dm*expects[6]).tr()).real, linestyle='dotted', color='k')
-            ax2.axhline(((J_ss*expects[6]).tr()).real, linestyle='dashed', color='k')
-        if plt_type == 2 and EM_approx=='ns':
-            print "COHERENCE : {}".format((ss_dm*expects[6]).tr())
-            ax2.axhline(((ss_dm*expects[6]).tr()).real, linestyle='dotted', color='k')
-            ax2.axhline(((J_ss*expects[6]).tr()).real, linestyle='dashed', color='k')
+        ax1.axhline(((J_ss*expects[0]).tr()), linestyle='dotted', color='k')
     ax1.plot(timelist, J_DATA.expect[5], linestyle='--')
     ax1.plot(timelist, J_DATA.expect[3], linestyle='--')
     ax2.plot(timelist, J_DATA.expect[6].real, linestyle='--')
@@ -156,9 +125,7 @@ def named_plot_creator(rho_0, L_RC, H_0, SIGMA_1, SIGMA_2, expects, PARAMS,
     plt.close()
     return ss_dm, DATA
 
-def data_maker(w_2, bias, V, T_EM, alpha_EM, alpha_1, alpha_2, N, end_time,
-                figure_num, initial, plt_ss=False,
-                make_new_data=False, pt=3, make_dynamics=True):
+def data_maker(w_2, bias, V, T_EM, alpha_EM, alpha_1, alpha_2, N, end_time, figure_num, initial, make_new_data=False):
     OO = basis(4,0)
     XO = basis(4,1)
     OX = basis(4,2)
@@ -180,7 +147,7 @@ def data_maker(w_2, bias, V, T_EM, alpha_EM, alpha_1, alpha_2, N, end_time,
     exc = N_1
     if N_1>4:
         exc= N_1
-    num_cpus = 2
+    num_cpus = 1
     J = J_minimal
 
     PARAM_names = ['w_1', 'w_2', 'V', 'bias', 'w_xx', 'T_1', 'T_2', 'wc',
@@ -228,58 +195,54 @@ def data_maker(w_2, bias, V, T_EM, alpha_EM, alpha_1, alpha_2, N, end_time,
     disp_1 = tensor(I_dimer, x_1)
     disp_2 = tensor(I_dimer, x_2)
 
+    thermal_RCs = enr_thermal_dm([N_1,N_2], exc, [n_RC_1, n_RC_2])
+    ''' initial density operator state'''
+    rho_0 = tensor(basis(4,initial)*basis(4,initial).dag(),thermal_RCs)
+
     ops = [OO, XO, OX, XX]
     # Expectation values and time increments needed to calculate the dynamics
     expects = ops + [dark, bright, exciton_coherence, site_coherence]
     expects +=[Phonon_1, Phonon_2, disp_1, disp_2]
 
-    if make_dynamics:
-        ''' initial density operator state'''
-        thermal_RCs = enr_thermal_dm([N_1,N_2], exc, [n_RC_1, n_RC_2])
-        rho_0 = tensor(basis(4,initial)*basis(4,initial).dag(),thermal_RCs)
-        timelist = np.linspace(0,end_time,4000*end_time)
-        DATA_P = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
-                                    timelist, l ='flat_', EM_approx='p', figure_num =  figure_num,
-                                    make_new_data=make_new_data, plt_type=pt, plot_ss=plt_ss)
+    timelist = np.linspace(0,end_time,4000*end_time)
 
-        DATA_P = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
-                                    timelist, EM_approx='p', figure_num =  figure_num,
-                                    make_new_data=make_new_data, plt_type=pt, plot_ss=plt_ss)
+    #DATA_J = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
+    #                        timelist, EM_approx='j', figure_num =  figure_num, make_new_data=make_new_data)
+    #del DATA_J
 
-        del DATA_P
+    DATA_P = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
+                                timelist, l ='flat_', EM_approx='p', figure_num =  figure_num,
+                                make_new_data=make_new_data)
+    DATA_P = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
+                                timelist, EM_approx='p', figure_num =  figure_num,
+                                make_new_data=make_new_data)
 
-        DATA_S = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
-                                    timelist, l ='flat_', EM_approx='s', figure_num =  figure_num,
-                                    make_new_data=make_new_data, plt_type=pt,
-                                    plot_ss=plt_ss)
+    #del DATA_P
 
-        del DATA_S
+    DATA_S = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
+                                timelist, l ='flat_', EM_approx='s', figure_num =  figure_num,
+                                make_new_data=make_new_data)
+    del DATA_S
 
-        DATA_S = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
-                                    timelist, EM_approx='s', figure_num =  figure_num,
-                                    make_new_data=make_new_data, plt_type=pt
-                                    , plot_ss=plt_ss)
-        del DATA_S
+    DATA_S = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
+                                timelist, EM_approx='s', figure_num =  figure_num,
+                                make_new_data=make_new_data)
+    del DATA_S
+    DATA_NS = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
+                                timelist, EM_approx='ns', figure_num =  figure_num,
+                                make_new_data=make_new_data, plot_ss=True)
+    save_params(PARAMS, figure_num, '')
+    DATA_NS = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
+                                timelist, l ='flat_', EM_approx='ns',
+                                figure_num =  figure_num, make_new_data=make_new_data, plot_ss=True)
+    del DATA_NS
+    save_params(PARAMS, figure_num, 'flat_')
 
-        DATA_NS = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
-                                    timelist, l ='flat_', EM_approx='ns',
-                                    figure_num =  figure_num, make_new_data=make_new_data,
-                                    plt_type=pt, plot_ss=plt_ss)
-        save_params(PARAMS, figure_num, 'flat_')
-        del DATA_NS
-        DATA_NS = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
-                                    timelist, EM_approx='ns', figure_num =  figure_num,
-                                    make_new_data=make_new_data, plt_type=pt, plot_ss=plt_ss)
-        save_params(PARAMS, figure_num, '')
-
-        del DATA_NS
-    else:
-        pass
-    return PARAMS, expects
+    return PARAMS
 
 def save_params(PARAMS, fig, l):
     block = ''
-    fn = 'DATA/QHE_O1notes_fig{}/N{}_exc{}/{}PARAMS.txt'.format(fig,
+    fn = 'DATA/QHE_notes_fig{}/N{}_exc{}/{}PARAMS.txt'.format(fig,
                                             PARAMS['N_1'], PARAMS['exc'], l)
     f = 0
     f = open(fn, 'w')
@@ -290,27 +253,7 @@ def save_params(PARAMS, fig, l):
     f.close()
     return None
 
-def make_dynamics_plots(w_2, bias, V, alpha_EM, N, make_new_data, plot_type):
-    data_maker(w_2, 0, V, 77, alpha_EM, 0., 0., 2, 1, '2a', 1,
-                        make_new_data=make_new_data, pt=plot_type, plt_ss=True)
-    data_maker(w_2, bias, V, 77, 1., 0., 0., 2, 3, '2b', 1,
-                        make_new_data=make_new_data, pt=plot_type, plt_ss=True)
 
-    #figure 4
-    data_maker(w_2, bias, V, 5700, alpha_EM, 2., 2., N, 1, '4ab', 0,
-                        make_new_data=make_new_data, pt=plot_type, plt_ss=True)
-    data_maker(w_2, bias, V, 5700, alpha_EM, 2., 2., N, 4, '4cd', 0,
-                        make_new_data=make_new_data, pt=plot_type, plt_ss=True)
-    #figure 5
-    #data_maker(1500., 50., 100, 5700, alpha_EM, 100/pi, 100/pi, N, 1, '5ab-p', 0,
-    #                    make_new_data=mnd, pt=plot_type, plt_ss=True)
-    #data_maker(1500., 50., 100, 5700, alpha_EM, 100/pi, 100/pi, N, 4, '5cd-p', 0,
-    #                    make_new_data=mnd, pt=plot_type, plt_ss=True)
-    data_maker(w_2, bias, V, 5700, alpha_EM, 100, 100, N, 1, '5ab', 0,
-                        make_new_data=make_new_data, pt=plot_type, plt_ss=True)
-    data_maker(w_2, bias, V, 5700, alpha_EM, 100, 100, N, 4, '5cd', 0,
-                        make_new_data=make_new_data, pt=plot_type, plt_ss=True)
-    return PARAMS
 if __name__ == "__main__":
 
     # (w_2, bias, V, T_EM, alpha_EM, alpha_1, alpha_2, N, end_time, figure_num)
@@ -318,37 +261,21 @@ if __name__ == "__main__":
         # Plot batch 1: flat spectrum, fully converged, overlay jake's data on the top
         #figure 2
 
-        w_2, bias, V, alpha_EM = 12400, 200, 100, 5
-        mnd = False
+        #PARAMS =  data_maker(100., 0., 20, 50, 1., 0., 0., 2, 1, '2a', 1,  make_new_data=True)
+        PARAMS = data_maker(100., 20., 20, 50, 1., 0., 0., 2, 3, '2b', 1, make_new_data=True)
+        """
+        #figure 4
         N = 3
-        #make_dynamics_plots(w_2, bias, V, alpha_EM, N, mnd, 0)
-        #make_dynamics_plots(w_2, bias, V, alpha_EM, N, mnd, 1)
-        #make_dynamics_plots(w_2, bias, V, alpha_EM, N, mnd, 2)
+        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 2., 2., N, 1, '4ab', 0, make_new_data=True)
+        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 2., 2., N, 4, '4cd', 0, make_new_data=True)
 
-    except:
-        var = traceback.format_exc()
-        print var
-        f = open('errors.log', 'w')
-        f.write(var+'\n')
-        f.close()
-    try:
-        w_2, bias, V, alpha_EM = 12400, 0, 100, 5
-        alpha_ph = [0.1, 1, 5, 10, 25, 50, 100]
-        biases = np.linspace(0,300,10)
-        N = 5
-        I = enr_identity([N,N], N)
+        #figure 5
 
-        for alpha in alpha_ph:
-            PARAMS, expects = data_maker(w_2, bias, V, 5700, alpha_EM, alpha, alpha, N, None,
-                            None, None, make_dynamics=False)
-            check.bias_dependence(biases, PARAMS, I)
-
-            fig = plt.figure()
-            ax = fig.add_subplot(111)
-            dark_states = load_obj("DATA/bias_dependence_wRC667_N{}_V100_wc53/operators/dark_ops".format(N))
-            vis.plot_bias_dependence(ax, dark_states, biases, PARAMS)
-            #PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
-
+        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100/pi, 100/pi, N, 1, '5ab-p', 0, make_new_data=True)
+        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100/pi, 100/pi, N, 4, '5cd-p', 0, make_new_data=True)
+        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100, 100, N, 1, '5ab', 0, make_new_data=True)
+        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100, 100, N, 4, '5cd', 0, make_new_data=True)
+        """
     except:
         var = traceback.format_exc()
         print var
