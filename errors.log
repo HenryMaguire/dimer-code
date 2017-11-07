@@ -1,9 +1,11 @@
 Traceback (most recent call last):
-  File "/home/henry/Work/phd-work/vibronic-dimer/QHE_notes_figures.py", line 265, in <module>
-    PARAMS = data_maker(100., 20., 20, 50, 1., 0., 0., 2, 3, '2b', 1, make_new_data=True)
-  File "/home/henry/Work/phd-work/vibronic-dimer/QHE_notes_figures.py", line 215, in data_maker
+  File "/home/henry/Work/phd-work/vibronic-dimer/QHE_notes_figures.py", line 287, in <module>
+    PARAMS = data_maker(100., 10., 20, 300, 1., 0., 0., N, 4, 'test', 0, make_new_data=True)
+  File "/home/henry/Work/phd-work/vibronic-dimer/QHE_notes_figures.py", line 242, in data_maker
     make_new_data=make_new_data)
-  File "/home/henry/Work/phd-work/vibronic-dimer/QHE_notes_figures.py", line 122, in named_plot_creator
-    ax2.plot(timelist, J_DATA.expect[6].real, linestyle='--')
-UnboundLocalError: local variable 'ax2' referenced before assignment
+  File "/home/henry/Work/phd-work/vibronic-dimer/QHE_notes_figures.py", line 63, in named_plot_creator
+    L = EM.L_secular_par(H_0, A_EM, PARAMS)
+  File "/home/henry/Work/phd-work/vibronic-dimer/dimer_optical.py", line 258, in L_secular_par
+    L = pool.imap_unordered(partial(secular_function,**kwargs), i_j_gen)
+NameError: global name 'secular_function' is not defined
 

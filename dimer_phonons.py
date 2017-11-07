@@ -33,7 +33,7 @@ def dimer_ham_RC(w_1, w_2, w_xx, V, mu, Omega_1,
     I = enr_identity([N_1,N_2], exc)
     H_dim_sub = w_1*XO*XO.dag() + w_2*OX*OX.dag() + w_xx*XX*XX.dag()
     H_dim_sub += V*(XO*OX.dag() + OX*XO.dag())
-    print H_dim_sub
+    #print H_dim_sub
     H_dim = tensor(H_dim_sub, I)
 
     atemp = enr_destroy([N_1,N_2], exc)
@@ -48,7 +48,7 @@ def dimer_ham_RC(w_1, w_2, w_xx, V, mu, Omega_1,
     H_RC2 = Omega_2*a_RC_exc[1].dag()*a_RC_exc[1]
 
     H_S = H_dim + H_RC1 + H_RC2 + H_I1 + H_I2
-    return H_S, A_1, A_2, SIGMA_1, SIGMA_2
+    return H_S, A_1, A_2, tensor(SIGMA_1, I), tensor(SIGMA_2, I)
 
 def operator_func(j, k, eVals=[], eVecs=[], A_1=[], A_2=[],
                     gamma_1=1., gamma_2=1., beta_1=0.4, beta_2=0.4):
@@ -116,7 +116,7 @@ def RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus=0):
             outer_eigen = eVecs[j] * (eVecs[k].dag())
             if sp.absolute(A_jk_1) > 0:
                 if sp.absolute(e_jk) > 0 and sp.absolute(beta_1) > 0:
-                    Chi_1 += 0.5*np.pi*e_jk*gamma_1 * float(coth(e_jk * beta_1 / 2).evalf())*A_jk_1*outer_eigen
+                    Chi_1 += 0.5*np.pi*e_jk*gamma_1 * coth(e_jk * beta_1 / 2)*A_jk_1*outer_eigen
                     Xi_1 += 0.5*np.pi*e_jk*gamma_1 * A_jk_1 * outer_eigen
                 else:
                     Chi_1 += np.pi*gamma_1*A_jk_1*outer_eigen/beta_1 # Just return coefficients which are left over
@@ -127,7 +127,7 @@ def RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus=0):
                     #print e_jk
                     # If e_jk is zero, coth diverges but J goes to zero so limit taken seperately
                     #print beta_2, e_jk
-                    Chi_2 += 0.5*np.pi*e_jk*gamma_2 * float(coth(e_jk * beta_2 / 2).evalf())*A_jk_2*outer_eigen # e_jk*gamma is the spectral density
+                    Chi_2 += 0.5*np.pi*e_jk*gamma_2 * coth(e_jk * beta_2 / 2)*A_jk_2*outer_eigen # e_jk*gamma is the spectral density
                     Xi_2 += 0.5*np.pi*e_jk*gamma_2 * A_jk_2 * outer_eigen
                 else:
                     Chi_2 += np.pi*gamma_2*A_jk_2*outer_eigen/beta_2 # Just return coefficients which are left over
@@ -201,14 +201,14 @@ def RC_mapping_OD(args):
     gamma_1, gamma_2 = 2, 2
     wRC_1, wRC_2 = 2*pi*wc*gamma_1, 2*pi*wc*gamma_2
     kappa_1, kappa_2 = np.sqrt(pi*alpha_1*wRC_1/2.), np.sqrt(pi*alpha_2*wRC_2/2.)
-    print "RC frame params: gamma: {}\twRC: {}\tkappa{}".format(gamma_1, wRC_1, kappa_1)
+    #print "RC frame params: gamma: {}\twRC: {}\tkappa{}".format(gamma_1, wRC_1, kappa_1)
     args.update({'gamma_1': gamma_1, 'gamma_2': gamma_2, 'w0_1': wRC_1,
                     'w0_2': wRC_2, 'kappa_1':kappa_1, 'kappa_2':kappa_2})
-    print "****************************************************************"
+    #print "****************************************************************"
     H_0, A_1, A_2, SIGMA_1, SIGMA_2 = dimer_ham_RC(w_1, w_2, w_xx, V, mu, wRC_1, wRC_2, kappa_1, kappa_2, N_1, N_2, exc)
     L_RC =  liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2, T_1, T_2, num_cpus=args['num_cpus'])
     full_size = (4*N_1*N_1)**2
-    print "It is {}by{}. The full basis would be {}by{}".format(L_RC.shape[0], L_RC.shape[0], full_size, full_size)
+    #print "It is {}by{}. The full basis would be {}by{}".format(L_RC.shape[0], L_RC.shape[0], full_size, full_size)
     return L_RC, H_0, A_1, A_2, SIGMA_1, SIGMA_2, args
 
 

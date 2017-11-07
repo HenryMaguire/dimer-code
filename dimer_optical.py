@@ -15,11 +15,91 @@ from numpy import pi
 from qutip import Qobj, basis, spost, spre, sprepost, steadystate, tensor
 import qutip.parallel as par
 
+#from dimer_weak_phonons import cauchyIntegrands, integral_converge, Gamma
 from utils import *
 import dimer_phonons as RC
 import dimer_tests as check
 
 reload(RC)
+
+def cauchyIntegrands(omega, beta, J, alpha, wc, ver):
+    # J_overdamped(omega, alpha, wc)
+    # Function which will be called within another function where J, beta and
+    # the eta are defined locally
+    F = 0
+    if ver == 1:
+        F = J(omega, alpha, wc)*(coth(beta*omega/2.)+1)
+    elif ver == -1:
+        F = J(omega, alpha, wc)*(coth(beta*omega/2.)-1)
+    elif ver == 0:
+        F = J(omega, alpha, wc)
+    return F
+
+def integral_converge(f, a, omega):
+    x = 30
+    I = 0
+    while abs(f(x))>0.01:
+        #print a, x
+        I += integrate.quad(f, a, x, weight='cauchy', wvar=omega)[0]
+        a+=30
+        x+=30
+    return I # Converged integral
+
+def Gamma(omega, beta, J, alpha, wc, imag_part=True):
+    G = 0
+    # Here I define the functions which "dress" the integrands so they
+    # have only 1 free parameter for Quad.
+    F_p = (lambda x: (cauchyIntegrands(x, beta, J, alpha, wc, 1)))
+    F_m = (lambda x: (cauchyIntegrands(x, beta, J, alpha, wc, -1)))
+    F_0 = (lambda x: (cauchyIntegrands(x, beta, J, alpha, wc, 0)))
+    w='cauchy'
+    if omega>0.:
+        # These bits do the Cauchy integrals too
+        G = (np.pi/2)*(coth(beta*omega/2.)-1)*J(omega,alpha, wc)
+        if imag_part:
+            G += (1j/2.)*(integral_converge(F_m, 0,omega))
+            G -= (1j/2.)*(integral_converge(F_p, 0,-omega))
+
+        #print integrate.quad(F_m, 0, n, weight='cauchy', wvar=omega), integrate.quad(F_p, 0, n, weight='cauchy', wvar=-omega)
+    elif omega==0.:
+        G = (np.pi/2)*(2*alpha/beta)
+        # The limit as omega tends to zero is zero for superohmic case?
+        if imag_part:
+            G += -(1j)*integral_converge(F_0, -1e-12,0)
+        #print (integrate.quad(F_0, -1e-12, 20, weight='cauchy', wvar=0)[0])
+    elif omega<0.:
+        G = (np.pi/2)*(coth(beta*abs(omega)/2.)+1)*J(abs(omega),alpha, wc)
+        if imag_part:
+            G += (1j/2.)*integral_converge(F_m, 0,-abs(omega))
+            G -= (1j/2.)*integral_converge(F_p, 0,abs(omega))
+        #print integrate.quad(F_m, 0, n, weight='cauchy', wvar=-abs(omega)), integrate.quad(F_p, 0, n, weight='cauchy', wvar=abs(omega))
+    return G
+
+def L_non_rwa(H_vib, SIGMA, PARAMS):
+    A = SIGMA + SIGMA.dag()
+    w_1 = PARAMS['w_1']
+    alpha = PARAMS['alpha_EM']
+
+    beta = beta_f(PARAMS['T_EM'])
+
+    eVals, eVecs = H_vib.eigenstates()
+    J=J_minimal
+    d_dim = len(eVals)
+    G = 0
+    for i in xrange(d_dim):
+        for j in xrange(d_dim):
+            eta = eVals[i]-eVals[j]
+            s = eVecs[i]*(eVecs[j].dag())
+            #print A.matrix_element(eVecs[i].dag(), eVecs[j])
+            s*= A.matrix_element(eVecs[i].dag(), eVecs[j])
+            s*= Gamma(eta, beta, J, alpha, w_1, imag_part=False)
+            G+=s
+    G_dag = G.dag()
+    # Initialise liouvilliian
+    L =  qt.spre(A*G) - qt.sprepost(G, A)
+    L += qt.spost(G_dag*A) - qt.sprepost(A, G_dag)
+    return -L
+
 
 def nonsecular_function(args, **kwargs):
     i, j = args[0], args[1]
@@ -51,37 +131,7 @@ def nonsecular_function(args, **kwargs):
     else:
         return zero, zero, zero, zero
 
-def secular_function(args, **kwargs):
-    i = args[0]
-    j = args[1]
-    A = kwargs['A']
-    eVecs = kwargs['eVecs']
-    eVals = kwargs['eVals']
-    T = kwargs['T_EM']
-    w_1, Gamma, J = kwargs['w_1'], kwargs['alpha_EM'], kwargs['J']
-    L = 0
-    lam_ij = A.matrix_element(eVecs[i].dag(), eVecs[j])
-    lam_ji = A.dag().matrix_element(eVecs[j].dag(), eVecs[i])
-    #lam_mn = (A.dag()).matrix_element(eVecs[n].dag(), eVecs[m])
-    lam_ij_sq = lam_ij*lam_ji
-    eps_ij = abs(eVals[i]-eVals[j])
 
-    if abs(lam_ij_sq)>0:
-        IJ = eVecs[i]*eVecs[j].dag()
-        JI = eVecs[j]*eVecs[i].dag()
-        JJ = eVecs[j]*eVecs[j].dag()
-        II = eVecs[i]*eVecs[i].dag()
-        Occ = Occupation(eps_ij, T)
-        if eps_ij == 0:
-            JN = Gamma/(2*pi*w_1*beta_f(T))
-            r_up = 2*pi*JN
-            r_down = 2*pi*JN
-            L = Qobj(lam_ij_sq*(r_up*(spre(II) + spost(II) - 2*sprepost(JI, IJ))+r_down*(spost(JJ)+ spre(JJ) - 2*sprepost(IJ,JI))))
-        else:
-            r_up = 2*pi*J(eps_ij, Gamma, w_1)*Occ
-            r_down = 2*pi*J(eps_ij, Gamma, w_1)*(Occ+1)
-            L = Qobj(lam_ij_sq*(r_up*(spre(II) + spost(II) - 2*sprepost(JI, IJ))+r_down*(spost(JJ)+ spre(JJ) - 2*sprepost(IJ,JI))))
-    return L
 
 def L_nonsecular_par(H_vib, A, args):
     Gamma, T, w_1, J, num_cpus = args['alpha_EM'], args['T_EM'], args['w_1'],args['J'], args['num_cpus']
@@ -145,7 +195,47 @@ def L_nonsecular(H_vib, A, args):
     print "It took ", time.time()-ti, " seconds to build the Non-secular RWA Liouvillian"
     return -0.25*L
 
+def L_secular(H_vib, A, args):
+    '''
+    Initially assuming that the vibronic eigenstructure has no
+    degeneracy and the secular approximation has been made
+    '''
+    ti = time.time()
+    #num_cpus = args['num_cpus']
+    dim_ham = H_vib.shape[0]
+    eVals, eVecs = H_vib.eigenstates()
+    #print [(i, ev) for i, ev in enumerate(eVals)] # Understanding manifold structure
+    #names = ['eVals', 'eVecs', 'A', 'w_1', 'Gamma', 'T', 'J']
+    T = args['T_EM']
+    w_1, Gamma, J = args['w_1'], args['alpha_EM'], args['J']
+    l = dim_ham*range(dim_ham)
+    i_j_gen = ((i,j) for i,j in zip(sorted(l), l))
+    L = 0
+    for i, j in i_j_gen:
+        lam_ij = A.matrix_element(eVecs[i].dag(), eVecs[j])
+        lam_ji = A.dag().matrix_element(eVecs[j].dag(), eVecs[i])
+        #lam_mn = (A.dag()).matrix_element(eVecs[n].dag(), eVecs[m])
+        lam_ij_sq = lam_ij*lam_ji
+        if abs(lam_ij_sq)>0:
+            eps_ij = abs(eVals[i]-eVals[j])
+            IJ = eVecs[i]*eVecs[j].dag()
+            JI = eVecs[j]*eVecs[i].dag()
+            JJ = eVecs[j]*eVecs[j].dag()
+            II = eVecs[i]*eVecs[i].dag()
+            Occ = Occupation(eps_ij, T)
+            r_up = 0
+            r_down = 0
+            if eps_ij == 0:
+                JN = Gamma/(2*pi*w_1*beta_f(T))
+                r_up = 2*pi*JN
+                r_down = 2*pi*JN
+            else:
+                r_up = 2*pi*J(eps_ij, Gamma, w_1)*Occ
+                r_down = 2*pi*J(eps_ij, Gamma, w_1)*(Occ+1)
+            L += Qobj(lam_ij_sq*(r_up*(spre(II) + spost(II) - 2*sprepost(JI, IJ))+r_down*(spost(JJ)+ spre(JJ) - 2*sprepost(IJ,JI))))
+    print "It took ", time.time()-ti, " seconds to build the secular RWA Liouvillian"
 
+    return -np.sum(L)*0.25
 
 def L_secular_par(H_vib, A, args):
     '''
@@ -239,7 +329,9 @@ def L_phenom_old(I, args):
     print "It took {} seconds to build the phenomenological Liouvillian".format(time.time()-ti)
     return L
 
+
 if __name__ == "__main__":
+    '''
     ev_to_inv_cm = 8065.5
     w_1, w_2 = 1.4*ev_to_inv_cm, 1.*ev_to_inv_cm
     eps = (w_1 + w_2)/2 # Hack to make the spectral density work
@@ -305,3 +397,4 @@ if __name__ == "__main__":
     # This is just a thermal state of the TLS-RC with respect to the electromagnetic bath only.
     print real_therm
     #print L_RC.dims == L_ns.dims, L_RC.dims == L_s.dims, L_ns.dims ==L_s.dims, L_n.dims == L_RC.dims
+    '''
