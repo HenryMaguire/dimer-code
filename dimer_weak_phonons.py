@@ -14,9 +14,6 @@ from dimer_plotting import plot_dynamics, plot_eig_dynamics, plot_coherences
 #import ctypes
 
 
-def coth(x):
-    return float(sympy.coth(x).evalf())
-
 
 def cauchyIntegrands(omega, beta, J, alpha, wc, ver):
     # J_overdamped(omega, alpha, wc)

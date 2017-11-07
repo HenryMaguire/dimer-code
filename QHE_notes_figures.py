@@ -50,7 +50,8 @@ def named_plot_creator(rho_0, L_RC, H_0, SIGMA_1, SIGMA_2, expects, PARAMS,
         PARAMS.update({'J':J_minimal})
     I = qt.enr_identity([PARAMS['N_1'],PARAMS['N_2']], PARAMS['exc'])
     print "Parameters for {} are: {}".format(plot_name, PARAMS)
-    A_EM = tensor(SIGMA_1+PARAMS['mu']*SIGMA_2, I)
+    A_EM = SIGMA_1+PARAMS['mu']*SIGMA_2
+    print A_EM.shape, H_0.shape
     opts = qt.Options(num_cpus=1, nsteps=6000)
     ''' define names for files, we'll need these in every if statement'''
     if make_new_data:
@@ -70,7 +71,7 @@ def named_plot_creator(rho_0, L_RC, H_0, SIGMA_1, SIGMA_2, expects, PARAMS,
                                                 PARAMS['N_1'], PARAMS['exc'])
         else:
             raise KeyError
-        L_full = L_RC#+L
+        L_full = L_RC+L
         # Calculate steady states if needed
         if plot_ss:
             try:
@@ -220,7 +221,7 @@ def data_maker(w_2, bias, V, T_EM, alpha_EM, alpha_1, alpha_2, N, end_time, figu
     #DATA_J = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
     #                        timelist, EM_approx='j', figure_num =  figure_num, make_new_data=make_new_data)
     #del DATA_J
-
+    """
     DATA_P = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
                                 timelist, l ='flat_', EM_approx='p', figure_num =  figure_num,
                                 make_new_data=make_new_data)
@@ -229,12 +230,12 @@ def data_maker(w_2, bias, V, T_EM, alpha_EM, alpha_1, alpha_2, N, end_time, figu
                                 timelist, EM_approx='p', figure_num =  figure_num,
                                 make_new_data=make_new_data)
 
-    #del DATA_P
+    del DATA_P
 
-    DATA_S = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
-                                timelist, l ='flat_', EM_approx='s', figure_num =  figure_num,
-                                make_new_data=make_new_data)
-    del DATA_S
+    #DATA_S = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
+    #                            timelist, l ='flat_', EM_approx='s', figure_num =  figure_num,
+    #                            make_new_data=make_new_data)
+    #del DATA_S
 
     DATA_S = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
                                 timelist, EM_approx='s', figure_num =  figure_num,
@@ -244,15 +245,16 @@ def data_maker(w_2, bias, V, T_EM, alpha_EM, alpha_1, alpha_2, N, end_time, figu
                                 timelist, EM_approx='ns', figure_num =  figure_num,
                                 make_new_data=make_new_data, plot_ss=True)
     save_params(PARAMS, figure_num, '')
-    DATA_NS = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
-                                timelist, l ='flat_', EM_approx='ns',
-                                figure_num =  figure_num, make_new_data=make_new_data, plot_ss=True)
+    #DATA_NS = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
+    #                            timelist, l ='flat_', EM_approx='ns',
+    #                            figure_num =  figure_num, make_new_data=make_new_data, plot_ss=True)
     del DATA_NS
     save_params(PARAMS, figure_num, 'flat_')
+
     DATA_nRWA = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
                                 timelist, EM_approx='nrwa', figure_num =  figure_num,
                                 make_new_data=make_new_data)
-    """
+
     return PARAMS
 
 def save_params(PARAMS, fig, l):
@@ -281,7 +283,8 @@ if __name__ == "__main__":
 
         #figure 4
         N = 2
-        PARAMS = data_maker(100., 10., 20, 10, 0., 1., 1., N, 1, 'test', 1, make_new_data=True)
+        #PARAMS = data_maker(100., 10., 20, 10, 0., 1., 1., N, 1, 'test', 1, make_new_data=True)
+        PARAMS = data_maker(100., 10., 20, 300, 1., 0., 0., N, 4, 'test', 0, make_new_data=True)
         """
         PARAMS = data_maker(100., 50., 100, 5700, 0.1, 2., 2., N, 4, '4cd', 0, make_new_data=True)
 

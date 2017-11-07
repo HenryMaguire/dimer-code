@@ -4,7 +4,7 @@ import scipy as sp
 from qutip import spre, spost, sprepost, tensor, basis
 import qutip as qt
 import pickle
-
+import sympy
 #new ptrace for ENR states.   rho is the state, sel is the same as the normal ptrace
 #(list of which subsystems you want to keep),
 #dims and excitations are the same as the ones you send to the other enr functions
@@ -179,3 +179,6 @@ def lin_construct(O):
     Od = O.dag()
     L = 2. * spre(O) * spost(Od) - spre(Od * O) - spost(Od * O)
     return L
+
+def coth(x):
+    return float(sympy.coth(x))

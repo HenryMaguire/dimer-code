@@ -15,14 +15,68 @@ from numpy import pi
 from qutip import Qobj, basis, spost, spre, sprepost, steadystate, tensor
 import qutip.parallel as par
 
-from dimer_weak_phonons import coth, cauchyIntegrands, integral_converge, Gamma
+#from dimer_weak_phonons import cauchyIntegrands, integral_converge, Gamma
 from utils import *
 import dimer_phonons as RC
 import dimer_tests as check
 
 reload(RC)
 
-def non_rwa(H_vib, A, PARAMS):
+def cauchyIntegrands(omega, beta, J, alpha, wc, ver):
+    # J_overdamped(omega, alpha, wc)
+    # Function which will be called within another function where J, beta and
+    # the eta are defined locally
+    F = 0
+    if ver == 1:
+        F = J(omega, alpha, wc)*(coth(beta*omega/2.)+1)
+    elif ver == -1:
+        F = J(omega, alpha, wc)*(coth(beta*omega/2.)-1)
+    elif ver == 0:
+        F = J(omega, alpha, wc)
+    return F
+
+def integral_converge(f, a, omega):
+    x = 30
+    I = 0
+    while abs(f(x))>0.01:
+        #print a, x
+        I += integrate.quad(f, a, x, weight='cauchy', wvar=omega)[0]
+        a+=30
+        x+=30
+    return I # Converged integral
+
+def Gamma(omega, beta, J, alpha, wc, imag_part=True):
+    G = 0
+    # Here I define the functions which "dress" the integrands so they
+    # have only 1 free parameter for Quad.
+    F_p = (lambda x: (cauchyIntegrands(x, beta, J, alpha, wc, 1)))
+    F_m = (lambda x: (cauchyIntegrands(x, beta, J, alpha, wc, -1)))
+    F_0 = (lambda x: (cauchyIntegrands(x, beta, J, alpha, wc, 0)))
+    w='cauchy'
+    if omega>0.:
+        # These bits do the Cauchy integrals too
+        G = (np.pi/2)*(coth(beta*omega/2.)-1)*J(omega,alpha, wc)
+        if imag_part:
+            G += (1j/2.)*(integral_converge(F_m, 0,omega))
+            G -= (1j/2.)*(integral_converge(F_p, 0,-omega))
+
+        #print integrate.quad(F_m, 0, n, weight='cauchy', wvar=omega), integrate.quad(F_p, 0, n, weight='cauchy', wvar=-omega)
+    elif omega==0.:
+        G = (np.pi/2)*(2*alpha/beta)
+        # The limit as omega tends to zero is zero for superohmic case?
+        if imag_part:
+            G += -(1j)*integral_converge(F_0, -1e-12,0)
+        #print (integrate.quad(F_0, -1e-12, 20, weight='cauchy', wvar=0)[0])
+    elif omega<0.:
+        G = (np.pi/2)*(coth(beta*abs(omega)/2.)+1)*J(abs(omega),alpha, wc)
+        if imag_part:
+            G += (1j/2.)*integral_converge(F_m, 0,-abs(omega))
+            G -= (1j/2.)*integral_converge(F_p, 0,abs(omega))
+        #print integrate.quad(F_m, 0, n, weight='cauchy', wvar=-abs(omega)), integrate.quad(F_p, 0, n, weight='cauchy', wvar=abs(omega))
+    return G
+
+def L_non_rwa(H_vib, SIGMA, PARAMS):
+    A = SIGMA + SIGMA.dag()
     w_1 = PARAMS['w_1']
     alpha = PARAMS['alpha_EM']
 
@@ -35,9 +89,11 @@ def non_rwa(H_vib, A, PARAMS):
     for i in xrange(d_dim):
         for j in xrange(d_dim):
             eta = eVals[i]-eVals[j]
-            s = eVecs[i]*eVecs[j].dag()
+            s = eVecs[i]*(eVecs[j].dag())
+            #print A.matrix_element(eVecs[i].dag(), eVecs[j])
             s*= A.matrix_element(eVecs[i].dag(), eVecs[j])
             s*= Gamma(eta, beta, J, alpha, w_1, imag_part=False)
+            G+=s
     G_dag = G.dag()
     # Initialise liouvilliian
     L =  qt.spre(A*G) - qt.sprepost(G, A)
