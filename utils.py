@@ -155,7 +155,8 @@ def J_underdamped(omega, alpha, Gamma, omega_0):
     return alpha*Gamma*pow(omega_0,2)*omega/(pow(pow(omega_0,2)-pow(omega,2),2)+(Gamma**2 *omega**2))
 
 def J_overdamped(omega, alpha, wc):
-    return alpha*wc*omega/(omega**2 +wc**2)
+    return alpha*wc*float(omega)/(omega**2 +wc**2)
+
 def J_OD_to_UD(omega, gamma, Omega, kappa):
     # kappa is  referred to as lambda
     # in J. Chem. Phys. 144, 044110 (2016)

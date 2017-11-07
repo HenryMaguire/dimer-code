@@ -7,70 +7,79 @@ import qutip as qt
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import integrate
+from utils import *
+import sympy
+import dimer_tests as check
+from dimer_plotting import plot_dynamics, plot_eig_dynamics, plot_coherences
 #import ctypes
 
 
 def coth(x):
-    return (np.exp(2*x)+1)/(np.exp(2*x)-1)
+    return float(sympy.coth(x).evalf())
+
 
 def cauchyIntegrands(omega, beta, J, alpha, wc, ver):
-    # Function which will be called within another function where J, beta and the eta are defined locally
+    # J_overdamped(omega, alpha, wc)
+    # Function which will be called within another function where J, beta and
+    # the eta are defined locally
     F = 0
     if ver == 1:
-        F = J(omega)*(coth(beta*omega/2.)+1)
+        F = J(omega, alpha, wc)*(coth(beta*omega/2.)+1)
     elif ver == -1:
-        F = J(omega)*(coth(beta*omega/2.)-1)
+        F = J(omega, alpha, wc)*(coth(beta*omega/2.)-1)
     elif ver == 0:
-        F = J(omega)
+        F = J(omega, alpha, wc)
     return F
 
-def Gamma(omega, beta, J, alpha, wc):
+def integral_converge(f, a, omega):
+    x = 30
+    I = 0
+    while abs(f(x))>0.01:
+        #print a, x
+        I += integrate.quad(f, a, x, weight='cauchy', wvar=omega)[0]
+        a+=30
+        x+=30
+    return I # Converged integral
+
+def Gamma(omega, beta, J, alpha, wc, imag_part=True):
     G = 0
-    # Here I define the functions which "dress" the integrands so they have only 1 free parameter for Quad.
+    # Here I define the functions which "dress" the integrands so they
+    # have only 1 free parameter for Quad.
     F_p = (lambda x: (cauchyIntegrands(x, beta, J, alpha, wc, 1)))
     F_m = (lambda x: (cauchyIntegrands(x, beta, J, alpha, wc, -1)))
     F_0 = (lambda x: (cauchyIntegrands(x, beta, J, alpha, wc, 0)))
-    n = 21
-    print "Cauchy int. convergence checks: ", F_0(4*n), F_m(4*n), F_p(4*n)
     w='cauchy'
     if omega>0.:
+        print "greater than"
         # These bits do the Cauchy integrals too
-        G = (np.pi/2)*(coth(beta*omega/2.)-1)*J(omega)
+        G = (np.pi/2)*(coth(beta*omega/2.)-1)*J(omega,alpha, wc)
+        if imag_part:
+            G += (1j/2.)*(integral_converge(F_m, 0,omega))
+            G -= (1j/2.)*(integral_converge(F_p, 0,-omega))
 
-        G += (1j/2.)*(integrate.quad(F_m, 0, n, weight=w, wvar=omega)[0]
-                    +integrate.quad(F_m, n, 2*n, weight=w, wvar=omega)[0]
-                    +integrate.quad(F_m, 2*n, 3*n, weight=w, wvar=omega)[0]
-                    +integrate.quad(F_m, 3*n, 4*n, weight=w, wvar=omega)[0]
-                    - integrate.quad(F_p, 0, n, weight=w, wvar=-omega)[0]
-                    -integrate.quad(F_p, n, 2*n, weight=w, wvar=-omega)[0]
-                    -integrate.quad(F_p, 2*n, 3*n, weight=w, wvar=-omega)[0]
-                    -integrate.quad(F_p, 3*n, 4*n, weight=w, wvar=-omega)[0])
         #print integrate.quad(F_m, 0, n, weight='cauchy', wvar=omega), integrate.quad(F_p, 0, n, weight='cauchy', wvar=-omega)
     elif omega==0.:
-        G = (np.pi/2)*(2*)
+        print "equal"
+        G = (np.pi/2)*(2*alpha/beta)
         # The limit as omega tends to zero is zero for superohmic case?
-        G = -(1j)*(integrate.quad(F_0, -1e-12, n, weight=w, wvar=0)[0]
-                    +integrate.quad(F_0, n, 2*n, weight=w, wvar=0)[0]
-                    +integrate.quad(F_0, 2*n, 3*n, weight=w, wvar=0)[0]
-                    +integrate.quad(F_0, 3*n, 4*n, weight=w, wvar=0)[0])
+        if imag_part:
+            G += -(1j)*integral_converge(F_0, -1e-12,0)
         #print (integrate.quad(F_0, -1e-12, 20, weight='cauchy', wvar=0)[0])
     elif omega<0.:
-        G = (np.pi/2)*(coth(beta*abs(omega)/2.)+1)*J(abs(omega))
-        G += (1j/2.)*(integrate.quad(F_m, 0, n, weight=w, wvar=-abs(omega))[0]
-                    +integrate.quad(F_m, n, 2*n, weight=w, wvar=-abs(omega))[0]
-                    +integrate.quad(F_m, 2*n, 3*n, weight=w, wvar=-abs(omega))[0]
-                    +integrate.quad(F_m, 3*n, 4*n, weight=w, wvar=-abs(omega))[0]
-                    - integrate.quad(F_p, 0, n, weight=w, wvar=abs(omega))[0]
-                    -integrate.quad(F_p, n, 2*n, weight=w, wvar=abs(omega))[0]
-                    -integrate.quad(F_p, 2*n, 3*n, weight=w, wvar=abs(omega))[0]
-                    -integrate.quad(F_p, 3*n, 4*n, weight=w, wvar=abs(omega))[0])
+        print "less than"
+        G = (np.pi/2)*(coth(beta*abs(omega)/2.)+1)*J(abs(omega),alpha, wc)
+        if imag_part:
+            G += (1j/2.)*integral_converge(F_m, 0,-abs(omega))
+            G -= (1j/2.)*integral_converge(F_p, 0,abs(omega))
         #print integrate.quad(F_m, 0, n, weight='cauchy', wvar=-abs(omega)), integrate.quad(F_p, 0, n, weight='cauchy', wvar=abs(omega))
     return G
 
 
 
-def liouvillian(PARAMS):
-
+def L_weak_phonon(PARAMS):
+    w_1 = PARAMS['w_1']
+    w_2 = PARAMS['w_2']
+    w_xx = PARAMS['w_xx']
     OO = basis(4,0)
 
     eps = PARAMS['bias']
@@ -78,31 +87,33 @@ def liouvillian(PARAMS):
     alpha_1 = PARAMS['alpha_1']
     alpha_2 = PARAMS['alpha_2']
     wc = PARAMS['wc']
-    H_dim = w_1*XO*XO.dag() + w_2*OX*OX.dag() + w_xx*XX*XX.dag() + V*(XO*OX.dag() + OX*XO.dag())
+
     energies, states = check.exciton_states(PARAMS)
     psi_m = states[0]
     psi_p = states[1]
-    print energies[1]-energies[0], np.sqrt(eps**2 + V**2)
-    eta = energies[1]-energies[0]
-    L = 0 # Initialise liouvilliian
-    Z = 0 # initialise operator Z
+    eta = np.sqrt(eps**2 + 4*V**2)
+
     beta_1 = beta_f(PARAMS['T_1'])
     beta_2 = beta_f(PARAMS['T_2'])
     MM = psi_m*psi_m.dag()
     PP =psi_p*psi_p.dag()
     MP = psi_m*psi_p.dag()
     PM = psi_p*psi_m.dag()
-    XX_proj = XX*XX.dag()
+    XX_proj = basis(4,3)*basis(4,3).dag()
     J=J_overdamped
-    site_1 = 0.5*((eta-eps)*MM + (eta+eps)*PP)/eta +(V/eta)*(PM + MP)
-    site_2 = 0.5*((eta+eps)*MM + (eta-eps)*PP)/eta -(V/eta)*(PM + MP)
-    Z_1 = 0.5*Gamma(0, beta_1, J, alpha_1, wc)*((eta-eps)*MM + (eta+eps)*PP)/eta
-    Z_1 += (V/eta)*(Gamma(eta, beta_1, J, alpha_1, wc)*PM+Gamma(-eta, beta_1, J, alpha_1, wc)*MP)
 
-    Z_2 = 0.5*Gamma(0, beta_1, J, alpha_2, wc)*((eta+eps)*MM + (eta-eps)*PP)/eta
-    Z_2 -= (V/eta)*(Gamma(eta, beta_1, J, alpha_2, wc)*PM+Gamma(-eta, beta_1, J, alpha_2, wc)*MP)
+    site_1 = (0.5*((eta-eps)*MM + (eta+eps)*PP) +V*(PM + MP))/eta
+    Z_1 = (Gamma(0, beta_1, J, alpha_1, wc)*((eta-eps)*MM + (eta+eps)*PP))/(2.*eta)
+    Z_1 += (V/eta)*Gamma(eta, beta_1, J, alpha_1, wc)*PM
+    Z_1 += (V/eta)*Gamma(-eta, beta_1, J, alpha_1, wc)*MP
 
-    L +=  qt.spre(site_1*Z_1) - qt.sprepost(Z_1, site_1)
+    site_2 = (0.5*((eta+eps)*MM + (eta-eps)*PP) -V*(PM + MP))/eta
+    Z_2 = (Gamma(0, beta_2, J, alpha_2, wc)*((eta+eps)*MM + (eta-eps)*PP))/(2.*eta)
+    Z_2 -= (V/eta)*Gamma(eta, beta_2, J, alpha_2, wc)*PM
+    Z_2 -= (V/eta)*Gamma(-eta, beta_2, J, alpha_2, wc)*MP
+    print site_1 + site_2
+    # Initialise liouvilliian
+    L =  qt.spre(site_1*Z_1) - qt.sprepost(Z_1, site_1)
     L += qt.spost(Z_1.dag()*site_1) - qt.sprepost(site_1, Z_1.dag())
     L +=  qt.spre(site_2*Z_2) - qt.sprepost(Z_2, site_2)
     L += qt.spost(Z_2.dag()*site_2) - qt.sprepost(site_2, Z_2.dag())
@@ -112,61 +123,54 @@ def liouvillian(PARAMS):
     L+=L_xx
     return -L
 
-"""
-plt.figure()
-omega= np.linspace(0,50, 1000)
-plt.plot(omega,J_superohm(omega))
-plt.title("Spectral density")
-"""
-"""
-epsilon = 1.
-delta = 2*np.pi #*10**(-12)
-T = 10.
+def get_dynamics(w_2=100., bias=10., V=10., alpha_1=1., alpha_2=1., end_time=1):
+    from qutip import basis
+    OO = basis(4,0)
+    XO = basis(4,1)
+    OX = basis(4,2)
+    XX = basis(4,3)
+    OO_p = OO*OO.dag()
+    XO_p = XO*XO.dag()
+    OX_p = OX*OX.dag()
+    XX_p = XX*XX.dag()
+    site_coherence = OX*XO.dag()
+    w_1 = w_2 + bias
+    dipole_1, dipole_2 = 1., 1.
+    mu = w_2*dipole_2/(w_1*dipole_1)
 
-L = liouvillian(epsilon, delta, J_overdamped, T)
+    T_1, T_2 = 300., 300. # Phonon bath temperature
 
-H = qt.Qobj([[-epsilon/2., delta/2.],[delta/2., epsilon/2.]])
+    wc = 1*53.08 # Ind.-Boson frame phonon cutoff freq
+    w0_2, w0_1 = 500., 500. # underdamped SD parameter omega_0
+    w_xx = w_2 + w_1
 
+    J = J_minimal
 
-rho = qt.fock_dm(2,1)
-timelist = np.linspace(0.,16., 10000)
-expect_list = [qt.fock_dm(2,0), qt.fock_dm(2,1)]
-DATA = qt.mesolve(H, rho, timelist, [L], expect_list)
-DATA_A = (open("Data/pop5d2pi.dat").read()).split('\n')
-pop_A, time_A = [], []
-for item in DATA_A:
-    li = item.split('\t')
-    time_A.append(float(li[0]))
-    pop_A.append(float(li[1]))
+    PARAM_names = ['w_1', 'w_2', 'V', 'bias', 'w_xx', 'T_1', 'T_2', 'wc',
+                    'w0_1', 'w0_2', 'alpha_1', 'alpha_2', 'J', 'dipole_1','dipole_2']
 
-plt.figure()
-plt.plot(timelist, DATA.expect[1], label='H')
-plt.plot(time_A, pop_A, label="Ahsan's data")
-plt.legend()
+    scope = locals() # Lets eval below use local variables, not global
+    PARAMS = dict((name, eval(name, scope)) for name in PARAM_names)
+    L = L_weak_phonon(PARAMS)
+    H_dim = w_1*XO_p + w_2*OX_p + w_xx*XX_p + V*(site_coherence + site_coherence.dag())
+    energies, states = check.exciton_states(PARAMS)
+    N_en, N_st = H_dim.eigenstates()
+    bright = states[1]*states[1].dag()
+    dark = states[0]*states[0].dag()
+    exciton_coherence = states[0]*states[1].dag()
+    ops = [OO_p, XO_p, OX_p, XX_p]
+    # Expectation values and time increments needed to calculate the dynamics
+    expects = ops + [dark, bright, exciton_coherence, site_coherence]
+    opts = qt.Options(num_cpus=1, nsteps=6000)
+    timelist = np.linspace(0,end_time,4000*end_time)
+    DATA = qt.mesolve(H_dim, XO_p, timelist, [L], e_ops=expects, progress_bar=True, options=opts)
+    fig = plt.figure(figsize=(12,8))
+    plot_dynamics(DATA, timelist, expects, fig.add_subplot(211), title='', ss_dm = False)
+    plot_coherences(DATA, timelist, expects, fig.add_subplot(212), title='', ss_dm = False)
+    plt.savefig("weak_coupling_text.pdf")
+    return DATA
 
-"""
-"""
-fo = open("WCSB_0p025.dat", "w")
-fo.write("% Parameters: \n alpha=0.025, omega_c=2.2, T=10, delta = pi, epsilon=1% \n")
-for item in DATA.expect[1]:
-    fo.write(item)
-"""
-#fo.write(DATA.expect[1])
-#fo.write("\n")
-#fo.write(timelist)
+if __name__ == "__main__":
 
-#DATA_J = qt.mesolve(H, rho, timelist, [L_Jake], expect_list)
-#plt.plot(timelist, DATA.expect[0])
-
-
-
-#plt.plot(timelist, DATA_J.expect[1], label='J')
-#plt.ylim(0,1)
-#print liuo(100, 10, J, T=10.).eigenenergies()
-#plt.legend()
-#plt.hold()
-
-
-
-
-#plt.show()
+    # w_2, bias, V, T_EM, alpha_EM, alpha_1, alpha_2, end_time
+    DATA = get_dynamics(w_2=100., bias=10., V=20., alpha_1=1., alpha_2=1., end_time=1)

@@ -15,11 +15,35 @@ from numpy import pi
 from qutip import Qobj, basis, spost, spre, sprepost, steadystate, tensor
 import qutip.parallel as par
 
+from dimer_weak_phonons import coth, cauchyIntegrands, integral_converge, Gamma
 from utils import *
 import dimer_phonons as RC
 import dimer_tests as check
 
 reload(RC)
+
+def non_rwa(H_vib, A, PARAMS):
+    w_1 = PARAMS['w_1']
+    alpha = PARAMS['alpha_EM']
+
+    beta = beta_f(PARAMS['T_EM'])
+
+    eVals, eVecs = H_vib.eigenstates()
+    J=J_minimal
+    d_dim = len(eVals)
+    G = 0
+    for i in xrange(d_dim):
+        for j in xrange(d_dim):
+            eta = eVals[i]-eVals[j]
+            s = eVecs[i]*eVecs[j].dag()
+            s*= A.matrix_element(eVecs[i].dag(), eVecs[j])
+            s*= Gamma(eta, beta, J, alpha, w_1, imag_part=False)
+    G_dag = G.dag()
+    # Initialise liouvilliian
+    L =  qt.spre(A*G) - qt.sprepost(G, A)
+    L += qt.spost(G_dag*A) - qt.sprepost(A, G_dag)
+    return -L
+
 
 def nonsecular_function(args, **kwargs):
     i, j = args[0], args[1]
@@ -249,7 +273,9 @@ def L_phenom_old(I, args):
     print "It took {} seconds to build the phenomenological Liouvillian".format(time.time()-ti)
     return L
 
+
 if __name__ == "__main__":
+    '''
     ev_to_inv_cm = 8065.5
     w_1, w_2 = 1.4*ev_to_inv_cm, 1.*ev_to_inv_cm
     eps = (w_1 + w_2)/2 # Hack to make the spectral density work
@@ -315,3 +341,4 @@ if __name__ == "__main__":
     # This is just a thermal state of the TLS-RC with respect to the electromagnetic bath only.
     print real_therm
     #print L_RC.dims == L_ns.dims, L_RC.dims == L_s.dims, L_ns.dims ==L_s.dims, L_n.dims == L_RC.dims
+    '''

@@ -1,9 +1,19 @@
 Traceback (most recent call last):
-  File "QHE_notes_figures.py", line 349, in <module>
-    vis.plot_bias_dependence(ax, dark_states, biases, PARAMS)
-  File "/home/henry/Work/phd-work/vibronic-dimer/dimer_plotting.py", line 74, in plot_bias_dependence
-    in zip(p_data, observables)])
-  File "/home/henry/anaconda2/envs/qutip/lib/python2.7/site-packages/qutip/qobj.py", line 509, in __mul__
-    raise TypeError("Incompatible Qobj shapes")
-TypeError: Incompatible Qobj shapes
+  File "/home/henry/Work/phd-work/vibronic-dimer/QHE_notes_figures.py", line 279, in <module>
+    PARAMS = data_maker(100., 10., 20, 10, 0., 1., 1., N, 1, 'test', 1, make_new_data=True)
+  File "/home/henry/Work/phd-work/vibronic-dimer/QHE_notes_figures.py", line 224, in data_maker
+    make_new_data=make_new_data)
+  File "/home/henry/Work/phd-work/vibronic-dimer/QHE_notes_figures.py", line 88, in named_plot_creator
+    DATA = qt.mesolve(H_0, rho_0, timelist, [L_full], e_ops=expects, progress_bar=True, options=opts)
+  File "/home/henry/anaconda2/envs/qutip/lib/python2.7/site-packages/qutip/mesolve.py", line 284, in mesolve
+    progress_bar)
+  File "/home/henry/anaconda2/envs/qutip/lib/python2.7/site-packages/qutip/mesolve.py", line 790, in _mesolve_const
+    return _generic_ode_solve(r, rho0, tlist, e_ops, opt, progress_bar)
+  File "/home/henry/anaconda2/envs/qutip/lib/python2.7/site-packages/qutip/mesolve.py", line 1023, in _generic_ode_solve
+    r.integrate(r.t + dt[t_idx])
+  File "/home/henry/anaconda2/envs/qutip/lib/python2.7/site-packages/scipy/integrate/_ode.py", line 408, in integrate
+    self.f_params, self.jac_params)
+  File "/home/henry/anaconda2/envs/qutip/lib/python2.7/site-packages/scipy/integrate/_ode.py", line 865, in run
+    y1, t, istate = self.runner(*args)
+KeyboardInterrupt
 

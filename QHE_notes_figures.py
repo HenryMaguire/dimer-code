@@ -27,10 +27,18 @@ reload(check)
 
 
 
-def named_plot_creator(rho_0, L_RC, H_0, SIGMA_1, SIGMA_2, expects, PARAMS, timelist, EM_approx='s', figure_num = '2', l ='', make_new_data=False, plot_ss=False):
+def named_plot_creator(rho_0, L_RC, H_0, SIGMA_1, SIGMA_2, expects, PARAMS,
+                        timelist, EM_approx='s', figure_num = '2', l ='',
+                        make_new_data=False, plot_ss=False):
     ss_dm = 0
     L=0
-    data_dir = "DATA/QHE_notes_fig{}/N{}_exc{}".format(figure_num, PARAMS['N_1'], PARAMS['exc'])
+    data_subpath = "DATA/QHE_notes_fig{}".format(figure_num)
+    data_dir = data_subpath+"/N{}_exc{}".format(PARAMS['N_1'], PARAMS['exc'])
+    if not os.path.exists(data_dir):
+        os.makedirs(data_dir)
+        if not os.path.exists(data_subpath):
+            os.makedirs(data_subpath)
+
     data_name = data_dir+"/{}_{}data".format(EM_approx, l)
     plot_name = data_dir+"/{}_{}dynamics2.pdf".format(EM_approx, l)
     if l == 'flat_':
@@ -48,10 +56,12 @@ def named_plot_creator(rho_0, L_RC, H_0, SIGMA_1, SIGMA_2, expects, PARAMS, time
     if make_new_data:
         if EM_approx=='ns':
             L = EM.L_nonsecular_par(H_0, A_EM, PARAMS)
+        if EM_approx=='nrwa':
+            L = EM.L_non_rwa(H_0, A_EM, PARAMS)
         elif EM_approx=='s':
             L = EM.L_secular_par(H_0, A_EM, PARAMS)
         elif EM_approx=='p':
-            plot_ss = True
+            plot_ss = False
             L = EM.L_phenom(I, PARAMS)
         elif EM_approx =='j':
             energies, states = check.exciton_states(PARAMS)
@@ -60,7 +70,7 @@ def named_plot_creator(rho_0, L_RC, H_0, SIGMA_1, SIGMA_2, expects, PARAMS, time
                                                 PARAMS['N_1'], PARAMS['exc'])
         else:
             raise KeyError
-        L_full = L_RC+L
+        L_full = L_RC#+L
         # Calculate steady states if needed
         if plot_ss:
             try:
@@ -78,15 +88,14 @@ def named_plot_creator(rho_0, L_RC, H_0, SIGMA_1, SIGMA_2, expects, PARAMS, time
 
         try:
             DATA = qt.mesolve(H_0, rho_0, timelist, [L_full], e_ops=expects, progress_bar=True, options=opts)
-            if not os.path.exists(data_dir):
-                os.makedirs(data_dir)
+
             save_obj(DATA, data_name)
 
             fig = plt.figure(figsize=(10,8))
             ax1 = fig.add_subplot(211)
             title = 'Eigenstate dynamics'
             #title = title + r"$\omega_0=$""%i"r"$cm^{-1}$, $\alpha_{ph}=$""%f"r"$cm^{-1}$, $T_{EM}=$""%i K" %(w0_1, alpha_1, T_EM)
-            vis.plot_eig_dynamics(DATA, timelist, expects, ax1, ss_dm=ss_dm)
+            vis.plot_dynamics(DATA, timelist, expects, ax1, ss_dm=ss_dm)
             ax2 = fig.add_subplot(212)
             vis.plot_coherences(DATA, timelist, expects, ax2, ss_dm=ss_dm)
 
@@ -103,13 +112,14 @@ def named_plot_creator(rho_0, L_RC, H_0, SIGMA_1, SIGMA_2, expects, PARAMS, time
             ax1 = fig.add_subplot(211)
             title = 'Eigenstate dynamics'
             #title = title + r"$\omega_0=$""%i"r"$cm^{-1}$, $\alpha_{ph}=$""%f"r"$cm^{-1}$, $T_{EM}=$""%i K" %(w0_1, alpha_1, T_EM)
-            vis.plot_eig_dynamics(DATA, timelist, expects, ax1, ss_dm=ss_dm)
+            vis.plot_dynamics(DATA, timelist, expects, ax1, ss_dm=ss_dm)
             ax2 = fig.add_subplot(212)
             vis.plot_coherences(DATA, timelist, expects, ax2, ss_dm=ss_dm)
             print "plot saved at: {}".format(plot_name)
         except Exception as err:
             DATA = None
             print 'Could not plot the data because:\n {}'.format(err)
+    """
     J_DATA = load_obj("DATA/QHE_notes_fig{}/N{}_exc{}/p_flat_data".format(figure_num, PARAMS['N_1'], PARAMS['exc']))
     J_ss= load_obj("DATA/QHE_notes_fig{}/N{}_exc{}/ss_p_flat_data".format(figure_num, PARAMS['N_1'], PARAMS['exc']))
     ax1.plot(timelist, J_DATA.expect[0], linestyle='--')
@@ -121,6 +131,7 @@ def named_plot_creator(rho_0, L_RC, H_0, SIGMA_1, SIGMA_2, expects, PARAMS, time
     ax1.plot(timelist, J_DATA.expect[3], linestyle='--')
     ax2.plot(timelist, J_DATA.expect[6].real, linestyle='--')
     ax2.plot(timelist, J_DATA.expect[6].imag, linestyle='--')
+    """
     plt.savefig(plot_name)
     plt.close()
     return ss_dm, DATA
@@ -213,6 +224,7 @@ def data_maker(w_2, bias, V, T_EM, alpha_EM, alpha_1, alpha_2, N, end_time, figu
     DATA_P = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
                                 timelist, l ='flat_', EM_approx='p', figure_num =  figure_num,
                                 make_new_data=make_new_data)
+    """
     DATA_P = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
                                 timelist, EM_approx='p', figure_num =  figure_num,
                                 make_new_data=make_new_data)
@@ -237,7 +249,10 @@ def data_maker(w_2, bias, V, T_EM, alpha_EM, alpha_1, alpha_2, N, end_time, figu
                                 figure_num =  figure_num, make_new_data=make_new_data, plot_ss=True)
     del DATA_NS
     save_params(PARAMS, figure_num, 'flat_')
-
+    DATA_nRWA = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
+                                timelist, EM_approx='nrwa', figure_num =  figure_num,
+                                make_new_data=make_new_data)
+    """
     return PARAMS
 
 def save_params(PARAMS, fig, l):
@@ -262,12 +277,13 @@ if __name__ == "__main__":
         #figure 2
 
         #PARAMS =  data_maker(100., 0., 20, 50, 1., 0., 0., 2, 1, '2a', 1,  make_new_data=True)
-        PARAMS = data_maker(100., 20., 20, 50, 1., 0., 0., 2, 3, '2b', 1, make_new_data=True)
-        """
+        #PARAMS = data_maker(100., 20., 20, 50, 1., 0., 0., 2, 3, '2b', 1, make_new_data=True)
+
         #figure 4
-        N = 3
-        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 2., 2., N, 1, '4ab', 0, make_new_data=True)
-        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 2., 2., N, 4, '4cd', 0, make_new_data=True)
+        N = 2
+        PARAMS = data_maker(100., 10., 20, 10, 0., 1., 1., N, 1, 'test', 1, make_new_data=True)
+        """
+        PARAMS = data_maker(100., 50., 100, 5700, 0.1, 2., 2., N, 4, '4cd', 0, make_new_data=True)
 
         #figure 5
 
