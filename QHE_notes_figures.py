@@ -30,8 +30,6 @@ reload(check)
 def named_plot_creator(rho_0, L_RC, H_0, SIGMA_1, SIGMA_2, expects, PARAMS,
                         timelist, EM_approx='s', figure_num = '2', l ='',
                         make_new_data=False, plot_ss=False):
-    ss_dm = 0
-    L=0
     data_subpath = "DATA/QHE_notes_fig{}".format(figure_num)
     data_dir = data_subpath+"/N{}_exc{}".format(PARAMS['N_1'], PARAMS['exc'])
     if not os.path.exists(data_dir):
@@ -53,11 +51,12 @@ def named_plot_creator(rho_0, L_RC, H_0, SIGMA_1, SIGMA_2, expects, PARAMS,
     A_EM = SIGMA_1+PARAMS['mu']*SIGMA_2
     print A_EM.shape, H_0.shape
     opts = qt.Options(num_cpus=1, nsteps=6000)
-    ''' define names for files, we'll need these in every if statement'''
+    ss_dm = 0
+    L=0
     if make_new_data:
         if EM_approx=='ns':
             L = EM.L_nonsecular_par(H_0, A_EM, PARAMS)
-        if EM_approx=='nrwa':
+        elif EM_approx=='nrwa':
             L = EM.L_non_rwa(H_0, A_EM, PARAMS)
         elif EM_approx=='s':
             L = EM.L_secular_par(H_0, A_EM, PARAMS)
@@ -70,6 +69,7 @@ def named_plot_creator(rho_0, L_RC, H_0, SIGMA_1, SIGMA_2, expects, PARAMS,
                                                 PARAMS['V'], PARAMS['mu'], PARAMS['alpha_EM'], PARAMS['T_EM'], PARAMS['J'],
                                                 PARAMS['N_1'], PARAMS['exc'])
         else:
+            print "EM approximation must be either s, ns, nrwa, p or j."
             raise KeyError
         L_full = L_RC+L
         # Calculate steady states if needed
@@ -113,7 +113,7 @@ def named_plot_creator(rho_0, L_RC, H_0, SIGMA_1, SIGMA_2, expects, PARAMS,
             ax1 = fig.add_subplot(211)
             title = 'Eigenstate dynamics'
             #title = title + r"$\omega_0=$""%i"r"$cm^{-1}$, $\alpha_{ph}=$""%f"r"$cm^{-1}$, $T_{EM}=$""%i K" %(w0_1, alpha_1, T_EM)
-            vis.plot_dynamics(DATA, timelist, expects, ax1, ss_dm=ss_dm)
+            vis.plot_eig_dynamics(DATA, timelist, expects, ax1, ss_dm=ss_dm)
             ax2 = fig.add_subplot(212)
             vis.plot_coherences(DATA, timelist, expects, ax2, ss_dm=ss_dm)
             print "plot saved at: {}".format(plot_name)
@@ -243,8 +243,8 @@ def data_maker(w_2, bias, V, T_EM, alpha_EM, alpha_1, alpha_2, N, end_time, figu
     del DATA_S
     DATA_NS = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
                                 timelist, EM_approx='ns', figure_num =  figure_num,
-                                make_new_data=make_new_data, plot_ss=True)
-    save_params(PARAMS, figure_num, '')
+                                make_new_data=make_new_data, plot_ss=False)
+    #save_params(PARAMS, figure_num, '')
     #DATA_NS = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
     #                            timelist, l ='flat_', EM_approx='ns',
     #                            figure_num =  figure_num, make_new_data=make_new_data, plot_ss=True)
@@ -278,23 +278,22 @@ if __name__ == "__main__":
         # Plot batch 1: flat spectrum, fully converged, overlay jake's data on the top
         #figure 2
 
-        #PARAMS =  data_maker(100., 0., 20, 50, 1., 0., 0., 2, 1, '2a', 1,  make_new_data=True)
-        #PARAMS = data_maker(100., 20., 20, 50, 1., 0., 0., 2, 3, '2b', 1, make_new_data=True)
+        PARAMS =  data_maker(100., 0., 20, 50, 1., 0., 0., 2, 1, '2a', 1,  make_new_data=True)
+        PARAMS = data_maker(100., 20., 20, 50, 1., 0., 0., 2, 3, '2b', 1, make_new_data=True)
 
         #figure 4
-        N = 2
+        N = 4
         #PARAMS = data_maker(100., 10., 20, 10, 0., 1., 1., N, 1, 'test', 1, make_new_data=True)
-        PARAMS = data_maker(100., 10., 20, 300, 1., 0., 0., N, 4, 'test', 0, make_new_data=True)
-        """
-        PARAMS = data_maker(100., 50., 100, 5700, 0.1, 2., 2., N, 4, '4cd', 0, make_new_data=True)
+        #PARAMS = data_maker(1000., 10., 20, 600, 1., 20., 20., N, 1, 'test', 0, make_new_data=True)
+        PARAMS = data_maker(1500., 0., 100, 5700, 0.1, 2., 2., N, 1, '4ab', 0, make_new_data=True)
+        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 2., 2., N, 4, '4cd', 0, make_new_data=True)
 
         #figure 5
 
-        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100/pi, 100/pi, N, 1, '5ab-p', 0, make_new_data=True)
-        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100/pi, 100/pi, N, 4, '5cd-p', 0, make_new_data=True)
+        #PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100/pi, 100/pi, N, 1, '5ab-p', 0, make_new_data=True)
+        #PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100/pi, 100/pi, N, 4, '5cd-p', 0, make_new_data=True)
         PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100, 100, N, 1, '5ab', 0, make_new_data=True)
         PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100, 100, N, 4, '5cd', 0, make_new_data=True)
-        """
     except:
         var = traceback.format_exc()
         print var

@@ -98,9 +98,9 @@ def plot_bias_dependence(ax, observables, biases, PARAMS, x_label='',
 
 
 def plot_dynamics(DATA, timelist, exp_ops, ax, title='', ss_dm = False):
-    labels = [r'Ground', r'Site 1', r'Site 2', r'Biexciton']
+    labels = [r'Site 1', r'Site 2', r'Biexciton']
     colors = [i['color'] for i in list(plt.rcParams['axes.prop_cycle'])][0:4]
-    info = zip([0,1,2,3], labels, colors) # expval id, etc., etc.
+    info = zip([1,2,3], labels, colors) # expval id, etc., etc.
     linewidth = 1.5
     linestyle = '-'
     for i, l, c in info:

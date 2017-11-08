@@ -100,6 +100,50 @@ def L_non_rwa(H_vib, SIGMA, PARAMS):
     L += qt.spost(G_dag*A) - qt.sprepost(A, G_dag)
     return -L
 
+def secular_function(args, **kwargs):
+    i, j = args[0], args[1]
+    A = kwargs['A']
+    eVecs = kwargs['eVecs']
+    eVals = kwargs['eVals']
+    T = kwargs['T_EM']
+    w_1, Gamma, J = kwargs['w_1'], kwargs['alpha_EM'], kwargs['J']
+
+    L = 0
+    lam_ij = A.matrix_element(eVecs[i].dag(), eVecs[j])
+    lam_ji = A.dag().matrix_element(eVecs[j].dag(), eVecs[i])
+    #lam_mn = (A.dag()).matrix_element(eVecs[n].dag(), eVecs[m])
+    lam_ij_sq = lam_ij*lam_ji
+    eps_ij = abs(eVals[i]-eVals[j])
+
+    if abs(lam_ij_sq)>0:
+        IJ = eVecs[i]*eVecs[j].dag()
+        JI = eVecs[j]*eVecs[i].dag()
+        JJ = eVecs[j]*eVecs[j].dag()
+        II = eVecs[i]*eVecs[i].dag()
+
+        Occ = Occupation(eps_ij, T)
+        r_up = 0
+        r_down = 0
+        if eps_ij == 0:
+            #print "EPS_{}{} =0".format(i, j)
+            # THis can't be the error
+            JN = Gamma/(2*pi*w_1*beta_f(T))
+            r_up = 2*pi*JN
+            r_down = 2*pi*JN
+        else:
+            #print "EPS_ij={}, w_1={}, Gamma={}".format(eps_ij,  w_1, Gamma)
+            r_up = 2*pi*J(eps_ij, Gamma, w_1)*Occ
+            r_down = 2*pi*J(eps_ij, Gamma, w_1)*(Occ+1)
+
+        #T1 = r_up*spre(II)+r_down*spre(JJ)
+        #T2 = r_up.conjugate()*spost(II)+r_down.conjugate()*spost(JJ)
+        #T3 = r_up*sprepost(JI, IJ)+r_down*sprepost(IJ,JI)
+        #L = lam_ij_sq*((T1 + T2) - T3)
+        #print i,j, 0.5*lam_ij_sq*r_up, 0.5*lam_ij_sq*r_down
+        s1 = r_up*(spre(II) + spost(II) - 2*sprepost(JI, IJ))
+        s2 = r_down*(spost(JJ)+ spre(JJ) - 2*sprepost(IJ,JI))
+        L = lam_ij_sq*(s1+s2)
+    return Qobj(L)
 
 def nonsecular_function(args, **kwargs):
     i, j = args[0], args[1]
