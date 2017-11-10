@@ -274,27 +274,54 @@ def save_params(PARAMS, fig, l):
 if __name__ == "__main__":
 
     # (w_2, bias, V, T_EM, alpha_EM, alpha_1, alpha_2, N, end_time, figure_num)
-    try:
-        # Plot batch 1: flat spectrum, fully converged, overlay jake's data on the top
-        #figure 2
+    if False:
+        try:
+            # Plot batch 1: flat spectrum, fully converged, overlay jake's data on the top
+            #figure 2
 
-        #PARAMS =  data_maker(100., 0., 20, 50, 1., 0., 0., 2, 1, '2a', 1,  make_new_data=True)
-        #PARAMS = data_maker(100., 20., 20, 50, 1., 0., 0., 2, 3, '2b', 1, make_new_data=True)
+            #PARAMS =  data_maker(100., 0., 20, 50, 1., 0., 0., 2, 1, '2a', 1,  make_new_data=True)
+            #PARAMS = data_maker(100., 20., 20, 50, 1., 0., 0., 2, 3, '2b', 1, make_new_data=True)
 
-        #figure 4
-        N = 2
-        #PARAMS = data_maker(100., 10., 20, 10, 0., 1., 1., N, 1, 'test', 1, make_new_data=True)
-        PARAMS = data_maker(100., 10., 20, 300, 1., 0., 0., N, 4, 'test', 0, make_new_data=True)
-        """
-        PARAMS = data_maker(100., 50., 100, 5700, 0.1, 2., 2., N, 4, '4cd', 0, make_new_data=True)
+            #figure 4
+            N = 2
+            #PARAMS = data_maker(100., 10., 20, 10, 0., 1., 1., N, 1, 'test', 1, make_new_data=True)
+            PARAMS = data_maker(100., 10., 20, 300, 1., 0., 0., N, 4, 'test', 0, make_new_data=True)
+            """
+            PARAMS = data_maker(100., 50., 100, 5700, 0.1, 2., 2., N, 4, '4cd', 0, make_new_data=True)
 
-        #figure 5
+            #figure 5
 
-        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100/pi, 100/pi, N, 1, '5ab-p', 0, make_new_data=True)
-        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100/pi, 100/pi, N, 4, '5cd-p', 0, make_new_data=True)
-        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100, 100, N, 1, '5ab', 0, make_new_data=True)
-        PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100, 100, N, 4, '5cd', 0, make_new_data=True)
-        """
+            PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100/pi, 100/pi, N, 1, '5ab-p', 0, make_new_data=True)
+            PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100/pi, 100/pi, N, 4, '5cd-p', 0, make_new_data=True)
+            PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100, 100, N, 1, '5ab', 0, make_new_data=True)
+            PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100, 100, N, 4, '5cd', 0, make_new_data=True)
+            """
+        except:
+            var = traceback.format_exc()
+            print var
+            f = open('errors.log', 'w')
+            f.write(var+'\n')
+            f.close()
+
+    if True:
+        try:
+        w_2, bias, V, alpha_EM = 12400, 0, 100, 5
+        alpha_ph = [0.1, 1, 5, 10, 25, 50, 100]
+        biases = np.linspace(0,300,10)
+        N = 5
+        I = enr_identity([N,N], N)
+
+        for alpha in alpha_ph:
+            PARAMS, expects = data_maker(w_2, bias, V, 5700, alpha_EM, alpha, alpha, N, None,
+                            None, None, make_dynamics=False)
+            check.bias_dependence(biases, PARAMS, I)
+
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+            dark_states = load_obj("DATA/bias_dependence_wRC667_N{}_V100_wc53/operators/dark_ops".format(N))
+            vis.plot_bias_dependence(ax, dark_states, biases, PARAMS)
+            #PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
+
     except:
         var = traceback.format_exc()
         print var

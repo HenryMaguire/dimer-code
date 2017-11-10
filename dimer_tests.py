@@ -132,21 +132,30 @@ def bias_dependence_function(eps, **kwargs):
     method = 'iterative-lgmres'
     ss_p, ss_s, ss_ns = None, None, None
     try:
+        L_nrwa = EM.L_non_rwa(H, A_EM, args)
+        ti = time.time()
+        ss_ns = steadystate(H, [L_RC+L_nrwa], method=method, use_precond=True)
+        print "Calculating the non-rotating-wave steady state took {} seconds".format(time.time()-ti)
+        del L_nrwa
+
         L_s = EM.L_secular(H, A_EM, args)
         ti = time.time()
         ss_s = steadystate(H, [L_RC+L_s], method=method, use_precond=True)
         print "Calculating the sec steady state took {} seconds".format(time.time()-ti)
         del L_s
+
         L_ns = EM.L_nonsecular(H, A_EM, args)
         ti = time.time()
         ss_ns = steadystate(H, [L_RC+L_ns], method=method, use_precond=True)
         print "Calculating the nonsec steady state took {} seconds".format(time.time()-ti)
         del L_ns
+
         L_p = EM.L_phenom(I, args)
         ti = time.time()
         ss_p = steadystate(H, [L_RC+L_p], method=method, use_precond=True)
         print "Calculating the phen steady state took {} seconds".format(time.time()-ti)
         del L_p
+
     except Exception as Err:
         var = traceback.format_exc()
         print var
