@@ -1,0 +1,26 @@
+kappa_2: 	 0.0 
+kappa_1: 	 0.0 
+T_EM: 	 50 
+bias: 	 0.0 
+alpha_2: 	 0.0 
+alpha_1: 	 0.0 
+T_2: 	 300.0 
+T_1: 	 300.0 
+num_cpus: 	 1 
+w_xx: 	 22583.4 
+wc: 	 53.08 
+J: 	 <function J_minimal at 0x7fe27f0477d0> 
+w0_1: 	 667.02295221 
+w0_2: 	 667.02295221 
+V: 	 100.0 
+w_1: 	 11291.7 
+w_2: 	 11291.7 
+dipole_2: 	 1.0 
+dipole_1: 	 1.0 
+exc: 	 2 
+alpha_EM: 	 1.0 
+N_1: 	 2 
+N_2: 	 2 
+mu: 	 1.0 
+gamma_1: 	 2 
+gamma_2: 	 2 

@@ -98,7 +98,7 @@ def L_non_rwa(H_vib, SIGMA, PARAMS):
     # Initialise liouvilliian
     L =  qt.spre(A*G) - qt.sprepost(G, A)
     L += qt.spost(G_dag*A) - qt.sprepost(A, G_dag)
-    return -L
+    return -L*0.5
 
 def secular_function(args, **kwargs):
     i, j = args[0], args[1]

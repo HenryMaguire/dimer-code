@@ -96,7 +96,7 @@ def named_plot_creator(rho_0, L_RC, H_0, SIGMA_1, SIGMA_2, expects, PARAMS,
             ax1 = fig.add_subplot(211)
             title = 'Eigenstate dynamics'
             #title = title + r"$\omega_0=$""%i"r"$cm^{-1}$, $\alpha_{ph}=$""%f"r"$cm^{-1}$, $T_{EM}=$""%i K" %(w0_1, alpha_1, T_EM)
-            vis.plot_dynamics(DATA, timelist, expects, ax1, ss_dm=ss_dm)
+            vis.plot_eig_dynamics(DATA, timelist, expects, ax1, ss_dm=ss_dm)
             ax2 = fig.add_subplot(212)
             vis.plot_coherences(DATA, timelist, expects, ax2, ss_dm=ss_dm)
 
@@ -274,6 +274,7 @@ def save_params(PARAMS, fig, l):
 if __name__ == "__main__":
 
     # (w_2, bias, V, T_EM, alpha_EM, alpha_1, alpha_2, N, end_time, figure_num)
+    """
     try:
         # Plot batch 1: flat spectrum, fully converged, overlay jake's data on the top
         #figure 2
@@ -294,6 +295,21 @@ if __name__ == "__main__":
         #PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100/pi, 100/pi, N, 4, '5cd-p', 0, make_new_data=True)
         PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100, 100, N, 1, '5ab', 0, make_new_data=True)
         PARAMS = data_maker(1500., 50., 100, 5700, 0.1, 100, 100, N, 4, '5cd', 0, make_new_data=True)
+    """
+    try:
+        PARAMS =  data_maker(1.4*ev_to_inv_cm, 0., 100., 50, 1., 0., 0., 2, 1, '2a_opt', 1,  make_new_data=True)
+        PARAMS = data_maker(1.4*ev_to_inv_cm, 200., 100., 50, 1., 0., 0., 2, 3, '2b_opt', 1, make_new_data=True)
+
+        #figure 4
+        N = 4
+        #PARAMS = data_maker(100., 10., 20, 10, 0., 1., 1., N, 1, 'test', 1, make_new_data=True)
+        #PARAMS = data_maker(1000., 10., 20, 600, 1., 20., 20., N, 1, 'test', 0, make_new_data=True)
+        PARAMS = data_maker(1.4*ev_to_inv_cm, 0., 100, 5700, 0.1, 2., 2., N, 1, '4ab_opt', 0, make_new_data=True)
+        PARAMS = data_maker(1.4*ev_to_inv_cm, 200., 100, 5700, 0.1, 2., 2., N, 4, '4cd_opt', 0, make_new_data=True)
+
+        PARAMS = data_maker(1.4*ev_to_inv_cm, 0., 100, 5700, 0.1, 100, 100, N, 1, '5ab_opt', 0, make_new_data=True)
+        PARAMS = data_maker(1.4*ev_to_inv_cm, 200., 100, 5700, 0.1, 100, 100, N, 4, '5cd_opt', 0, make_new_data=True)
+
     except:
         var = traceback.format_exc()
         print var

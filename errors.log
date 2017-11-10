@@ -1,9 +1,9 @@
 Traceback (most recent call last):
-  File "/home/henry/Work/phd-work/vibronic-dimer/QHE_notes_figures.py", line 287, in <module>
-    PARAMS = data_maker(100., 10., 20, 600, 1., 1., 1., N, 2, 'test', 0, make_new_data=True)
-  File "/home/henry/Work/phd-work/vibronic-dimer/QHE_notes_figures.py", line 231, in data_maker
+  File "QHE_notes_figures.py", line 307, in <module>
+    PARAMS = data_maker(1.4*ev_to_inv_cm, 0., 100, 5700, 0.1, 2., 2., N, 1, '4ab_opt', 0, make_new_data=True)
+  File "QHE_notes_figures.py", line 242, in data_maker
     make_new_data=make_new_data)
-  File "/home/henry/Work/phd-work/vibronic-dimer/QHE_notes_figures.py", line 91, in named_plot_creator
+  File "QHE_notes_figures.py", line 91, in named_plot_creator
     DATA = qt.mesolve(H_0, rho_0, timelist, [L_full], e_ops=expects, progress_bar=True, options=opts)
   File "/home/henry/anaconda2/envs/qutip/lib/python2.7/site-packages/qutip/mesolve.py", line 284, in mesolve
     progress_bar)
