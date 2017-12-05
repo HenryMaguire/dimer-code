@@ -11,6 +11,7 @@ from utils import *
 import sympy
 import dimer_tests as check
 from dimer_plotting import plot_dynamics, plot_eig_dynamics, plot_coherences
+from qutip import basis
 #import ctypes
 
 
@@ -47,7 +48,6 @@ def Gamma(omega, beta, J, alpha, wc, imag_part=True):
     F_0 = (lambda x: (cauchyIntegrands(x, beta, J, alpha, wc, 0)))
     w='cauchy'
     if omega>0.:
-        print "greater than"
         # These bits do the Cauchy integrals too
         G = (np.pi/2)*(coth(beta*omega/2.)-1)*J(omega,alpha, wc)
         if imag_part:
@@ -56,14 +56,12 @@ def Gamma(omega, beta, J, alpha, wc, imag_part=True):
 
         #print integrate.quad(F_m, 0, n, weight='cauchy', wvar=omega), integrate.quad(F_p, 0, n, weight='cauchy', wvar=-omega)
     elif omega==0.:
-        print "equal"
         G = (np.pi/2)*(2*alpha/beta)
         # The limit as omega tends to zero is zero for superohmic case?
         if imag_part:
             G += -(1j)*integral_converge(F_0, -1e-12,0)
         #print (integrate.quad(F_0, -1e-12, 20, weight='cauchy', wvar=0)[0])
     elif omega<0.:
-        print "less than"
         G = (np.pi/2)*(coth(beta*abs(omega)/2.)+1)*J(abs(omega),alpha, wc)
         if imag_part:
             G += (1j/2.)*integral_converge(F_m, 0,-abs(omega))
@@ -71,6 +69,27 @@ def Gamma(omega, beta, J, alpha, wc, imag_part=True):
         #print integrate.quad(F_m, 0, n, weight='cauchy', wvar=-abs(omega)), integrate.quad(F_p, 0, n, weight='cauchy', wvar=abs(omega))
     return G
 
+def commutate(A, A_i, anti = False):
+    if anti:
+        return qt.spre(A*A_i) - qt.sprepost(A_i,A) + qt.sprepost(A, A_i.dag()) - qt.spre(A_i.dag()*A)
+    else:
+        return qt.spre(A*A_i) - qt.sprepost(A_i,A) - qt.sprepost(A, A_i.dag()) + qt.spre(A_i.dag()*A)
+
+
+def auto_L(PARAMS, A, T, alpha):
+    eig = zip(*check.exciton_states(PARAMS))
+    L = 0
+    beta = beta_f(T)
+    for eig_i in eig:
+        for eig_j in eig:
+            omega = eig_i[0]-eig_j[0]
+            A_ij = eig_i[1]*eig_j[1].dag()*A.matrix_element(eig_i[1].dag(), eig_j[1])
+            L += Gamma(omega, beta, J_overdamped, alpha, PARAMS['wc'], imag_part=False) * commutate(A, A_ij)
+            # Imaginary part
+            G = Gamma(omega, beta, J_overdamped, alpha, PARAMS['wc'], imag_part=True)
+            print G
+            L += G.imag * commutate(A, A_ij, anti=True)
+    return -0.5*L
 
 
 def L_weak_phonon(PARAMS):
@@ -90,8 +109,8 @@ def L_weak_phonon(PARAMS):
     psi_p = states[1]
     eta = np.sqrt(eps**2 + 4*V**2)
 
-    beta_1 = beta_f(PARAMS['T_1'])
-    beta_2 = beta_f(PARAMS['T_2'])
+    PARAMS['beta_1'] = beta_1 = beta_f(PARAMS['T_1'])
+    PARAMS['beta_2'] = beta_2 = beta_f(PARAMS['T_2'])
     MM = psi_m*psi_m.dag()
     PP =psi_p*psi_p.dag()
     MP = psi_m*psi_p.dag()
@@ -108,7 +127,7 @@ def L_weak_phonon(PARAMS):
     Z_2 = (Gamma(0, beta_2, J, alpha_2, wc)*((eta+eps)*MM + (eta-eps)*PP))/(2.*eta)
     Z_2 -= (V/eta)*Gamma(eta, beta_2, J, alpha_2, wc)*PM
     Z_2 -= (V/eta)*Gamma(-eta, beta_2, J, alpha_2, wc)*MP
-    print site_1 + site_2
+    print site_1, site_2
     # Initialise liouvilliian
     L =  qt.spre(site_1*Z_1) - qt.sprepost(Z_1, site_1)
     L += qt.spost(Z_1.dag()*site_1) - qt.sprepost(site_1, Z_1.dag())
@@ -118,10 +137,11 @@ def L_weak_phonon(PARAMS):
     L_xx = (alpha_1+alpha_2)*(qt.spre(XX_proj) + qt.spost(XX_proj)
                             -2*qt.sprepost(XX_proj,XX_proj))
     L+=L_xx
-    return -L
+    # Second attempt
+    return L
 
 def get_dynamics(w_2=100., bias=10., V=10., alpha_1=1., alpha_2=1., end_time=1):
-    from qutip import basis
+
     OO = basis(4,0)
     XO = basis(4,1)
     OX = basis(4,2)
@@ -141,14 +161,16 @@ def get_dynamics(w_2=100., bias=10., V=10., alpha_1=1., alpha_2=1., end_time=1):
     w0_2, w0_1 = 500., 500. # underdamped SD parameter omega_0
     w_xx = w_2 + w_1
 
-    J = J_minimal
+    J = J_overdamped
 
     PARAM_names = ['w_1', 'w_2', 'V', 'bias', 'w_xx', 'T_1', 'T_2', 'wc',
                     'w0_1', 'w0_2', 'alpha_1', 'alpha_2', 'J', 'dipole_1','dipole_2']
 
     scope = locals() # Lets eval below use local variables, not global
     PARAMS = dict((name, eval(name, scope)) for name in PARAM_names)
-    L = L_weak_phonon(PARAMS)
+    print PARAMS
+    L = auto_L(PARAMS, XO_p, T_1, alpha_1)+auto_L(PARAMS, OX_p, T_2, alpha_2)#_weak_phonon(PARAMS)
+
     H_dim = w_1*XO_p + w_2*OX_p + w_xx*XX_p + V*(site_coherence + site_coherence.dag())
     energies, states = check.exciton_states(PARAMS)
     N_en, N_st = H_dim.eigenstates()
@@ -161,13 +183,19 @@ def get_dynamics(w_2=100., bias=10., V=10., alpha_1=1., alpha_2=1., end_time=1):
     opts = qt.Options(num_cpus=1, nsteps=6000)
     timelist = np.linspace(0,end_time,4000*end_time)
     DATA = qt.mesolve(H_dim, XO_p, timelist, [L], e_ops=expects, progress_bar=True, options=opts)
+    '''
+    J_1 = lambda x : J_overdamped(x, alpha_1, wc)
+    J_2 = lambda x : J_overdamped(x, alpha_2, wc)
+    J_12 = lambda x : J_overdamped(x, alpha_1+alpha_2, wc)
+    DATA = qt.bloch_redfield.brmesolve(H_dim, XO_p, timelist, [site_1, site_2], expects, [J_1, J_2], options=opts)'''
     fig = plt.figure(figsize=(12,8))
-    plot_dynamics(DATA, timelist, expects, fig.add_subplot(211), title='', ss_dm = False)
+    plot_eig_dynamics(DATA, timelist, expects, fig.add_subplot(211), title='', ss_dm = False)
     plot_coherences(DATA, timelist, expects, fig.add_subplot(212), title='', ss_dm = False)
-    plt.savefig("weak_coupling_text.pdf")
+    plt.savefig("weak_coupling_test.pdf")
+
     return DATA
 
 if __name__ == "__main__":
 
     # w_2, bias, V, T_EM, alpha_EM, alpha_1, alpha_2, end_time
-    DATA = get_dynamics(w_2=100., bias=10., V=20., alpha_1=1., alpha_2=1., end_time=1)
+    DATA = get_dynamics(w_2=12400., bias=10., V=100., alpha_1=5., alpha_2=5., end_time=10)

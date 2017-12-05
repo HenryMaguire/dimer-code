@@ -134,7 +134,7 @@ def bias_dependence_function(eps, **kwargs):
     try:
         L_nrwa = EM.L_non_rwa(H, A_EM, args)
         ti = time.time()
-        ss_ns = steadystate(H, [L_RC+L_nrwa], method=method, use_precond=True)
+        ss_nrwa = steadystate(H, [L_RC+L_nrwa], method=method, use_precond=True)
         print "Calculating the non-rotating-wave steady state took {} seconds".format(time.time()-ti)
         del L_nrwa
 
@@ -161,7 +161,7 @@ def bias_dependence_function(eps, **kwargs):
         print var
         print "Could not build preconditioner, solving steadystate without one"
     print "Redfield: coh={}, dark={}, bright={}".format((ss_ns*coh).tr(), (ss_ns*dark).tr(), (ss_ns*bright).tr())
-    return ss_p, ss_s, ss_ns, coh, bright, dark
+    return ss_p, ss_s, ss_ns, ss_nrwa, coh, bright, dark
 
 
 def bias_dependence(biases, args, I):
@@ -175,7 +175,7 @@ def bias_dependence(biases, args, I):
     dark_ops = []
     args.update({'I': I})
     if not os.path.isfile(test_file):
-        ss_p, ss_s, ss_ns, coh_ops, bright_ops, dark_ops = qt.parfor(
+        ss_p, ss_s, ss_ns, ss_nrwa, coh_ops, bright_ops, dark_ops = qt.parfor(
                         bias_dependence_function, biases, kwargs=args)
 
         if not os.path.exists(ops_dir):
@@ -184,12 +184,14 @@ def bias_dependence(biases, args, I):
             If it exists, just save the ss data to the directory'''
             os.makedirs(main_dir)
             os.makedirs(ops_dir)
+            os.makedirs(main_dir+'nonRWA')
             os.makedirs(main_dir+'nonsecular')
             os.makedirs(main_dir+'secular')
             os.makedirs(main_dir+'phenom')
         save_obj(ss_p, main_dir+'phenom/steadystate_DMs_alpha{}'.format(int(args['alpha_1'])))
         save_obj(ss_s, main_dir+'secular/steadystate_DMs_alpha{}'.format(int(args['alpha_1'])))
         save_obj(ss_ns, main_dir+'nonsecular/steadystate_DMs_alpha{}'.format(int(args['alpha_1'])))
+        save_obj(ss_nrwa, main_dir+'nonRWA/steadystate_DMs_alpha{}'.format(int(args['alpha_1'])))
         save_obj(coh_ops, ops_dir+'eigcoherence_ops')
         save_obj(dark_ops, ops_dir+'dark_ops')
         save_obj(bright_ops, ops_dir+'bright_ops')

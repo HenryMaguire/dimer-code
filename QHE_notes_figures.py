@@ -206,54 +206,54 @@ def data_maker(w_2, bias, V, T_EM, alpha_EM, alpha_1, alpha_2, N, end_time, figu
     Phonon_2 = tensor(I_dimer, phonon_num_2)
     disp_1 = tensor(I_dimer, x_1)
     disp_2 = tensor(I_dimer, x_2)
+    if False:
+        thermal_RCs = enr_thermal_dm([N_1,N_2], exc, [n_RC_1, n_RC_2])
+        ''' initial density operator state'''
+        rho_0 = tensor(basis(4,initial)*basis(4,initial).dag(),thermal_RCs)
 
-    thermal_RCs = enr_thermal_dm([N_1,N_2], exc, [n_RC_1, n_RC_2])
-    ''' initial density operator state'''
-    rho_0 = tensor(basis(4,initial)*basis(4,initial).dag(),thermal_RCs)
+        ops = [OO, XO, OX, XX]
+        # Expectation values and time increments needed to calculate the dynamics
+        expects = ops + [dark, bright, exciton_coherence, site_coherence]
+        expects +=[Phonon_1, Phonon_2, disp_1, disp_2]
 
-    ops = [OO, XO, OX, XX]
-    # Expectation values and time increments needed to calculate the dynamics
-    expects = ops + [dark, bright, exciton_coherence, site_coherence]
-    expects +=[Phonon_1, Phonon_2, disp_1, disp_2]
+        timelist = np.linspace(0,end_time,4000*end_time)
 
-    timelist = np.linspace(0,end_time,4000*end_time)
+        #DATA_J = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
+        #                        timelist, EM_approx='j', figure_num =  figure_num, make_new_data=make_new_data)
+        #del DATA_J
+        """
+        DATA_P = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
+                                    timelist, l ='flat_', EM_approx='p', figure_num =  figure_num,
+                                    make_new_data=make_new_data)
+        """
+        DATA_P = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
+                                    timelist, EM_approx='p', figure_num =  figure_num,
+                                    make_new_data=make_new_data)
 
-    #DATA_J = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
-    #                        timelist, EM_approx='j', figure_num =  figure_num, make_new_data=make_new_data)
-    #del DATA_J
-    """
-    DATA_P = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
-                                timelist, l ='flat_', EM_approx='p', figure_num =  figure_num,
-                                make_new_data=make_new_data)
-    """
-    DATA_P = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
-                                timelist, EM_approx='p', figure_num =  figure_num,
-                                make_new_data=make_new_data)
+        del DATA_P
 
-    del DATA_P
+        #DATA_S = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
+        #                            timelist, l ='flat_', EM_approx='s', figure_num =  figure_num,
+        #                            make_new_data=make_new_data)
+        #del DATA_S
 
-    #DATA_S = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
-    #                            timelist, l ='flat_', EM_approx='s', figure_num =  figure_num,
-    #                            make_new_data=make_new_data)
-    #del DATA_S
+        DATA_S = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
+                                    timelist, EM_approx='s', figure_num =  figure_num,
+                                    make_new_data=make_new_data)
+        del DATA_S
+        DATA_NS = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
+                                    timelist, EM_approx='ns', figure_num =  figure_num,
+                                    make_new_data=make_new_data, plot_ss=False)
+        #save_params(PARAMS, figure_num, '')
+        #DATA_NS = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
+        #                            timelist, l ='flat_', EM_approx='ns',
+        #                            figure_num =  figure_num, make_new_data=make_new_data, plot_ss=True)
+        del DATA_NS
+        save_params(PARAMS, figure_num, 'flat_')
 
-    DATA_S = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
-                                timelist, EM_approx='s', figure_num =  figure_num,
-                                make_new_data=make_new_data)
-    del DATA_S
-    DATA_NS = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
-                                timelist, EM_approx='ns', figure_num =  figure_num,
-                                make_new_data=make_new_data, plot_ss=False)
-    #save_params(PARAMS, figure_num, '')
-    #DATA_NS = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
-    #                            timelist, l ='flat_', EM_approx='ns',
-    #                            figure_num =  figure_num, make_new_data=make_new_data, plot_ss=True)
-    del DATA_NS
-    save_params(PARAMS, figure_num, 'flat_')
-
-    DATA_nRWA = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
-                                timelist, EM_approx='nrwa', figure_num =  figure_num,
-                                make_new_data=make_new_data)
+        DATA_nRWA = named_plot_creator(rho_0, L_RC, H_0, SIG_1, SIG_2, expects, PARAMS,
+                                    timelist, EM_approx='nrwa', figure_num =  figure_num,
+                                    make_new_data=make_new_data)
 
     return PARAMS
 
@@ -277,18 +277,20 @@ if __name__ == "__main__":
 
     if False:
         try:
-            PARAMS =  data_maker(1.4*ev_to_inv_cm, 0., 100., 50, 1., 0., 0., 2, 1, '2a_opt', 1,  make_new_data=True)
-            PARAMS = data_maker(1.4*ev_to_inv_cm, 200., 100., 50, 1., 0., 0., 2, 3, '2b_opt', 1, make_new_data=True)
+            #PARAMS =  data_maker(1.4*ev_to_inv_cm, 0., 100., 50, 1., 0., 0., 2, 1, '2a_opt', 1,  make_new_data=True)
+            #PARAMS = data_maker(1.4*ev_to_inv_cm, 200., 100., 50, 1., 0., 0., 2, 3, '2b_opt', 1, make_new_data=True)
 
             #figure 4
-            N = 4
+            N = 3
             #PARAMS = data_maker(100., 10., 20, 10, 0., 1., 1., N, 1, 'test', 1, make_new_data=True)
             #PARAMS = data_maker(1000., 10., 20, 600, 1., 20., 20., N, 1, 'test', 0, make_new_data=True)
-            PARAMS = data_maker(1.4*ev_to_inv_cm, 0., 100, 5700, 0.1, 2., 2., N, 1, '4ab_opt', 0, make_new_data=True)
-            PARAMS = data_maker(1.4*ev_to_inv_cm, 200., 100, 5700, 0.1, 2., 2., N, 4, '4cd_opt', 0, make_new_data=True)
+            w_1 = 12400. #1.4*ev_to_inv_cm
+            B = 1.
+            PARAMS = data_maker(w_1, 0., 100, 5700, 0., B, B, N, 10, '4ab_opt2', 1, make_new_data=True)
+            PARAMS = data_maker(w_1, 200., 100, 5700, 0., B, B, N, 10, '4cd_opt2', 1, make_new_data=True)
 
-            PARAMS = data_maker(1.4*ev_to_inv_cm, 0., 100, 5700, 0.1, 100, 100, N, 1, '5ab_opt', 0, make_new_data=True)
-            PARAMS = data_maker(1.4*ev_to_inv_cm, 200., 100, 5700, 0.1, 100, 100, N, 4, '5cd_opt', 0, make_new_data=True)
+            #PARAMS = data_maker(w_1, 0., 100, 5700, 0.1, 100, 100, N, 15, '5ab_opt', 0, make_new_data=True)
+            #PARAMS = data_maker(w_1, 200., 100, 5700, 0.1, 100, 100, N, 15, '5cd_opt', 0, make_new_data=True)
         except:
             var = traceback.format_exc()
             print var
@@ -327,22 +329,23 @@ if __name__ == "__main__":
 
     if True:
         try:
-        w_2, bias, V, alpha_EM = 12400, 0, 100, 5
-        alpha_ph = [0.1, 1, 5, 10, 25, 50, 100]
-        biases = np.linspace(0,300,10)
-        N = 5
-        I = enr_identity([N,N], N)
+            w_2, bias, V, alpha_EM = 12400., 0, 100., 1.
+            alpha_ph = [0.1, 1, 5, 10, 25, 50, 100]
+            biases = np.linspace(0,300,5)
+            N = 5
+            I = enr_identity([N,N], N)
 
-        for alpha in alpha_ph:
-            PARAMS, expects = data_maker(w_2, bias, V, 5700, alpha_EM, alpha, alpha, N, None,
-                            None, None, make_dynamics=False)
-            check.bias_dependence(biases, PARAMS, I)
+            for alpha in alpha_ph:
+                #w_2, bias, V, T_EM, alpha_EM, alpha_1, alpha_2, N, end_time, figure_num, initial, make_new_data=False
+                PARAMS = data_maker(w_2, bias, V, 5700, alpha_EM, alpha, alpha, N, None, None, None)
+                check.bias_dependence(biases, PARAMS, I)
 
-            fig = plt.figure()
-            ax = fig.add_subplot(111)
-            dark_states = load_obj("DATA/bias_dependence_wRC667_N{}_V100_wc53/operators/dark_ops".format(N))
-            vis.plot_bias_dependence(ax, dark_states, biases, PARAMS)
-            #PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
+                fig = plt.figure()
+                ax = fig.add_subplot(111)
+                dark_states = load_obj("DATA/bias_dependence_wRC667_N{}_V100_wc53/operators/dark_ops".format(N))
+                coherence = load_obj("DATA/bias_dependence_wRC667_N{}_V100_wc53/operators/eigcoherence_ops".format(N))
+                vis.plot_bias_dependence(ax, dark_states, biases, PARAMS)
+                PARAMS.update({'alpha_1':alpha, 'alpha_2':alpha})
         except:
             var = traceback.format_exc()
             print var

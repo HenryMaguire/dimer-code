@@ -21,6 +21,8 @@ import dimer_phonons as RC
 import dimer_tests as check
 
 reload(RC)
+def coth(x):
+    return float(sympy.coth(x))
 
 def cauchyIntegrands(omega, beta, J, alpha, wc, ver):
     # J_overdamped(omega, alpha, wc)
@@ -39,7 +41,7 @@ def integral_converge(f, a, omega):
     x = 30
     I = 0
     while abs(f(x))>0.01:
-        #print a, x
+        print a, x
         I += integrate.quad(f, a, x, weight='cauchy', wvar=omega)[0]
         a+=30
         x+=30
@@ -255,6 +257,7 @@ def L_secular(H_vib, A, args):
     l = dim_ham*range(dim_ham)
     i_j_gen = ((i,j) for i,j in zip(sorted(l), l))
     L = 0
+    print
     for i, j in i_j_gen:
         lam_ij = A.matrix_element(eVecs[i].dag(), eVecs[j])
         lam_ji = A.dag().matrix_element(eVecs[j].dag(), eVecs[i])

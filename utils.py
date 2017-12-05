@@ -147,7 +147,11 @@ def J_multipolar(omega, Gamma, omega_0):
 
 def J_minimal(omega, Gamma, omega_0):
     return Gamma*omega/(omega_0) #2*np.pi*
-
+def J_minimal_hard(omega, Gamma, omega_0, cutoff):
+    if omega >cutoff:
+        return 0.
+    else:
+        return Gamma*omega/(omega_0) #2*np.pi*
 def J_flat(omega, Gamma, omega_0):
     return Gamma#/(2*np.pi)
 
