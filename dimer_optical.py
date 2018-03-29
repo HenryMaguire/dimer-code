@@ -77,7 +77,8 @@ def Gamma(omega, beta, J, alpha, wc, imag_part=True):
         #print integrate.quad(F_m, 0, n, weight='cauchy', wvar=-abs(omega)), integrate.quad(F_p, 0, n, weight='cauchy', wvar=abs(omega))
     return G
 
-def L_non_rwa(H_vib, SIGMA, PARAMS):
+def L_non_rwa(H_vib, SIGMA, PARAMS, silent=False):
+    ti = time.time()
     A = SIGMA + SIGMA.dag()
     w_1 = PARAMS['w_1']
     alpha = PARAMS['alpha_EM']
@@ -100,6 +101,8 @@ def L_non_rwa(H_vib, SIGMA, PARAMS):
     # Initialise liouvilliian
     L =  qt.spre(A*G) - qt.sprepost(G, A)
     L += qt.spost(G_dag*A) - qt.sprepost(A, G_dag)
+    if not silent:
+        print "Full optical Liouvillian took {} seconds.".format(time.time()- ti)
     return -L*0.5
 
 def secular_function(args, **kwargs):
