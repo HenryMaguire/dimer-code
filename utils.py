@@ -80,7 +80,7 @@ def save_obj(obj, name ):
         pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
 
 
-def beta_f(T):
+def beta_f(T, conversion=0.695):
     conversion = 0.695
     beta = 0
     if T ==0.: # First calculate beta
@@ -90,7 +90,7 @@ def beta_f(T):
         beta = 1. / (conversion*T)
     return beta
 
-def Occupation(omega, T):
+def Occupation(omega, T, conversion=0.695):
     conversion = 0.695
     """
     if time_units == 'ev':
