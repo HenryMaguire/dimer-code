@@ -104,8 +104,9 @@ def RCME_operators_par(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus
 
 
 def RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus=0):
-    # This function will be passed a TLS-RC hamiltonian, RC operator, spectral density and beta
-    # outputs all of the operators needed for the RCME (underdamped)
+    # This function will be passed a TLS-RC hamiltonian, RC operator,
+    #spectral density and beta outputs all of the operators
+    # needed for the RCME (underdamped)
     ti = time.time()
     dim_ham = H_0.shape[0]
     Z_1, Z_2 = 0, 0
@@ -141,7 +142,8 @@ def RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus=0):
     print "The operators took {} and have dimension {}.".format(time.time()-ti, dim_ham)
     return H_0, Z_1, Z_2
 
-def liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2, T_1, T_2, num_cpus=0, new_way=False):
+def liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,
+                    wRC_1, wRC_2, T_1, T_2, num_cpus=1, silent=False):
     ti = time.time()
     conversion = 0.695
     beta_1 = 0. # We want to calculate beta for each reaction coordinate, but avoid divergences
@@ -163,32 +165,16 @@ def liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2, T_1, T_2, 
         beta_2 = 1./(conversion * T_2)
         #RCnb_2 = (1 / (sp.exp( beta_2 * wRC_2)-1))
     # Now this function has to construct the liouvillian so that it can be passed to mesolve
-    H_0, Z_1, Z_2  = RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus=num_cpus)
-    '''
-    print np.sum(Chi_1.full() == Chi_1_.full()), Chi_1.shape[0]**2
-    print np.sum(Chi_2.full() == Chi_2_.full()), Chi_1.shape[0]**2
-    print np.sum(Xi_1.full() == Xi_1_.full()), Chi_1.shape[0]**2
-    print np.sum(Xi_2.full() == Xi_2_.full()), Chi_1.shape[0]**2
-    print abs(Chi_1.full()) == abs(Chi_1_.full())'''
+    H_0, Z_1, Z_2  = RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2,
+                                    beta_1, beta_2, num_cpus=num_cpus)
+
     L = 0
     L+=spre(A_1*Z_1)+spre(A_2*Z_2)
     L-=sprepost(Z_1, A_1)+sprepost(Z_2, A_2)
     L-=sprepost(A_1, Z_1.dag())+sprepost(A_2, Z_2.dag())
     L+=spost(Z_1.dag()*A_1)+spost(Z_2.dag()*A_2)
-    """
-    else:
-        for A, Chi in zip([A_1, A_2],[Chi_1, Chi_2]):
-            L=L-spre(A*Chi)
-            L=L+sprepost(A, Chi)
-            L=L+sprepost(Chi, A)
-            L=L-spost(Chi*A)
-        for A, Xi in zip([A_1, A_2],[Xi_1, Xi_2]):
-            L=L+spre(A*Xi)
-            L=L+sprepost(A, Xi)
-            L=L-sprepost(Xi, A)
-            L=L-spost(Xi*A)
-    """
-    print "Building the RC Liouvillian took ", time.time()-ti, "seconds."
+    if not silent:
+        print "Building the RC Liouvillian took ", time.time()-ti, "seconds."
     return L
 
 def rate_operators(args):
@@ -210,27 +196,33 @@ def rate_operators(args):
                                                    wRC_2, kappa_1, kappa_2, N_1,
                                                    N_2, exc)
 
-    return RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2, beta_f(T_1), beta_f(T_2))
+    return RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2,
+                                    beta_f(T_1), beta_f(T_2))
 
 
 def construct_thermal(args):
-    w_1, w_2, w_xx, V, mu = args['w_1'], args['w_2'], args['w_xx'], args['V'], args['mu']
-    alpha_1, alpha_2, wc, T_EM = args['alpha_1'], args['alpha_2'], args['wc'], args['T_EM']
+    w_1, w_2, w_xx  = args['w_1'], args['w_2'], args['w_xx']
+    V, mu = args['V'], args['mu']
+    alpha_1, alpha_2 =  args['alpha_1'], args['alpha_2']
+    wc, T_EM = args['wc'], args['T_EM']
     gamma_1, gamma_2 = 2, 2
     wRC_1, wRC_2 = 2*pi*wc*gamma_1, 2*pi*wc*gamma_2
-    kappa_1, kappa_2 = np.sqrt(pi*alpha_1*wRC_1/2.), np.sqrt(pi*alpha_2*wRC_2/2.)
+    kappa_1 = np.sqrt(pi*alpha_1*wRC_1/2.)
+    kappa_2 = np.sqrt(pi*alpha_2*wRC_2/2.)
     N_1, N_2, exc = args['N_1'], args['N_2'], args['exc']
-    H_0, A_1, A_2, A_EM = dimer_ham_RC(w_1, w_2, w_xx, V, mu, wRC_1, wRC_2, kappa_1, kappa_2, N_1, N_2, exc)
+    H_0, A_1, A_2, A_EM = dimer_ham_RC(w_1, w_2, w_xx, V, mu, wRC_1, wRC_2,
+                                            kappa_1, kappa_2, N_1, N_2, exc)
     I = enr_identity([N_1,N_2], exc)
     D = (-H_0/(0.695*T_EM)).expm()
     return D/D.tr()
 
-def RC_mapping_OD(args, new_way=True):
+def RC_mapping_OD(args, silent=False):
 
     # we define all of the RC parameters by the underdamped spectral density
     w_1, w_2, w_xx, V = args['w_1'], args['w_2'], args['w_xx'], args['V']
     T_1, T_2 = args['T_1'], args['T_2']
-    wRC_1, wRC_2, alpha_1, alpha_2, wc = args['w0_1'], args['w0_2'], args['alpha_1'], args['alpha_2'], args['wc']
+    wRC_1, wRC_2 = args['w0_1'], args['w0_2']
+    alpha_1, alpha_2, wc = args['alpha_1'], args['alpha_2'], args['wc']
     N_1, N_2, exc = args['N_1'], args['N_2'], args['exc']
     gamma_1, gamma_2 = 2, 2
     wRC_1, wRC_2 = 2*pi*wc*gamma_1, 2*pi*wc*gamma_2
@@ -240,13 +232,15 @@ def RC_mapping_OD(args, new_way=True):
                     'w0_2': wRC_2, 'kappa_1':kappa_1, 'kappa_2':kappa_2})
     #print "****************************************************************"
     H_0, A_1, A_2, SIGMA_1, SIGMA_2 = dimer_ham_RC(w_1, w_2, w_xx, V,wRC_1, wRC_2, kappa_1, kappa_2, N_1, N_2, exc)
-    L_RC =  liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2, T_1, T_2, num_cpus=args['num_cpus'], new_way=new_way)
+    L_RC =  liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2,
+                            T_1, T_2, num_cpus=args['num_cpus'], silent=silent)
     full_size = (4*N_1*N_1)**2
-    #print "It is {}by{}. The full basis would be {}by{}".format(L_RC.shape[0], L_RC.shape[0], full_size, full_size)
+    if not silent:
+        print "It is {}by{}. The full basis would be {}by{}".format(L_RC.shape[0], L_RC.shape[0], full_size, full_size)
     return L_RC, H_0, A_1, A_2, SIGMA_1, SIGMA_2, args
 
 
-def RC_mapping_UD(args):
+def RC_mapping_UD(args, silent=False):
 
     # we define all of the RC parameters by the underdamped spectral density
     w_1, w_2, w_xx, V = args['w_1'], args['w_2'], args['w_xx'], args['V']
@@ -261,14 +255,19 @@ def RC_mapping_UD(args):
     Gamma_2 = (wRC_2**2)/wc
     gamma_2 = Gamma_2 / (2. * np.pi * wRC_2)
     kappa_2 = np.sqrt(np.pi * alpha_2 * wRC_2 / 2.)
-    print "****************************************************************"
+    if not silent:
+        print "****************************************************************"
     #print args
-    H_0, A_1, A_2, SIGMA_1, SIGMA_2 = dimer_ham_RC(w_1, w_2, w_xx, V, wRC_1, wRC_2, kappa_1, kappa_2, N_1, N_2, exc)
-    L_RC =  liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2, T_1, T_2, num_cpus=args['num_cpus'])
+    H_0, A_1, A_2, sig_1, sig_2 = dimer_ham_RC(w_1, w_2, w_xx, V, wRC_1, wRC_2,
+                                                kappa_1, kappa_2, N_1, N_2, exc)
+    L_RC =  liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2,
+                            T_1, T_2, num_cpus=args['num_cpus'], silent=silent)
     full_size = (4*N_1*N_1)**2
-    print "It is {}by{}. The full basis would be {}by{}".format(L_RC.shape[0], L_RC.shape[0], full_size, full_size)
+    if not silent:
+        note = (L_RC.shape[0], L_RC.shape[0], full_size, full_size)
+        print "It is {}by{}. The full basis would be {}by{}".format(note)
 
-    return L_RC, H_0, A_1, A_2, SIGMA_1, SIGMA_2, wRC_1, wRC_2, kappa_1, kappa_2
+    return L_RC, H_0, A_1, A_2, sig_1, sig_2, wRC_1, wRC_2, kappa_1, kappa_2
     #H_dim_full = w_1*XO*XO.dag() + w_2*w_1*OX*OX.dag() + w_xx*XX*XX.dag() + V*((SIGMA_m1+SIGMA_m1.dag())*(SIGMA_m2+SIGMA_m2.dag()))
 
 

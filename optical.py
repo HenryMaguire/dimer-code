@@ -77,9 +77,9 @@ def Gamma(omega, beta, J, alpha, wc, imag_part=True):
         #print integrate.quad(F_m, 0, n, weight='cauchy', wvar=-abs(omega)), integrate.quad(F_p, 0, n, weight='cauchy', wvar=abs(omega))
     return G
 
-def L_non_rwa(H_vib, SIGMA, PARAMS, silent=False):
+def L_non_rwa(H_vib, sigma, PARAMS, silent=False):
     ti = time.time()
-    A = SIGMA + SIGMA.dag()
+    A = sigma + sigma.dag()
     w_1 = PARAMS['w_1']
     alpha = PARAMS['alpha_EM']
 
