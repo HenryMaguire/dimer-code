@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from utils import *
 
 
-def dimer_ham_RC(w_1, w_2, w_xx, V, mu, Omega_1,
+def dimer_ham_RC(w_1, w_2, w_xx, V, Omega_1,
                 Omega_2, kap_1, kap_2, N_1, N_2, exc):
     """ Builds RC Hamiltonian in excitation restricted subspace
 
@@ -50,57 +50,63 @@ def dimer_ham_RC(w_1, w_2, w_xx, V, mu, Omega_1,
     H_S = H_dim + H_RC1 + H_RC2 + H_I1 + H_I2
     return H_S, A_1, A_2, tensor(SIGMA_1, I), tensor(SIGMA_2, I)
 
-def operator_func(j, k, eVals=[], eVecs=[], A_1=[], A_2=[],
+def operator_func(j, eVals=[], eVecs=[], A_1=[], A_2=[],
                     gamma_1=1., gamma_2=1., beta_1=0.4, beta_2=0.4):
     """ For parallelising the Liouvillian contruction
     """
-    Chi_1, Xi_1, Chi_2, Xi_2 = 0, 0, 0, 0 # Initialise operators
-    try:
-        # eigenvalue difference, needs to be real for coth and hermiticity
-        e_jk = (eVals[j] - eVals[k]).real
-        # Overlap of collapse operator for site 1 with vibronic eigenbasis
-        J, K = eVecs[j], eVecs[k]
-        A_jk_1 = A_1.matrix_element(J.dag(), K)
-        outer_eigen = J*K.dag()
+    zero = 0*A_1
+    dim_ham = len(eVecs)
+    Z_1, Z_2 = zero, zero # Initialise operators
+    for k in range(dim_ham):
+        try:
+            # eigenvalue difference, needs to be real for coth and hermiticity
+            e_jk = (eVals[j] - eVals[k]).real
+            # Overlap of collapse operator for site 1 with vibronic eigenbasis
+            J, K = eVecs[j], eVecs[k]
+            A_jk_1 = A_1.matrix_element(J.dag(), K)
+            outer_eigen = J*K.dag()
 
-        if sp.absolute(A_jk_1) > 0:
-            if sp.absolute(e_jk) > 0 and sp.absolute(beta_1) > 0:
-                Chi_1 = 0.5*np.pi*e_jk*gamma_1 * float(coth(e_jk * beta_1 / 2).evalf())*A_jk_1*outer_eigen
-                Xi_1 = 0.5*np.pi*e_jk*gamma_1 * A_jk_1 * outer_eigen
-            else:
-                Chi_1 = np.pi*gamma_1*A_jk_1*outer_eigen/beta_1 # Just return coefficients which are left over
-                #Xi += 0 #since J_RC goes to zero
-        A_jk_2 = A_2.matrix_element(eVecs[j].dag(), eVecs[k])
-        if sp.absolute(A_jk_2) > 0:
-            if sp.absolute(e_jk) > 0 and sp.absolute(beta_2)>0:
-                # e_jk*gamma is the spectral density
-                Chi_2 = 0.5*np.pi*e_jk*gamma_2 * float(coth(e_jk * beta_2 / 2).evalf())*A_jk_2*outer_eigen
-                Xi_2 = 0.5*np.pi*e_jk*gamma_2 * A_jk_2 * outer_eigen
-            else:
-                # If e_jk is zero, coth diverges but J goes to zero so limit taken seperately
-                Chi_2 = np.pi*gamma_2*A_jk_2*outer_eigen/beta_2 # Just return coefficients which are left over
-                #Xi += 0 #since J_RC goes to zero
-    except e:
-        print e
+            if sp.absolute(A_jk_1) > 0:
+                if sp.absolute(e_jk) > 0 and sp.absolute(beta_1) > 0:
+                    Z_1 += 0.5*np.pi*e_jk*gamma_1 * coth(e_jk * beta_1 / 2)*A_jk_1*outer_eigen
+                    Z_1 += 0.5*np.pi*e_jk*gamma_1 * A_jk_1 * outer_eigen
+                else:
+                    Z_1 += np.pi*gamma_1*A_jk_1*outer_eigen/beta_1 # Just return coefficients which are left over
+                    #Xi += 0 #since J_RC goes to zero
+            A_jk_2 = A_2.matrix_element(eVecs[j].dag(), eVecs[k])
+            if sp.absolute(A_jk_2) > 0:
+                if sp.absolute(e_jk) > 0 and sp.absolute(beta_2)>0:
+                    # e_jk*gamma is the spectral density
+                    Z_2 += 0.5*np.pi*e_jk*gamma_2 * coth(e_jk * beta_2 / 2)*A_jk_2*outer_eigen
+                    Z_2 += 0.5*np.pi*e_jk*gamma_2 * A_jk_2 * outer_eigen
+                else:
+                    # If e_jk is zero, coth diverges but J goes to zero so limit taken seperately
+                    Z_2 += np.pi*gamma_2*A_jk_2*outer_eigen/beta_2 # Just return coefficients which are left over
+                    #Xi += 0 #since J_RC goes to zero
+        except Exception as e:
+            print e
     #if type(Chi_1) != type(1):
     #    print Chi_1.dims
-    return Qobj(Chi_1), Qobj(Xi_1), Qobj(Chi_2), Qobj(Xi_2)
+    return [Z_1, Z_2]
 
 def RCME_operators_par(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus=0):
+    ti = time.time()
     dim_ham = H_0.shape[0]
     eVals, eVecs = H_0.eigenstates()
     names = ['eVals', 'eVecs', 'A_1', 'A_2', 'gamma_1', 'gamma_2', 'beta_1', 'beta_2']
     kwargs = dict()
     for name in names:
         kwargs[name] = eval(name)
-    l = dim_ham*range(dim_ham) # Perform two loops in one
-    Chi_1, Xi_1, Chi_2, Xi_2 = par.parfor(operator_func,  sorted(l), l, num_cpus=num_cpus, **kwargs)
-    return H_0, sum(Chi_1), sum(Xi_1), sum(Chi_2), sum(Xi_2)
+    l = range(dim_ham) # Previously performed two loops in one
+    Z =  par.parfor(operator_func,  l, num_cpus=num_cpus, **kwargs)
+    print "The operators took {} and have dimension {}.".format(time.time()-ti, dim_ham)
+    return H_0, sum(Z[0]), sum(Z[1])
 
 
 def RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus=0):
     # This function will be passed a TLS-RC hamiltonian, RC operator, spectral density and beta
     # outputs all of the operators needed for the RCME (underdamped)
+    ti = time.time()
     dim_ham = H_0.shape[0]
     Z_1, Z_2 = 0, 0
     eVals, eVecs = H_0.eigenstates()
@@ -132,6 +138,7 @@ def RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus=0):
                 else:
                     Z_2 += np.pi*gamma_2*A_jk_2*outer_eigen/beta_2 # Just return coefficients which are left over
                     #Xi += 0 #since J_RC goes to zero
+    print "The operators took {} and have dimension {}.".format(time.time()-ti, dim_ham)
     return H_0, Z_1, Z_2
 
 def liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2, T_1, T_2, num_cpus=0, new_way=False):
@@ -187,7 +194,7 @@ def liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2, T_1, T_2, 
 def rate_operators(args):
     # we define all of the RC parameters by the underdamped spectral density
     w_1, w_2, w_xx, V = args['w_1'], args['w_2'], args['w_xx'], args['V']
-    T_1, T_2, mu = args['T_1'], args['T_2'], args['mu']
+    T_1, T_2 = args['T_1'], args['T_2']
     wRC_1, wRC_2, alpha_1, alpha_2, wc = args['w0_1'], args['w0_2'],args['alpha_1'], args['alpha_2'], args['wc']
     N_1, N_2, exc = args['N_1'], args['N_2'], args['exc']
 
@@ -222,7 +229,7 @@ def RC_mapping_OD(args, new_way=True):
 
     # we define all of the RC parameters by the underdamped spectral density
     w_1, w_2, w_xx, V = args['w_1'], args['w_2'], args['w_xx'], args['V']
-    T_1, T_2, mu = args['T_1'], args['T_2'], args['mu']
+    T_1, T_2 = args['T_1'], args['T_2']
     wRC_1, wRC_2, alpha_1, alpha_2, wc = args['w0_1'], args['w0_2'], args['alpha_1'], args['alpha_2'], args['wc']
     N_1, N_2, exc = args['N_1'], args['N_2'], args['exc']
     gamma_1, gamma_2 = 2, 2
@@ -232,7 +239,7 @@ def RC_mapping_OD(args, new_way=True):
     args.update({'gamma_1': gamma_1, 'gamma_2': gamma_2, 'w0_1': wRC_1,
                     'w0_2': wRC_2, 'kappa_1':kappa_1, 'kappa_2':kappa_2})
     #print "****************************************************************"
-    H_0, A_1, A_2, SIGMA_1, SIGMA_2 = dimer_ham_RC(w_1, w_2, w_xx, V, mu, wRC_1, wRC_2, kappa_1, kappa_2, N_1, N_2, exc)
+    H_0, A_1, A_2, SIGMA_1, SIGMA_2 = dimer_ham_RC(w_1, w_2, w_xx, V,wRC_1, wRC_2, kappa_1, kappa_2, N_1, N_2, exc)
     L_RC =  liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2, T_1, T_2, num_cpus=args['num_cpus'], new_way=new_way)
     full_size = (4*N_1*N_1)**2
     #print "It is {}by{}. The full basis would be {}by{}".format(L_RC.shape[0], L_RC.shape[0], full_size, full_size)
@@ -243,7 +250,7 @@ def RC_mapping_UD(args):
 
     # we define all of the RC parameters by the underdamped spectral density
     w_1, w_2, w_xx, V = args['w_1'], args['w_2'], args['w_xx'], args['V']
-    T_1, T_2, mu = args['T_1'], args['T_2'], args['mu']
+    T_1, T_2, mu = args['T_1'], args['T_2']
     wRC_1, wRC_2, alpha_1, alpha_2, wc = args['w0_1'], args['w0_2'], args['alpha_1'], args['alpha_2'], args['wc']
     N_1, N_2, exc = args['N_1'], args['N_2'], args['exc']
 
@@ -256,7 +263,7 @@ def RC_mapping_UD(args):
     kappa_2 = np.sqrt(np.pi * alpha_2 * wRC_2 / 2.)
     print "****************************************************************"
     #print args
-    H_0, A_1, A_2, SIGMA_1, SIGMA_2 = dimer_ham_RC(w_1, w_2, w_xx, V, mu, wRC_1, wRC_2, kappa_1, kappa_2, N_1, N_2, exc)
+    H_0, A_1, A_2, SIGMA_1, SIGMA_2 = dimer_ham_RC(w_1, w_2, w_xx, V, wRC_1, wRC_2, kappa_1, kappa_2, N_1, N_2, exc)
     L_RC =  liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2, T_1, T_2, num_cpus=args['num_cpus'])
     full_size = (4*N_1*N_1)**2
     print "It is {}by{}. The full basis would be {}by{}".format(L_RC.shape[0], L_RC.shape[0], full_size, full_size)
