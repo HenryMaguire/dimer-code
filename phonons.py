@@ -13,7 +13,8 @@ from utils import *
 
 
 def dimer_ham_RC(w_1, w_2, w_xx, V, Omega_1,
-                Omega_2, kap_1, kap_2, N_1, N_2, exc):
+                Omega_2, kap_1, kap_2, N_1, N_2, exc,
+                shift=True):
     """ Builds RC Hamiltonian in excitation restricted subspace
 
     Input: System splitting, RC freq., system-RC coupling
@@ -31,8 +32,16 @@ def dimer_ham_RC(w_1, w_2, w_xx, V, Omega_1,
     #I_RC_2 = qeye(N_2)
     I_dim = qeye(4)
     I = enr_identity([N_1,N_2], exc)
-    H_dim_sub = w_1*XO*XO.dag() + w_2*OX*OX.dag() + w_xx*XX*XX.dag()
+    shift1, shift2 = (kap_1**2)/Omega_1, (kap_2**2)/Omega_2
+    if shift:
+        w_1 += shift1
+        w_2 += shift2
+        w_xx += shift1+shift2
+    H_dim_sub = w_1*XO*XO.dag()
+    H_dim_sub += w_2*OX*OX.dag() + w_xx*XX*XX.dag()
     H_dim_sub += V*(XO*OX.dag() + OX*XO.dag())
+
+    #shift1, shift2 = (kap_1**2)/Omega_1, (kap_2**2)/Omega_2
     #print H_dim_sub
     H_dim = tensor(H_dim_sub, I)
 
@@ -48,7 +57,7 @@ def dimer_ham_RC(w_1, w_2, w_xx, V, Omega_1,
     H_RC2 = Omega_2*a_RC_exc[1].dag()*a_RC_exc[1]
 
     H_S = H_dim + H_RC1 + H_RC2 + H_I1 + H_I2
-    return H_S, A_1, A_2, tensor(SIGMA_1, I), tensor(SIGMA_2, I)
+    return [H_dim_sub, H_S], A_1, A_2, tensor(SIGMA_1, I), tensor(SIGMA_2, I)
 
 def operator_func(j, eVals=[], eVecs=[], A_1=[], A_2=[],
                     gamma_1=1., gamma_2=1., beta_1=0.4, beta_2=0.4):
@@ -142,7 +151,7 @@ def RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus=0):
     print "The operators took {} and have dimension {}.".format(time.time()-ti, dim_ham)
     return H_0, Z_1, Z_2
 
-def liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,
+def liouvillian_build(H_RC, A_1, A_2, gamma_1, gamma_2,
                     wRC_1, wRC_2, T_1, T_2, num_cpus=1, silent=False):
     ti = time.time()
     conversion = 0.695
@@ -165,7 +174,7 @@ def liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,
         beta_2 = 1./(conversion * T_2)
         #RCnb_2 = (1 / (sp.exp( beta_2 * wRC_2)-1))
     # Now this function has to construct the liouvillian so that it can be passed to mesolve
-    H_0, Z_1, Z_2  = RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2,
+    H_RC, Z_1, Z_2  = RCME_operators(H_RC, A_1, A_2, gamma_1, gamma_2,
                                     beta_1, beta_2, num_cpus=num_cpus)
 
     L = 0
@@ -174,7 +183,7 @@ def liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,
     L-=sprepost(A_1, Z_1.dag())+sprepost(A_2, Z_2.dag())
     L+=spost(Z_1.dag()*A_1)+spost(Z_2.dag()*A_2)
     if not silent:
-        print "Building the RC Liouvillian took ", time.time()-ti, "seconds."
+        print "Building the RC Liouvillian took {:0.3f} seconds.".format(time.time()-ti)
     return L
 
 def rate_operators(args):
@@ -192,11 +201,11 @@ def rate_operators(args):
     gamma_2 = Gamma_2 / (2. * np.pi * wRC_2)
     kappa_2 = np.sqrt(np.pi * alpha_2 * wRC_2 / 2.)
     #print args
-    H_0, A_1, A_2, SIGMA_1, SIGMA_2 = dimer_ham_RC(w_1, w_2, w_xx, V, mu, wRC_1,
+    H, A_1, A_2, SIGMA_1, SIGMA_2 = dimer_ham_RC(w_1, w_2, w_xx, V, mu, wRC_1,
                                                    wRC_2, kappa_1, kappa_2, N_1,
                                                    N_2, exc)
 
-    return RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2,
+    return RCME_operators(H[1], A_1, A_2, gamma_1, gamma_2,
                                     beta_f(T_1), beta_f(T_2))
 
 
@@ -224,51 +233,57 @@ def RC_mapping_OD(args, silent=False):
     wRC_1, wRC_2 = args['w0_1'], args['w0_2']
     alpha_1, alpha_2, wc = args['alpha_1'], args['alpha_2'], args['wc']
     N_1, N_2, exc = args['N_1'], args['N_2'], args['exc']
-    gamma_1, gamma_2 = 2, 2
-    wRC_1, wRC_2 = 2*pi*wc*gamma_1, 2*pi*wc*gamma_2
+    gamma_1, gamma_2 = wRC_1/(2*pi*wc), wRC_2/(2*pi*wc)
     kappa_1, kappa_2 = np.sqrt(pi*alpha_1*wRC_1/2.), np.sqrt(pi*alpha_2*wRC_2/2.)
     #print "RC frame params: gamma: {}\twRC: {}\tkappa{}".format(gamma_1, wRC_1, kappa_1)
     args.update({'gamma_1': gamma_1, 'gamma_2': gamma_2, 'w0_1': wRC_1,
                     'w0_2': wRC_2, 'kappa_1':kappa_1, 'kappa_2':kappa_2})
     #print "****************************************************************"
-    H_0, A_1, A_2, SIGMA_1, SIGMA_2 = dimer_ham_RC(w_1, w_2, w_xx, V,wRC_1, wRC_2, kappa_1, kappa_2, N_1, N_2, exc)
-    L_RC =  liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2,
+    H, A_1, A_2, SIGMA_1, SIGMA_2 = dimer_ham_RC(w_1, w_2, w_xx, V,wRC_1, wRC_2, kappa_1, kappa_2, N_1, N_2, exc)
+    L_RC =  liouvillian_build(H[1], A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2,
                             T_1, T_2, num_cpus=args['num_cpus'], silent=silent)
     full_size = (4*N_1*N_1)**2
     if not silent:
-        print "It is {}by{}. The full basis would be {}by{}".format(L_RC.shape[0], L_RC.shape[0], full_size, full_size)
-    return L_RC, H_0, A_1, A_2, SIGMA_1, SIGMA_2, args
+        print "****************************************************************"
+        note = (L_RC.shape[0], L_RC.shape[0], full_size, full_size)
+        print "It is {}by{}. The full basis would be {}by{}".format(L_RC.shape[0],
+                                            L_RC.shape[0], full_size, full_size)
+    return -L_RC, H, A_1, A_2, SIGMA_1, SIGMA_2, args
 
 
-def RC_mapping_UD(args, silent=False):
+def RC_mapping(args, silent=False, shift=True):
 
     # we define all of the RC parameters by the underdamped spectral density
     w_1, w_2, w_xx, V = args['w_1'], args['w_2'], args['w_xx'], args['V']
-    T_1, T_2, mu = args['T_1'], args['T_2']
-    wRC_1, wRC_2, alpha_1, alpha_2, wc = args['w0_1'], args['w0_2'], args['alpha_1'], args['alpha_2'], args['wc']
+    T_1, T_2, mu = args['T_1'], args['T_2'], args['mu']
+    wRC_1, wRC_2, alpha_1, alpha_2 = args['w0_1'], args['w0_2'], args['alpha_1'], args['alpha_2']
     N_1, N_2, exc = args['N_1'], args['N_2'], args['exc']
-
-    Gamma_1 = (wRC_1**2)/wc # This param doesn't exist for an overdamped spectral density, we set it to this instead
-    gamma_1 = Gamma_1 / (2. * np.pi * wRC_1)  # no longer a free parameter that we normally use to fix wRC to the system splitting
+    Gamma_1, Gamma_2 = args['Gamma_1'], args['Gamma_2']
+    gamma_1 = Gamma_1 / (2. * np.pi * wRC_1)
     kappa_1 = np.sqrt(np.pi * alpha_1 * wRC_1 / 2.)  # coupling strength between the TLS and RC
 
-    Gamma_2 = (wRC_2**2)/wc
     gamma_2 = Gamma_2 / (2. * np.pi * wRC_2)
     kappa_2 = np.sqrt(np.pi * alpha_2 * wRC_2 / 2.)
+    shift1, shift2 = (kappa_1**2)/wRC_1, (kappa_2**2)/wRC_2
+    if not shift:
+        shift1, shift2 = 0., 0.
+    args.update({'gamma_1': gamma_1, 'gamma_2': gamma_2, 'w0_1': wRC_1,
+                    'w0_2': wRC_2, 'kappa_1':kappa_1, 'kappa_2':kappa_2,
+                    'shift1':shift1, 'shift2':shift2})
+    #print args
+    H, A_1, A_2, sig_1, sig_2 = dimer_ham_RC(w_1, w_2, w_xx, V, wRC_1, wRC_2,
+                                                kappa_1, kappa_2, N_1, N_2, exc,
+                                                shift=shift)
+    L_RC =  liouvillian_build(H[1], A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2,
+                            T_1, T_2, num_cpus=args['num_cpus'], silent=silent)
+    full_size = (4*N_1*N_2)**2
     if not silent:
         print "****************************************************************"
-    #print args
-    H_0, A_1, A_2, sig_1, sig_2 = dimer_ham_RC(w_1, w_2, w_xx, V, wRC_1, wRC_2,
-                                                kappa_1, kappa_2, N_1, N_2, exc)
-    L_RC =  liouvillian_build(H_0, A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2,
-                            T_1, T_2, num_cpus=args['num_cpus'], silent=silent)
-    full_size = (4*N_1*N_1)**2
-    if not silent:
         note = (L_RC.shape[0], L_RC.shape[0], full_size, full_size)
-        print "It is {}by{}. The full basis would be {}by{}".format(note)
-
-    return L_RC, H_0, A_1, A_2, sig_1, sig_2, wRC_1, wRC_2, kappa_1, kappa_2
-    #H_dim_full = w_1*XO*XO.dag() + w_2*w_1*OX*OX.dag() + w_xx*XX*XX.dag() + V*((SIGMA_m1+SIGMA_m1.dag())*(SIGMA_m2+SIGMA_m2.dag()))
+        print "It is {}by{}. The full basis would be {}by{}".format(L_RC.shape[0],
+                                            L_RC.shape[0], full_size, full_size)
+    return -L_RC, H, A_1, A_2, sig_1, sig_2, args
+    #H_dim_full = w_1*XO*XO.dag() + w_2*w_1*OX*OX.dag() + w_xx*XX*XX.dag() +                    V*((SIGMA_m1+SIGMA_m1.dag())*(SIGMA_m2+SIGMA_m2.dag()))
 
 
 

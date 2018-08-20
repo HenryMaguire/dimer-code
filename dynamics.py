@@ -144,7 +144,7 @@ if __name__ == "__main__":
     ncolors = len(plt.rcParams['axes.prop_cycle'])
 
     thermal_RCs = enr_thermal_dm([N_1,N_2], exc, [n_RC_1, n_RC_2])
-    rho_0 = tensor(basis(4,0)*basis(4,0).dag(),thermal_RCs)
+    rho_0 = tensor(basis(4,0)*basis(4,0).dag(), thermal_RCs)
     #timelist = np.linspace(0,3,1000)
     L_RC, H_0, A_1, A_2, A_EM, wRC_1, wRC_2, kappa_1, kappa_2 = RC.RC_mapping_OD(PARAMS)
     timelist = np.linspace(0,1,7000)
@@ -160,9 +160,8 @@ if __name__ == "__main__":
     #DATA_J = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='j', l='flat_')
     DATA_P = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='p', l='flat_')
     DATA_S = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='s', l='flat_')
-    DATA_NS = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='ns', l='flat_')"""
-
-    """
+    DATA_NS = vis.calculate_dynamics(rho_0, L_RC, H_0, A_EM, expects, PARAMS, EM_approx='ns', l='flat_')
+    
     mut_inf_d1 = []
     mut_inf_d2 = []
     mut_inf_12 = []

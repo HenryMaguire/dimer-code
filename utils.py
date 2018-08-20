@@ -5,6 +5,26 @@ from qutip import spre, spost, sprepost, tensor, basis
 import qutip as qt
 import pickle
 import sympy
+
+def exciton_states(PARS, shift=False):
+    w_1, w_2, V, eps = PARS['w_1'], PARS['w_2'],PARS['V'], PARS['bias']
+    if shift:
+        try:
+            w_1 += PARS['shift1']
+            w_2 += PARS['shift2']
+        except KeyError as e:
+            print "No RC mapping performed yet."
+            raise KeyError
+    eps = (w_1-w_2)
+    print eps, PARS['bias']
+    eta = np.sqrt(eps**2 + 4*V**2)
+    lam_m = ((w_2+eps)+w_2-eta)*0.5
+    lam_p = ((w_2+eps)+w_2+eta)*0.5
+    v_p = qt.Qobj(np.array([0., np.sqrt(eta+eps), np.sqrt(eta-eps), 0.]))/np.sqrt(2*eta)
+    v_m = qt.Qobj(np.array([0., np.sqrt(eta-eps), -np.sqrt(eta+eps), 0.]))/np.sqrt(2*eta)
+
+    return [lam_m, lam_p], [v_m, v_p]
+
 #new ptrace for ENR states.   rho is the state, sel is the same as the normal ptrace
 #(list of which subsystems you want to keep),
 #dims and excitations are the same as the ones you send to the other enr functions
