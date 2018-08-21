@@ -16,7 +16,6 @@ def exciton_states(PARS, shift=False):
             print "No RC mapping performed yet."
             raise KeyError
     eps = (w_1-w_2)
-    print eps, PARS['bias']
     eta = np.sqrt(eps**2 + 4*V**2)
     lam_m = ((w_2+eps)+w_2-eta)*0.5
     lam_p = ((w_2+eps)+w_2+eta)*0.5
