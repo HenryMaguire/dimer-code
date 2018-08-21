@@ -98,7 +98,7 @@ def operator_func(j, eVals=[], eVecs=[], A_1=[], A_2=[],
     #    print Chi_1.dims
     return [Z_1, Z_2]
 
-def RCME_operators_par(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus=0):
+def RCME_operators_par(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus=0, silent=False):
     ti = time.time()
     dim_ham = H_0.shape[0]
     eVals, eVecs = H_0.eigenstates()
@@ -108,11 +108,12 @@ def RCME_operators_par(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus
         kwargs[name] = eval(name)
     l = range(dim_ham) # Previously performed two loops in one
     Z =  par.parfor(operator_func,  l, num_cpus=num_cpus, **kwargs)
-    print "The operators took {} and have dimension {}.".format(time.time()-ti, dim_ham)
+    if not silent:
+    	print "The operators took {} and have dimension {}.".format(time.time()-ti, dim_ham)
     return H_0, sum(Z[0]), sum(Z[1])
 
 
-def RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus=0):
+def RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus=0, silent=False):
     # This function will be passed a TLS-RC hamiltonian, RC operator,
     #spectral density and beta outputs all of the operators
     # needed for the RCME (underdamped)
@@ -148,7 +149,8 @@ def RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus=0):
                 else:
                     Z_2 += np.pi*gamma_2*A_jk_2*outer_eigen/beta_2 # Just return coefficients which are left over
                     #Xi += 0 #since J_RC goes to zero
-    print "The operators took {} and have dimension {}.".format(time.time()-ti, dim_ham)
+    if not silent:
+        print "The operators took {} and have dimension {}.".format(time.time()-ti, dim_ham)
     return H_0, Z_1, Z_2
 
 def liouvillian_build(H_RC, A_1, A_2, gamma_1, gamma_2,
@@ -174,8 +176,13 @@ def liouvillian_build(H_RC, A_1, A_2, gamma_1, gamma_2,
         beta_2 = 1./(conversion * T_2)
         #RCnb_2 = (1 / (sp.exp( beta_2 * wRC_2)-1))
     # Now this function has to construct the liouvillian so that it can be passed to mesolve
-    H_RC, Z_1, Z_2  = RCME_operators(H_RC, A_1, A_2, gamma_1, gamma_2,
-                                    beta_1, beta_2, num_cpus=num_cpus)
+    if num_cpus>1:
+        RCop = RCME_operators_par
+    else:
+        RCop = RCME_operators
+    H_RC, Z_1, Z_2  = RCop(H_RC, A_1, A_2, gamma_1, gamma_2,
+                                    beta_1, beta_2, num_cpus=num_cpus, 
+                                    silent=silent)
 
     L = 0
     L+=spre(A_1*Z_1)+spre(A_2*Z_2)

@@ -105,6 +105,51 @@ def L_non_rwa(H_vib, sigma, PARAMS, silent=False):
         print "Full optical Liouvillian took {} seconds.".format(time.time()- ti)
     return -L*0.5
 
+def nonRWA_function(args, **kwargs):
+    i, j = args[0], args[1]
+    A = kwargs['A']
+    eVecs = kwargs['eVecs']
+    eVals = kwargs['eVals']
+    T = kwargs['T_EM']
+    w_1, alpha, J = kwargs['w_1'], kwargs['alpha_EM'], kwargs['J']
+    beta = beta_f(kwargs['T_EM'])
+    eta = eVals[i]-eVals[j]
+    
+    g = Gamma(eta, beta, J, alpha, w_1, imag_part=False)
+  
+    aij = A.matrix_element(eVecs[i].dag(), eVecs[j])
+    if abs(g)>0 and abs(aij)>0:    
+        return g*aij*eVecs[i]*(eVecs[j].dag())
+    else:
+        return 0*A
+
+def L_non_rwa_par(H_vib, sigma, args, silent=False):
+    Gamma, T, w_1, J, num_cpus = args['alpha_EM'], args['T_EM'], args['w_1'],args['J'], args['num_cpus']
+    #Construct non-secular liouvillian
+    ti = time.time()
+    dim_ham = H_vib.shape[0]
+
+    A = sigma + sigma.dag()
+    eVals, eVecs = H_vib.eigenstates()
+    kwargs = dict(args)
+    kwargs.update({'eVals':eVals, 'eVecs':eVecs, 'A':A})
+    l = dim_ham*range(dim_ham) # Perform two loops in one
+    i_j_gen = ((i,j) for i,j in zip(sorted(l), l))
+    pool = multiprocessing.Pool(num_cpus)
+    Out = pool.imap_unordered(partial(nonRWA_function,**kwargs), i_j_gen)
+    pool.close()
+    pool.join()
+    G = np.sum(np.array([x for x in Out]))
+    G_dag = G.dag()
+    # Initialise liouvilliian
+    L =  qt.spre(A*G) - qt.sprepost(G, A)
+    L += qt.spost(G_dag*A) - qt.sprepost(A, G_dag)
+    #print np.sum(X1.full()), np.sum(X2.full()), np.sum(X3.full()), np.sum(X4.full())
+    if not silent:
+        print "It took ", time.time()-ti, " seconds to build the Non-secular RWA Liouvillian"
+    return -0.5*L
+
+
 def secular_function(args, **kwargs):
     i, j = args[0], args[1]
     A = kwargs['A']
