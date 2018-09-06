@@ -6,6 +6,11 @@ import qutip as qt
 import pickle
 import sympy
 
+
+
+def Coth(x):
+    return (np.exp(2*x)+1)/(np.exp(2*x)-1)
+
 def exciton_states(PARS, shift=False):
     w_1, w_2, V, eps = PARS['w_1'], PARS['w_2'],PARS['V'], PARS['bias']
     if shift:

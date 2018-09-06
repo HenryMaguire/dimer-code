@@ -114,11 +114,11 @@ def nonRWA_function(args, **kwargs):
     w_1, alpha, J = kwargs['w_1'], kwargs['alpha_EM'], kwargs['J']
     beta = beta_f(kwargs['T_EM'])
     eta = eVals[i]-eVals[j]
-    
+
     g = Gamma(eta, beta, J, alpha, w_1, imag_part=False)
-  
+
     aij = A.matrix_element(eVecs[i].dag(), eVecs[j])
-    if abs(g)>0 and abs(aij)>0:    
+    if abs(g)>0 and abs(aij)>0:
         return g*aij*eVecs[i]*(eVecs[j].dag())
     else:
         return 0*A
@@ -289,7 +289,7 @@ def L_nonsecular(H_vib, A, args):
     print "It took ", time.time()-ti, " seconds to build the Non-secular RWA Liouvillian"
     return -0.25*L
 
-def L_secular(H_vib, A, args):
+def L_secular(H_vib, A, args, silent=False):
     '''
     Initially assuming that the vibronic eigenstructure has no
     degeneracy and the secular approximation has been made
@@ -328,7 +328,8 @@ def L_secular(H_vib, A, args):
                 r_up = 2*pi*J(eps_ij, Gamma, w_1)*Occ
                 r_down = 2*pi*J(eps_ij, Gamma, w_1)*(Occ+1)
             L += Qobj(lam_ij_sq*(r_up*(spre(II) + spost(II) - 2*sprepost(JI, IJ))+r_down*(spost(JJ)+ spre(JJ) - 2*sprepost(IJ,JI))))
-    print "It took ", time.time()-ti, " seconds to build the secular RWA Liouvillian"
+    if not silent:
+        print "It took ", time.time()-ti, " seconds to build the secular RWA Liouvillian"
 
     return -np.sum(L)*0.25
 
