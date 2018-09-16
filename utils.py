@@ -185,6 +185,8 @@ def J_underdamped(omega, alpha, Gamma, omega_0):
 def J_overdamped(omega, alpha, wc):
     return alpha*wc*float(omega)/(omega**2 +wc**2)
 
+
+
 def J_OD_to_UD(omega, gamma, Omega, kappa):
     # kappa is  referred to as lambda
     # in J. Chem. Phys. 144, 044110 (2016)
@@ -210,3 +212,45 @@ def lin_construct(O):
 
 def coth(x):
     return float(sympy.coth(x))
+
+
+
+def make_initial_state(init_dimer_str, eops_dict, PARS):
+    I_dimer = qeye(4)
+    # Should also displace these states
+    n1 = Occupation(PARS['w0_1'], PARS['T_1'])
+    n2 = Occupation(PARS['w0_2'], PARS['T_2'])
+    therm = tensor(I_dimer, qt.enr_thermal_dm([PARS['N_1'], PARS['N_2']], PARS['exc'], n1))
+    return eops_dict[init_dimer_str]*therm
+
+
+def make_expectation_operators(PARS):
+    labels = [ 'OO', 'XO', 'OX', 'XX', 'site_coherence', 'bright', 'dark', 'eig_coherence',
+             'RC1_position1', 'RC2_position', 'RC1_number', 'RC2_number']
+    I = enr_identity([PARS['N_1'], PARS['N_2']], PARS['exc'])
+    I_dimer = qeye(4)
+    energies, states = exciton_states(PARS, shift=False)
+    bright_vec = states[1]
+    dark_vec = states[0]
+    # electronic operators
+     # site populations site coherences, eig pops, eig cohs
+    subspace_ops = [OO_proj, XO_proj, OX_proj, XX_proj,site_coherence,
+                   bright_vec*bright_vec.dag(), dark_vec*dark_vec.dag(),
+                   dark_vec*bright_vec.dag()]
+    # put operators into full RC tensor product basis
+    fullspace_ops = [tensor(op, I) for op in subspace_ops]
+    # RC operators
+    # RC positions, RC number state1, RC number state1, RC upper N fock, RC ground fock
+
+    N_1, N_2, exc = PARS['N_1'], PARS['N_2'], PARS['exc']
+    a_enr_ops = enr_destroy([N_1, N_2], exc)
+    position1 = a_enr_ops[0].dag() + a_enr_ops[0]
+    position2 = a_enr_ops[1].dag() + a_enr_ops[1]
+    number1   = a_enr_ops[0].dag()*a_enr_ops[0]
+    number2   = a_enr_ops[1].dag()*a_enr_ops[1]
+
+    subspace_ops = [position1, position2, number1, number2]
+    fullspace_ops += [tensor(I_dimer, op) for op in subspace_ops]
+
+
+    return dict((key_val[0], key_val[1]) for key_val in zip(labels, fullspace_ops))
