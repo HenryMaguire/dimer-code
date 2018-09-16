@@ -3,7 +3,9 @@ import time
 
 import numpy as np
 from numpy import pi, sqrt
-import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('TkAgg')
+#import matplotlib.pyplot as plt
 
 
 import phonons as RC
@@ -13,7 +15,6 @@ from phonons import RC_mapping
 from optical import L_non_rwa, L_phenom
 from qutip import basis, qeye, enr_identity, enr_destroy, tensor, enr_thermal_dm, steadystate
 from utils import *
-import tests as check
 
 OO = basis(4,0)
 XO = basis(4,1)
@@ -47,7 +48,10 @@ fock_ground = qt.enr_fock([N,N],N, (N,0))
 fock_ground2 = qt.enr_fock([N,N],N, (0,N))
 """
 
-
+def SD_peak_position(Gamma, alpha, w_0):
+    Omega = np.linspace(0,w_0*50,10000)
+    J_w = np.array([J_underdamped(w, alpha, Gamma, w_0) for w in Omega])
+    return Omega[np.argmax(J_w)]
 
 def dynamics(bias=100., w_2=2000., V = 100., pialpha_prop=0.1,
                                  T_EM=0., T_ph =300.,
@@ -70,8 +74,8 @@ def dynamics(bias=100., w_2=2000., V = 100., pialpha_prop=0.1,
 
     Gamma_1 = Gamma_2 = Gamma
     w0_2, w0_1 = w_0, w_0 # underdamped SD parameter omega_0
-    if not silent:
-        plot_UD_SD(Gamma_1, w_2*pialpha_prop/pi, w_0, eps=w_2)
+    #if not silent:
+    #    #plot_UD_SD(Gamma_1, w_2*pialpha_prop/pi, w_0, eps=w_2)
     w_xx = w_2 + w_1
     if not silent:
         print "Gap is {}. Phonon thermal energy is {}. Phonon SD peak is {}. N={}.".format(gap, phonon_energy,

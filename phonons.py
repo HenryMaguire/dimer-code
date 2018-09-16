@@ -6,8 +6,6 @@ from numpy import pi
 from qutip import Qobj,basis, ket, mesolve, qeye, tensor, thermal_dm, destroy, steadystate, spost, spre, sprepost, enr_destroy, enr_identity, steadystate, to_super
 import qutip.parallel as par
 from sympy.functions import coth
-import matplotlib.pyplot as plt
-
 
 from utils import *
 
@@ -181,7 +179,7 @@ def liouvillian_build(H_RC, A_1, A_2, gamma_1, gamma_2,
     else:
         RCop = RCME_operators
     H_RC, Z_1, Z_2  = RCop(H_RC, A_1, A_2, gamma_1, gamma_2,
-                                    beta_1, beta_2, num_cpus=num_cpus, 
+                                    beta_1, beta_2, num_cpus=num_cpus,
                                     silent=silent)
 
     L = 0

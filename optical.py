@@ -18,7 +18,6 @@ import qutip.parallel as par
 #from dimer_weak_phonons import cauchyIntegrands, integral_converge, Gamma
 from utils import *
 import phonons as RC
-import tests as check
 
 reload(RC)
 def coth(x):

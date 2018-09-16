@@ -1,7 +1,7 @@
 import numpy as np
 from numpy import pi
 import scipy as sp
-from qutip import spre, spost, sprepost, tensor, basis
+from qutip import spre, spost, sprepost, tensor, basis, qeye
 import qutip as qt
 import pickle
 import sympy
@@ -225,9 +225,21 @@ def make_initial_state(init_dimer_str, eops_dict, PARS):
 
 
 def make_expectation_operators(PARS):
+    OO = basis(4,0)
+    XO = basis(4,1)
+    OX = basis(4,2)
+    XX = basis(4,3)
+
+    site_coherence = OX*XO.dag()
+
+    OO_proj = OO*OO.dag()
+    XO_proj = XO*XO.dag()
+    OX_proj = OX*OX.dag()
+    XX_proj = XX*XX.dag()
+    
     labels = [ 'OO', 'XO', 'OX', 'XX', 'site_coherence', 'bright', 'dark', 'eig_coherence',
              'RC1_position1', 'RC2_position', 'RC1_number', 'RC2_number']
-    I = enr_identity([PARS['N_1'], PARS['N_2']], PARS['exc'])
+    I = qt.enr_identity([PARS['N_1'], PARS['N_2']], PARS['exc'])
     I_dimer = qeye(4)
     energies, states = exciton_states(PARS, shift=False)
     bright_vec = states[1]
@@ -243,7 +255,7 @@ def make_expectation_operators(PARS):
     # RC positions, RC number state1, RC number state1, RC upper N fock, RC ground fock
 
     N_1, N_2, exc = PARS['N_1'], PARS['N_2'], PARS['exc']
-    a_enr_ops = enr_destroy([N_1, N_2], exc)
+    a_enr_ops = qt.enr_destroy([N_1, N_2], exc)
     position1 = a_enr_ops[0].dag() + a_enr_ops[0]
     position2 = a_enr_ops[1].dag() + a_enr_ops[1]
     number1   = a_enr_ops[0].dag()*a_enr_ops[0]
