@@ -167,18 +167,24 @@ params = dict({'Gamma': dict({'s' : 30, 'm' : 200, 'l' : 1500}),
              'w_0'  : dict({'s' : 50, 'm' : 200, 'l' : 1500}),
                 'alpha': dict({'s' : 10, 'm' : 50 , 'l' : 200})})
 # have already calculated the below parameters
-combs = [i for i in combinations_with_replacement(sizes, 3)]
+#combs = [i for i in combinations_with_replacement(sizes, 3)]
+#perms = permutations_with_replacement(sizes)
+perms = [('m', 's', 'm'), ('m', 's', 'l'), ('m', 'l', 's'),
+         ('m', 'l', 'm'), ('l', 's', 'm'), ('l', 's', 'l'),
+         ('l', 'm', 'm'), ('l', 'm', 'l'), ('l', 'l', 's'), ('l', 'l', 'm')]
+
+perms.reverse()
 
 N_values = range(3,10)
-for perm in permutations_with_replacement(sizes):
-    if perm not in combs:
+for perm in perms :
+    #if perm not in combs:
         # Gamma, omega_0, alpha
-        Gamma = params['Gamma'][perm[0]]
-        w_0 = params['w_0'][perm[1]]
-        alpha = params['alpha'][perm[2]]
-        pialpha_prop = (pi*alpha)/w_2
-        label_str = ''.join(perm)
-        for N in N_values:
-            _, _ = dynamics(N=N, w_0=w_0, Gamma=Gamma, pialpha_prop=pialpha_prop,
-                            alpha_EM=1., T_EM=2000.,  silent = True,
-                            init_dimer=init_dimer, dir_name='dynamics_{}'.format(label_str))
+    Gamma = params['Gamma'][perm[0]]
+    w_0 = params['w_0'][perm[1]]
+    alpha = params['alpha'][perm[2]]
+    pialpha_prop = (pi*alpha)/w_2
+    label_str = ''.join(perm)
+    for N in N_values:
+        _, _ = dynamics(N=N, w_0=w_0, Gamma=Gamma, pialpha_prop=pialpha_prop,
+                        alpha_EM=1., T_EM=2000.,  silent = True,
+                        init_dimer=init_dimer, dir_name='dynamics_{}'.format(label_str))

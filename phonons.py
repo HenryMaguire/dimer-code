@@ -272,9 +272,7 @@ def RC_mapping(args, silent=False, shift=True):
     shift1, shift2 = (kappa_1**2)/wRC_1, (kappa_2**2)/wRC_2
     if not shift:
         shift1, shift2 = 0., 0.
-    args.update({'gamma_1': gamma_1, 'gamma_2': gamma_2, 'w0_1': wRC_1,
-                    'w0_2': wRC_2, 'kappa_1':kappa_1, 'kappa_2':kappa_2,
-                    'shift1':shift1, 'shift2':shift2})
+    args.update({'gamma_1': gamma_1, 'gamma_2': gamma_2, 'w0_1': wRC_1, 'w0_2': wRC_2, 'kappa_1':kappa_1, 'kappa_2':kappa_2,'shift1':shift1, 'shift2':shift2})
     #print args
     H, A_1, A_2, sig_1, sig_2 = dimer_ham_RC(w_1, w_2, w_xx, V, wRC_1, wRC_2,
                                                 kappa_1, kappa_2, N_1, N_2, exc,
