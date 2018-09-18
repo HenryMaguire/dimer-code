@@ -169,9 +169,7 @@ params = dict({'Gamma': dict({'s' : 30, 'm' : 200, 'l' : 1500}),
 # have already calculated the below parameters
 #combs = [i for i in combinations_with_replacement(sizes, 3)]
 #perms = permutations_with_replacement(sizes)
-perms = [('m', 's', 'm'), ('m', 's', 'l'), ('m', 'l', 's'),
-         ('m', 'l', 'm'), ('l', 's', 'm'), ('l', 's', 'l'),
-         ('l', 'm', 'm'), ('l', 'm', 'l'), ('l', 'l', 's'), ('l', 'l', 'm')]
+perms = [('l', 's', 'm'), ('l', 's', 'l')]
 
 perms.reverse()
 
