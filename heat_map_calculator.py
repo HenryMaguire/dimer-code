@@ -115,7 +115,7 @@ def heat_map_calculator(PARAMS,
             H, L = get_H_and_L(PARAMS,silent=True)
             tf = time.time()
             ss = steadystate(H[1], [L], method='iterative-gmres',
-                           use_precond=True, fill_factor=47,
+                           use_precond=True, fill_factor=43,
                            drop_tol=1e-3, use_rcm=True, return_info=True,
                            tol=1e-9, maxiter=1100)
             print "Build time: {:0.3f} \t | \t Solution time: {:0.3f}".format(tf-ti, ss[1]['solution_time'])
@@ -180,7 +180,7 @@ def get_heatmap(comb, observable, dir_name="dynamics"):
     colors = [c['color'] for c in plt.rcParams['axes.prop_cycle']]
     return ss_array, info_array
 
-N = 2
+N = 8
 # bias vs alpha
 pars = PARAMS_setup(bias=100., w_2=2000., V = 100., pialpha_prop=0.1,
                                  T_EM=2000., T_ph =300.,
@@ -195,8 +195,8 @@ ss_array, info_array= heat_map_calculator(pars,
                         x_values=x_values,
                         y_values=y_values,
                         dir_name='heatmap_epsAlpha')
-plt.imshow(steadystate_observable(ss_array, pars, 'sigma_x',
-                                  (len(y_values), len(x_values))))
+#plt.imshow(steadystate_observable(ss_array, pars, 'sigma_x',
+#                                  (len(y_values), len(x_values))))
 
 pialpha_prop = 100./2000.
 # Gamma vs w_0
@@ -214,9 +214,10 @@ ss_array, info_array = heat_map_calculator(pars,
                         x_values=x_values,
                         y_values=y_values,
                         dir_name='heatmap_oG')
-plt.imshow(steadystate_observable(ss_array, pars, 'sigma_x',
-                                  (len(y_values), len(x_values))))
+#plt.imshow(steadystate_observable(ss_array, pars, 'sigma_x',
+#                                  (len(y_values), len(x_values))))
 # T_ph vs T_EM
+pialpha_prop = 100./2000.
 pars = PARAMS_setup(bias=100., w_2=2000., V = 100., pialpha_prop=pialpha_prop,
                                  T_EM=0., T_ph =300.,
                                  alpha_EM=1., shift=True,
@@ -231,7 +232,7 @@ ss_array, info_array= heat_map_calculator(pars,
                         x_values=x_values,
                         y_values=y_values,
                         dir_name='heatmap_TphTEM')
-plt.imshow(steadystate_observable(ss_array, pars, 'sigma_x',
-                                  (len(y_values), len(x_values))))
-
-plt.show()
+#plt.imshow(steadystate_observable(ss_array, pars, 'sigma_x',
+#                                  (len(y_values), len(x_values))))
+#
+#
