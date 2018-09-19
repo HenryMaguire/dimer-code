@@ -32,6 +32,7 @@ def exciton_states(PARS, shift=False):
 #new ptrace for ENR states.   rho is the state, sel is the same as the normal ptrace
 #(list of which subsystems you want to keep),
 #dims and excitations are the same as the ones you send to the other enr functions
+
 def ENR_ptrace(rho,sel,dims,excitations):
     if isinstance(sel, int):
         sel = np.array([sel])
@@ -236,9 +237,9 @@ def make_expectation_operators(PARS):
     XO_proj = XO*XO.dag()
     OX_proj = OX*OX.dag()
     XX_proj = XX*XX.dag()
-    
+
     labels = [ 'OO', 'XO', 'OX', 'XX', 'site_coherence', 'bright', 'dark', 'eig_coherence',
-             'RC1_position1', 'RC2_position', 'RC1_number', 'RC2_number']
+             'RC1_position1', 'RC2_position', 'RC1_number', 'RC2_number' , 'sigma_x', 'sigma_y']
     I = qt.enr_identity([PARS['N_1'], PARS['N_2']], PARS['exc'])
     I_dimer = qeye(4)
     energies, states = exciton_states(PARS, shift=False)
@@ -248,7 +249,9 @@ def make_expectation_operators(PARS):
      # site populations site coherences, eig pops, eig cohs
     subspace_ops = [OO_proj, XO_proj, OX_proj, XX_proj,site_coherence,
                    bright_vec*bright_vec.dag(), dark_vec*dark_vec.dag(),
-                   dark_vec*bright_vec.dag()]
+                   dark_vec*bright_vec.dag(),
+                    site_coherence+site_coherence.dag(),
+                    1j*(site_coherence-site_coherence.dag())]
     # put operators into full RC tensor product basis
     fullspace_ops = [tensor(op, I) for op in subspace_ops]
     # RC operators
