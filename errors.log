@@ -1,7 +1,0 @@
-Traceback (most recent call last):
-  File "/home/henry/Work/phd-work/vibronic-dimer/QHE_notes_figures.py", line 346, in <module>
-    coherence = load_obj("DATA/bias_dependence_wRC667_N{}_V100_wc53/operators/coh_ops".format(N))
-  File "utils.py", line 75, in load_obj
-    with open(name + '.pickle', 'rb') as f:
-IOError: [Errno 2] No such file or directory: 'DATA/bias_dependence_wRC667_N5_V100_wc53/operators/coh_ops.pickle'
-

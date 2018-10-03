@@ -1,0 +1,15 @@
+[W 15:34:45.475 NotebookApp] WARNING: The notebook server is listening on all IP addresses and not using encryption. This is not recommended.
+[I 15:34:45.499 NotebookApp] [jupyter_nbextensions_configurator] enabled 0.4.0
+[I 15:34:45.501 NotebookApp] Serving notebooks from local directory: /home/henry/Work/phd-work/dimer-code
+[I 15:34:45.501 NotebookApp] 0 active kernels 
+[I 15:34:45.501 NotebookApp] The Jupyter Notebook is running at: http://[all ip addresses on your system]:9999/
+[I 15:34:45.501 NotebookApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
+[W 15:21:27.632 NotebookApp] WARNING: The notebook server is listening on all IP addresses and not using encryption. This is not recommended.
+[I 15:21:27.632 NotebookApp] The port 9999 is already in use, trying another port.
+[I 15:21:27.657 NotebookApp] [jupyter_nbextensions_configurator] enabled 0.4.0
+[I 15:21:27.658 NotebookApp] Serving notebooks from local directory: /home/henry/Work/phd-work/dimer-code
+[I 15:21:27.658 NotebookApp] 0 active kernels 
+[I 15:21:27.658 NotebookApp] The Jupyter Notebook is running at: http://[all ip addresses on your system]:10000/
+[I 15:21:27.659 NotebookApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
+[C 13:19:32.050 NotebookApp] received signal 15, stopping
+[I 13:19:32.051 NotebookApp] Shutting down kernels
