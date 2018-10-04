@@ -13,7 +13,6 @@ from phonons import RC_mapping
 from optical import L_non_rwa, L_phenom
 from qutip import basis, qeye, enr_identity, enr_destroy, tensor, enr_thermal_dm, steadystate
 from utils import *
-import tests as check
 
 def permutations_with_replacement(e):
     # needed for parameter sweep later
@@ -218,7 +217,6 @@ def get_H_and_L(PARS,silent=False):
 
     L = L_RC
     del L_RC
-    PARS['num_cpus'] = 1
     if abs(PARS['alpha_EM'])>0:
         if PARS['num_cpus']>1:
             L_EM_full = opt.L_non_rwa_par(H[1], tensor(sigma,I), PARS, silent=silent)

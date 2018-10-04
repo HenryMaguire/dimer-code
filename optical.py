@@ -20,6 +20,12 @@ from utils import *
 import phonons as RC
 
 reload(RC)
+
+def chunks(l, n):
+    """Yield successive n-sized chunks from l."""
+    for i in range(0, len(l), n):
+        yield l[i:i + n]
+
 def coth(x):
     return float(sympy.coth(x))
 
@@ -104,23 +110,29 @@ def L_non_rwa(H_vib, sigma, PARAMS, silent=False):
         print "Full optical Liouvillian took {} seconds.".format(time.time()- ti)
     return -L*0.5
 
-def nonRWA_function(args, **kwargs):
-    i, j = args[0], args[1]
+def nonRWA_function(idx_list, **kwargs):
+
     A = kwargs['A']
     eVecs = kwargs['eVecs']
     eVals = kwargs['eVals']
     T = kwargs['T_EM']
     w_1, alpha, J = kwargs['w_1'], kwargs['alpha_EM'], kwargs['J']
     beta = beta_f(kwargs['T_EM'])
-    eta = eVals[i]-eVals[j]
 
-    g = Gamma(eta, beta, J, alpha, w_1, imag_part=False)
+    op_contrib = 0*A
+    for i, j in idx_list:
 
-    aij = A.matrix_element(eVecs[i].dag(), eVecs[j])
-    if abs(g)>0 and abs(aij)>0:
-        return g*aij*eVecs[i]*(eVecs[j].dag())
-    else:
-        return 0*A
+        eta = eVals[i]-eVals[j]
+
+        g = Gamma(eta, beta, J, alpha, w_1, imag_part=False)
+
+        aij = A.matrix_element(eVecs[i].dag(), eVecs[j])
+        if abs(g)>0 and abs(aij)>0:
+            op_contrib+= g*aij*eVecs[i]*(eVecs[j].dag())
+        else:
+            pass
+    return op_contrib
+
 
 def L_non_rwa_par(H_vib, sigma, args, silent=False):
     Gamma, T, w_1, J, num_cpus = args['alpha_EM'], args['T_EM'], args['w_1'],args['J'], args['num_cpus']
@@ -133,7 +145,8 @@ def L_non_rwa_par(H_vib, sigma, args, silent=False):
     kwargs = dict(args)
     kwargs.update({'eVals':eVals, 'eVecs':eVecs, 'A':A})
     l = dim_ham*range(dim_ham) # Perform two loops in one
-    i_j_gen = ((i,j) for i,j in zip(sorted(l), l))
+    i_j_gen = [(i,j) for i,j in zip(sorted(l), l)]
+    i_j_gen = chunks(i_j_gen, 128)
     pool = multiprocessing.Pool(num_cpus)
     Out = pool.imap_unordered(partial(nonRWA_function,**kwargs), i_j_gen)
     pool.close()
