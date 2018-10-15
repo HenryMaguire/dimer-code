@@ -10,6 +10,39 @@ from sympy.functions import coth
 from utils import *
 
 
+def H_mapping_RC(H_sub, coupling_ops, Omega_1,
+                Omega_2, kap_1, kap_2, N_1, N_2, exc,
+                shift=True):
+    """ Builds RC Hamiltonian in excitation restricted subspace
+
+    Input: Hamiltonian and system operators which couple to phonon bath 1 and 2
+     Output: Hamiltonian, all
+    collapse operators in the vibronic Hilbert space
+    """
+
+    I_sub = qeye(H_sub.shape[0])
+    I = enr_identity([N_1,N_2], exc)
+    shifts = [(kap_1**2)/Omega_1, (kap_2**2)/Omega_2]
+    if shift:
+        for s, op in zip(shifts,coupling_ops):
+            H_sub += s*op
+
+    H_S = tensor(H_sub, I)
+
+    atemp = enr_destroy([N_1,N_2], exc)
+
+    a_RC_exc = [tensor(I_sub, aa) for aa in atemp] # annhilation ops in exc restr basis
+    A_1 = a_RC_exc[0].dag() + a_RC_exc[0]
+    A_2 = a_RC_exc[1].dag() + a_RC_exc[1]
+    H_I1 = kap_1*tensor(coupling_ops[0], I)*A_1
+    H_I2 = kap_2*tensor(coupling_ops[1], I)*A_2
+
+    H_RC1 = Omega_1*a_RC_exc[0].dag()*a_RC_exc[0]
+    H_RC2 = Omega_2*a_RC_exc[1].dag()*a_RC_exc[1]
+
+    H = H_S + H_RC1 + H_RC2 + H_I1 + H_I2
+    return [H_sub, H], A_1, A_2
+
 def dimer_ham_RC(w_1, w_2, w_xx, V, Omega_1,
                 Omega_2, kap_1, kap_2, N_1, N_2, exc,
                 shift=True):
@@ -257,7 +290,8 @@ def RC_mapping_OD(args, silent=False):
 
 
 def RC_mapping(args, silent=False, shift=True):
-
+    H_sub = args['H_sub']
+    coupling_ops = args['coupling_ops']
     # we define all of the RC parameters by the underdamped spectral density
     w_1, w_2, w_xx, V = args['w_1'], args['w_2'], args['w_xx'], args['V']
     T_1, T_2, mu = args['T_1'], args['T_2'], args['mu']
@@ -274,18 +308,19 @@ def RC_mapping(args, silent=False, shift=True):
         shift1, shift2 = 0., 0.
     args.update({'gamma_1': gamma_1, 'gamma_2': gamma_2, 'w0_1': wRC_1, 'w0_2': wRC_2, 'kappa_1':kappa_1, 'kappa_2':kappa_2,'shift1':shift1, 'shift2':shift2})
     #print args
-    H, A_1, A_2, sig_1, sig_2 = dimer_ham_RC(w_1, w_2, w_xx, V, wRC_1, wRC_2,
-                                                kappa_1, kappa_2, N_1, N_2, exc,
-                                                shift=shift)
+    H, A_1, A_2 = H_mapping_RC(H_sub, coupling_ops, wRC_1,
+                                                wRC_2, kappa_1, kappa_2, N_1, N_2, exc,
+                                                shift=True)
+
     L_RC =  liouvillian_build(H[1], A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2,
                             T_1, T_2, num_cpus=args['num_cpus'], silent=silent)
-    full_size = (4*N_1*N_2)**2
+    full_size = (H_sub.shape[0]*N_1*N_2)**2
     if not silent:
         print "****************************************************************"
         note = (L_RC.shape[0], L_RC.shape[0], full_size, full_size)
         print "It is {}by{}. The full basis would be {}by{}".format(L_RC.shape[0],
                                             L_RC.shape[0], full_size, full_size)
-    return -L_RC, H, A_1, A_2, sig_1, sig_2, args
+    return -L_RC, H, A_1, A_2, args
     #H_dim_full = w_1*XO*XO.dag() + w_2*w_1*OX*OX.dag() + w_xx*XX*XX.dag() +                    V*((SIGMA_m1+SIGMA_m1.dag())*(SIGMA_m2+SIGMA_m2.dag()))
 
 

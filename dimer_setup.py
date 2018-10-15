@@ -202,7 +202,7 @@ def make_expectation_operators(PARS):
 
     return dict((key_val[0], key_val[1]) for key_val in zip(labels, fullspace_ops))
 
-def get_H_and_L(PARS,silent=False):
+def get_H_and_L(PARS,silent=False, threshold=0.):
     L_RC, H, A_1, A_2, SIG_1, SIG_2, PARAMS = RC.RC_mapping(PARS,
                                                                 silent=silent,
                                                                 shift=True)
@@ -226,15 +226,17 @@ def get_H_and_L(PARS,silent=False):
         del L_EM_full
     else:
         print "Not including optical dissipator"
+    if threshold:
+        L.tidyup(threshold)
     return H, L
 
 def PARAMS_setup(bias=100., w_2=2000., V = 100., pialpha_prop=0.1,
                                  T_EM=0., T_ph =300.,
                                  alpha_EM=1., shift=True,
                                  num_cpus=1, w_0=200, Gamma=50., N=3,
-                                 silent=False):
+                                 silent=False, exc_diff=0):
     N_1 = N_2 = N
-    exc = N
+    exc = N+exc_diff
     gap = sqrt(bias**2 +4*(V**2))
     phonon_energy = T_ph*0.695
 
@@ -267,5 +269,4 @@ def PARAMS_setup(bias=100., w_2=2000., V = 100., pialpha_prop=0.1,
     PARAMS.update({'alpha_1': alpha, 'alpha_2': alpha})
     PARAMS.update({'N_1': N_1, 'N_2': N_2})
     PARAMS.update({'exc': exc})
-    PARAMS.update({'exc': 0})
     return PARAMS
