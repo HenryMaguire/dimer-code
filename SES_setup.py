@@ -37,12 +37,14 @@ I_sys = qeye(3)
 reload(RC)
 reload(opt)
 
-labels = [ 'OO', 'XO', 'OX', 'site_coherence', 'bright', 'dark', 'eig_coherence',
-             'RC1_position1', 'RC2_position', 'RC1_number', 'RC2_number', 'sigma_x', 'sigma_y']
+labels = [ 'OO', 'XO', 'OX', 'site_coherence', 
+            'bright', 'dark', 'eig_coherence',
+             'RC1_position1', 'RC2_position', 
+             'RC1_number', 'RC2_number', 'sigma_x', 'sigma_y']
 
 def make_expectation_operators(PARS):
     # makes a dict: keys are names of observables values are operators
-    I_sys=PARS['sys_dim']
+    I_sys=qeye(PARS['sys_dim'])
     I = enr_identity([PARS['N_1'], PARS['N_2']], PARS['exc'])
     energies, states = exciton_states(PARS, shift=False)
     bright_vec = states[1]
@@ -102,6 +104,7 @@ def PARAMS_setup(bias=100., w_2=2000., V = 100., pialpha_prop=0.1,
                                  alpha_EM=1., shift=True,
                                  num_cpus=1, w_0=200, Gamma=50., N=3,
                                  silent=False, exc_diff=0, sys_dim=3):
+    # Sets up the parameter dict
     N_1 = N_2 = N
     exc = N+exc_diff
     gap = sqrt(bias**2 +4*(V**2))

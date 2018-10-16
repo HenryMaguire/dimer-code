@@ -1,22 +1,25 @@
 from dimer_setup import *
 import time
-def calculate_steadystate(H, L, fill_factor=47, persistent=False, method="iterative-lgmres"):
+from qutip import build_preconditioner, steadystate
+def calculate_steadystate(H, L, fill_factor=500, tol=1e-8, persistent=False, method="iterative-lgmres"):
     calculated = False
     ff = fill_factor
-    tol = 1e-8
     ss = 0
     while not calculated:
         try:
-            from qutip import steadystate
-            time.sleep(3) # To allow observation of "ambient" memory usage
-            ss = steadystate(H[1], [L], method=method,
-                                   use_precond=True, fill_factor=ff,
-                                   drop_tol=5e-3, use_rcm=True, return_info=True,
-                                   tol=tol, maxiter=60000, ILU_MILU='smilu_2')
-            calculated=True
-            return ss[0], ss[1]
+            
+            M=None
+            if "iterative" in method:
+                ti = time.time()
+                M, m_info = build_preconditioner(H[1], [L], fill_factor=500,return_info=True,
+                                        drop_tol=1e-4, use_rcm=True, ILU_MILU='smilu_2')
+                print "Building preconditioner took {} seconds".format(time.time()-ti)
+                print m_info
+            ss, info = steadystate(H[1], [L], method=method, M=M,
+                                    use_precond=True, use_rcm=True, 
+                                    return_info=True, tol=tol, maxiter=1000)
+            return ss, info
         except Exception as err:
-            del steadystate
             print "Steadystate failed because {}.".format(err)
             if persistent:
                 if "tolerance" in str(err):
@@ -34,7 +37,25 @@ def calculate_steadystate(H, L, fill_factor=47, persistent=False, method="iterat
                 print("Skipping...")
                 return 0, 0 # don't bother
 
+def calculate_steadystate_bootstrap(H, L_full, chop_threshold=1e-8, fill_factor=500, method="iterative-lgmres", maxiter=1000):
+    # return ss, info
+    # uses chopped L for the preconditioner, but the full Liouvillian for the krylov subspace bit
+    from utils import chop
+    try:
+        M=None
+        if "iterative" in method:
+            ti = time.time()
+            M, m_info = build_preconditioner(H[1], [chop(L_full, threshold=chop_threshold)], fill_factor=500,
+                                        return_info=True,drop_tol=1e-4, use_rcm=True, ILU_MILU='smilu_2')
+            print m_info
+            print "Building preconditioner took {} seconds".format(time.time()-ti)
+        return steadystate(H[1], [L_full], method=method, M=M,
+                                    use_precond=True, use_rcm=True, 
+                                    return_info=True, tol=1e-8, maxiter=maxiter)
 
+    except Exception as err:
+        print(err)
+        return (None, None)
 
 
 def heat_map_calculator(PARAMS,

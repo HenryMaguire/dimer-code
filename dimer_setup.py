@@ -146,5 +146,5 @@ def PARAMS_setup(bias=100., w_2=2000., V = 100., pialpha_prop=0.1,
 
     PARAMS.update({'alpha_1': alpha, 'alpha_2': alpha})
     PARAMS.update({'N_1': N_1, 'N_2': N_2, 'exc': exc})
-    PARAMS.update({'sys_dim' : sys_dim})
+    PARAMS.update({'sys_dim' : 4})
     return PARAMS
