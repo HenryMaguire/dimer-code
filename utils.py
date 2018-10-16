@@ -26,7 +26,9 @@ def exciton_states(PARS, shift=False):
     lam_p = ((w_2+eps)+w_2+eta)*0.5
     v_p = qt.Qobj(np.array([0., np.sqrt(eta+eps), np.sqrt(eta-eps), 0.]))/np.sqrt(2*eta)
     v_m = qt.Qobj(np.array([0., np.sqrt(eta-eps), -np.sqrt(eta+eps), 0.]))/np.sqrt(2*eta)
-
+    if PARS['sys_dim'] == 3:
+        v_p.eliminate_states([3])
+        v_m.eliminate_states([3])
     return [lam_m, lam_p], [v_m, v_p]
 
 #new ptrace for ENR states.   rho is the state, sel is the same as the normal ptrace
@@ -42,22 +44,14 @@ def ENR_ptrace(rho,sel,dims,excitations):
     if (sel < 0).any() or (sel >= len(rho.dims[0])).any():
         raise TypeError("Invalid selection index in ptrace.")
 
-    ############
     #dimensions
-    ####################
     #enr stuff for the original state
     nstates, state2idx, idx2state = qt.enr_state_dictionaries(dims, excitations)
 
-
-
-    ################
     #number of states in selection
-    ######################
-    #
     drho=rho.dims[0]
     dims_short= np.asarray(drho).take(sel)
     nstates2, state2idx2, idx2state2 = qt.enr_state_dictionaries(dims_short.tolist(), excitations)
-
 
     # this is a list of the dimensions of the system one has traced out
     rest = np.setdiff1d(np.arange(len(drho)), sel)
@@ -216,60 +210,86 @@ def coth(x):
 
 
 
-def make_initial_state(init_dimer_str, eops_dict, PARS):
-    I_dimer = qeye(4)
+
+
+
+def plot_UD_SD(Gamma, alpha, w_0, eps=2000., ax=None):
+    Omega = np.linspace(0,eps,10000)
+    J_w = np.array([J_underdamped(w, alpha, Gamma, w_0) for w in Omega])
+    show_im = ax
+    if ax is None:
+        f, ax = plt.subplots(1,1)
+    ax.plot(Omega, J_w)
+    ax.set_xlabel(r"$\omega$")
+    ax.set_ylabel(r"$J(\omega)$")
+    if show_im is None:
+        plt.show()
+
+def plot_UD_SD_PARAMS(PARAMS, ax=None):
+    eps = PARAMS['w_2']
+    alpha = PARAMS['alpha_2']
+    w_0 = PARAMS['w0_2']
+    Omega = np.linspace(0,eps,10000)
+    J_w = np.array([J_underdamped(w, alpha, Gamma, w_0) for w in Omega])
+    show_im = ax
+    if ax is None:
+        f, ax = plt.subplots(1,1)
+    ax.plot(Omega, J_w)
+    ax.set_xlabel(r"$\omega$")
+    ax.set_ylabel(r"$J(\omega)$")
+    if show_im is None:
+        plt.show()
+
+def SD_peak_position(Gamma, alpha, w_0):
+    Omega = np.linspace(0,w_0*50,10000)
+    J_w = np.array([J_underdamped(w, alpha, Gamma, w_0) for w in Omega])
+    return Omega[np.argmax(J_w)]
+
+
+def print_PARAMS(PARAMS):
+    keys = ['y_values', 'x_values',
+            'y_axis_parameters', 'x_axis_parameters']
+    try:
+        keys+= list(PARAMS['y_axis_parameters'])
+        keys+= list(PARAMS['x_axis_parameters'])
+    except KeyError:
+        pass
+    not_useful = np.concatenate((keys, ['J', 'num_cpus']))
+
+    param_strings = []
+    for key in PARAMS.keys():
+        try:
+            if key not in not_useful:
+                param_strings.append("{}={:0.2f}".format(key, PARAMS[key]))
+        except KeyError:
+            pass
+    print(", ".join(param_strings))
+
+
+# conversions between alphas and the ratios in terms of w_2
+def alpha_to_pialpha_prop(alpha, w_2):
+    return pi*alpha/w_2
+
+def pialpha_prop_to_alpha(pialpha_prop, w_2):
+    return pialpha_prop*w_2/pi
+
+assert 0.1 == alpha_to_pialpha_prop(100/pi, 1000.)
+assert 100 == pialpha_prop_to_alpha(0.1, 1000.*pi)
+
+def make_initial_state(init_sys_str, eops_dict, PARS):
+    I_sys = qeye(PARS['sys_dim'])
     # Should also displace these states
     n1 = Occupation(PARS['w0_1'], PARS['T_1'])
     n2 = Occupation(PARS['w0_2'], PARS['T_2'])
-    therm = tensor(I_dimer, qt.enr_thermal_dm([PARS['N_1'], PARS['N_2']], PARS['exc'], n1))
-    return eops_dict[init_dimer_str]*therm
+    therm = tensor(I_sys, qt.enr_thermal_dm([PARS['N_1'], PARS['N_2']], PARS['exc'], n1))
+    return eops_dict[init_sys_str]*therm
 
-
-def make_expectation_operators(PARS):
-    OO = basis(4,0)
-    XO = basis(4,1)
-    OX = basis(4,2)
-    XX = basis(4,3)
-
-    site_coherence = OX*XO.dag()
-
-    OO_proj = OO*OO.dag()
-    XO_proj = XO*XO.dag()
-    OX_proj = OX*OX.dag()
-    XX_proj = XX*XX.dag()
-
-    labels = [ 'OO', 'XO', 'OX', 'XX', 'site_coherence', 'bright', 'dark', 'eig_coherence',
-             'RC1_position1', 'RC2_position', 'RC1_number', 'RC2_number' , 'sigma_x', 'sigma_y']
-    I = qt.enr_identity([PARS['N_1'], PARS['N_2']], PARS['exc'])
-    I_dimer = qeye(4)
-    energies, states = exciton_states(PARS, shift=False)
-    bright_vec = states[1]
-    dark_vec = states[0]
-    # electronic operators
-     # site populations site coherences, eig pops, eig cohs
-    subspace_ops = [OO_proj, XO_proj, OX_proj, XX_proj,site_coherence,
-                   bright_vec*bright_vec.dag(), dark_vec*dark_vec.dag(),
-                   dark_vec*bright_vec.dag(),
-                    site_coherence+site_coherence.dag(),
-                    1j*(site_coherence-site_coherence.dag())]
-    # put operators into full RC tensor product basis
-    fullspace_ops = [tensor(op, I) for op in subspace_ops]
-    # RC operators
-    # RC positions, RC number state1, RC number state1, RC upper N fock, RC ground fock
-
-    N_1, N_2, exc = PARS['N_1'], PARS['N_2'], PARS['exc']
-    a_enr_ops = qt.enr_destroy([N_1, N_2], exc)
-    position1 = a_enr_ops[0].dag() + a_enr_ops[0]
-    position2 = a_enr_ops[1].dag() + a_enr_ops[1]
-    number1   = a_enr_ops[0].dag()*a_enr_ops[0]
-    number2   = a_enr_ops[1].dag()*a_enr_ops[1]
-
-    subspace_ops = [position1, position2, number1, number2]
-    fullspace_ops += [tensor(I_dimer, op) for op in subspace_ops]
-
-
-    return dict((key_val[0], key_val[1]) for key_val in zip(labels, fullspace_ops))
-
+def permutations_with_replacement(e):
+    # needed for parameter sweep later
+    for i in e:
+        for j in e:
+            for k in e:
+                yield (i,j,k)
 
 # Sparse matrix utilities
 

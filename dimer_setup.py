@@ -14,12 +14,6 @@ from optical import L_non_rwa, L_phenom
 from qutip import basis, qeye, enr_identity, enr_destroy, tensor, enr_thermal_dm, steadystate
 from utils import *
 
-def permutations_with_replacement(e):
-    # needed for parameter sweep later
-    for i in e:
-        for j in e:
-            for k in e:
-                yield (i,j,k)
 
 OO = basis(4,0)
 XO = basis(4,1)
@@ -42,123 +36,7 @@ I_dimer = qeye(4)
 
 reload(RC)
 reload(opt)
-# Change to the directory which contains the current script
-"""dirFile = os.path.dirname(os.path.join('/Users/henrymaguire/Work',
-                          'coherence_analysis.ipynb'))
-# Load style file
-plt.style.use(os.path.join(dirFile, 'plot_style.mplstyle'))
-# Make some style choices for plotting
-colourWheel =['#329932',
-            '#ff6961',
-            'b',
-            '#6a3d9a',
-            '#fb9a99',
-            '#e31a1c',
-            '#fdbf6f',
-            '#ff7f00',
-            '#cab2d6',
-            '#6a3d9a',
-            '#ffff99',
-            '#b15928',
-            '#67001f',
-            '#b2182b',
-            '#d6604d',
-            '#f4a582',
-            '#fddbc7',
-            '#f7f7f7',
-            '#d1e5f0',
-            '#92c5de',
-            '#4393c3',
-            '#2166ac',
-            '#053061']
 
-
-
-plt.style.use('ggplot')
-plt.rcParams["axes.grid"] = True
-plt.rcParams["axes.edgecolor"] = "0.15"
-plt.rcParams["axes.linewidth"]  = 1.5
-plt.rcParams['axes.facecolor'] = 'white'
-plt.rcParams['font.size'] = 13
-plt.rcParams['legend.fontsize'] = 'large'
-plt.rcParams['figure.titlesize'] = 'medium'
-
-colors = [c['color'] for c in plt.rcParams['axes.prop_cycle']]
-colors+=colors"""
-
-
-
-
-def plot_UD_SD(Gamma, alpha, w_0, eps=2000., ax=None):
-    Omega = np.linspace(0,eps,10000)
-    J_w = np.array([J_underdamped(w, alpha, Gamma, w_0) for w in Omega])
-    show_im = ax
-    if ax is None:
-        f, ax = plt.subplots(1,1)
-    ax.plot(Omega, J_w)
-    ax.set_xlabel(r"$\omega$")
-    ax.set_ylabel(r"$J(\omega)$")
-    if show_im is None:
-        plt.show()
-
-def plot_UD_SD_PARAMS(PARAMS, ax=None):
-    eps = PARAMS['w_2']
-    alpha = PARAMS['alpha_2']
-    w_0 = PARAMS['w0_2']
-    Omega = np.linspace(0,eps,10000)
-    J_w = np.array([J_underdamped(w, alpha, Gamma, w_0) for w in Omega])
-    show_im = ax
-    if ax is None:
-        f, ax = plt.subplots(1,1)
-    ax.plot(Omega, J_w)
-    ax.set_xlabel(r"$\omega$")
-    ax.set_ylabel(r"$J(\omega)$")
-    if show_im is None:
-        plt.show()
-
-def SD_peak_position(Gamma, alpha, w_0):
-    Omega = np.linspace(0,w_0*50,10000)
-    J_w = np.array([J_underdamped(w, alpha, Gamma, w_0) for w in Omega])
-    return Omega[np.argmax(J_w)]
-
-
-def print_PARAMS(PARAMS):
-    keys = ['y_values', 'x_values',
-            'y_axis_parameters', 'x_axis_parameters']
-    try:
-        keys+= list(PARAMS['y_axis_parameters'])
-        keys+= list(PARAMS['x_axis_parameters'])
-    except KeyError:
-        pass
-    not_useful = np.concatenate((keys, ['J', 'num_cpus']))
-
-    param_strings = []
-    for key in PARAMS.keys():
-        try:
-            if key not in not_useful:
-                param_strings.append("{}={:0.2f}".format(key, PARAMS[key]))
-        except KeyError:
-            pass
-    print(", ".join(param_strings))
-
-
-# conversions between alphas and the ratios in terms of w_2
-def alpha_to_pialpha_prop(alpha, w_2):
-    return pi*alpha/w_2
-
-def pialpha_prop_to_alpha(pialpha_prop, w_2):
-    return pialpha_prop*w_2/pi
-
-assert 0.1 == alpha_to_pialpha_prop(100/pi, 1000.)
-assert 100 == pialpha_prop_to_alpha(0.1, 1000.*pi)
-
-def make_initial_state(init_dimer_str, eops_dict, PARS):
-    I_dimer = qeye(4)
-    # Should also displace these states
-    n1 = Occupation(PARS['w0_1'], PARS['T_1'])
-    n2 = Occupation(PARS['w0_2'], PARS['T_2'])
-    therm = tensor(I_dimer, qt.enr_thermal_dm([PARS['N_1'], PARS['N_2']], PARS['exc'], n1))
-    return eops_dict[init_dimer_str]*therm
 
 """
 fock_N1      = qt.enr_fock([N,N],N, (N/2,N/2))
@@ -173,7 +51,7 @@ labels = [ 'OO', 'XO', 'OX', 'XX', 'site_coherence', 'bright', 'dark', 'eig_cohe
 def make_expectation_operators(PARS):
     # makes a dict: keys are names of observables values are operators
     I = enr_identity([PARS['N_1'], PARS['N_2']], PARS['exc'])
-    I_dimer = qeye(4)
+    I_dimer = qeye(PARS['sys_dim'])
     energies, states = exciton_states(PARS, shift=False)
     bright_vec = states[1]
     dark_vec = states[0]
