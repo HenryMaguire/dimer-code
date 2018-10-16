@@ -14,12 +14,7 @@ from optical import L_non_rwa, L_phenom
 from qutip import basis, qeye, enr_identity, enr_destroy, tensor, enr_thermal_dm, steadystate
 from utils import *
 
-def permutations_with_replacement(e):
-    # needed for parameter sweep later
-    for i in e:
-        for j in e:
-            for k in e:
-                yield (i,j,k)
+
 
 OO = basis(3,0)
 XO = basis(3,1)
@@ -85,7 +80,12 @@ plt.rcParams['figure.titlesize'] = 'medium'
 colors = [c['color'] for c in plt.rcParams['axes.prop_cycle']]
 colors+=colors"""
 
-
+def permutations_with_replacement(e):
+    # needed for parameter sweep later
+    for i in e:
+        for j in e:
+            for k in e:
+                yield (i,j,k)
 
 
 def plot_UD_SD(Gamma, alpha, w_0, eps=2000., ax=None):
@@ -230,7 +230,7 @@ def PARAMS_setup(bias=100., w_2=2000., V = 100., pialpha_prop=0.1,
                                  T_EM=0., T_ph =300.,
                                  alpha_EM=1., shift=True,
                                  num_cpus=1, w_0=200, Gamma=50., N=3,
-                                 silent=False, exc_diff=0):
+                                 silent=False, exc_diff=0, sys_dim=3):
     N_1 = N_2 = N
     exc = N+exc_diff
     gap = sqrt(bias**2 +4*(V**2))
@@ -264,6 +264,6 @@ def PARAMS_setup(bias=100., w_2=2000., V = 100., pialpha_prop=0.1,
     PARAMS = dict((name, eval(name, scope)) for name in PARAM_names)
 
     PARAMS.update({'alpha_1': alpha, 'alpha_2': alpha})
-    PARAMS.update({'N_1': N_1, 'N_2': N_2})
-    PARAMS.update({'exc': exc})
+    PARAMS.update({'N_1': N_1, 'N_2': N_2, 'exc': exc})
+    PARAMS.update({'sys_dim' : sys_dim})
     return PARAMS
