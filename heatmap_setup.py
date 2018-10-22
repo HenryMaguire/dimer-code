@@ -1,7 +1,7 @@
 from dimer_setup import *
 import time
 from qutip import build_preconditioner, steadystate
-def calculate_steadystate(H, L, fill_factor=500, tol=1e-8, persistent=False, method="iterative-lgmres"):
+def calculate_steadystate(H, L, fill_factor=500, tol=1e-8, persistent=False, method="iterative-lgmres", maxiter=500):
     calculated = False
     ff = fill_factor
     ss = 0
@@ -11,13 +11,14 @@ def calculate_steadystate(H, L, fill_factor=500, tol=1e-8, persistent=False, met
             M=None
             if "iterative" in method:
                 ti = time.time()
-                M, m_info = build_preconditioner(H[1], [L], fill_factor=500,return_info=True,
-                                        drop_tol=1e-4, use_rcm=True, ILU_MILU='smilu_2')
+                M, m_info = build_preconditioner(H[1], [L], fill_factor=fill_factor,return_info=True,
+                                        drop_tol=1e-4, use_rcm=True, ILU_MILU='smilu_2', maxiter=maxiter)
                 print "Building preconditioner took {} seconds".format(time.time()-ti)
-                print m_info
+                # print m_info['ilu_fill_factor']
             ss, info = steadystate(H[1], [L], method=method, M=M,
                                     use_precond=True, use_rcm=True, 
-                                    return_info=True, tol=tol, maxiter=1000)
+                                    return_info=True, tol=tol, maxiter=maxiter)
+            print "Steady state took {:0.3f} seconds".format(info['solution_time'])
             return ss, info
         except Exception as err:
             print "Steadystate failed because {}.".format(err)

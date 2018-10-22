@@ -298,6 +298,8 @@ from scipy.sparse import csc_matrix
 import matplotlib.pyplot as plt
 import numpy as np
 
+def get_csc(_X):
+    return (csc_matrix(_X.data)).data
 
 def total_elements(qobj):
     return qobj.shape[0]**2
