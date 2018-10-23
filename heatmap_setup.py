@@ -19,7 +19,7 @@ def calculate_steadystate(H, L, fill_factor=500, tol=1e-8, persistent=False, met
                 # print m_info['ilu_fill_factor']
             ss, info = steadystate(H[1], [L], method=method, M=M,
                                     use_precond=False,
-                                    return_info=True, tol=tol)
+                                    return_info=True, tol=tol, maxiter=6000)
             print "Steady state took {:0.3f} seconds".format(info['solution_time'])
             return ss, info
         except Exception as err:

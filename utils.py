@@ -248,7 +248,8 @@ def SD_peak_position(Gamma, alpha, w_0):
 
 def print_PARAMS(PARAMS):
     keys = ['y_values', 'x_values',
-            'y_axis_parameters', 'x_axis_parameters']
+            'y_axis_parameters', 'x_axis_parameters', 
+            'coupling_ops', 'H_sub']
     try:
         keys+= list(PARAMS['y_axis_parameters'])
         keys+= list(PARAMS['x_axis_parameters'])
@@ -263,6 +264,8 @@ def print_PARAMS(PARAMS):
                 param_strings.append("{}={:0.2f}".format(key, PARAMS[key]))
         except KeyError:
             pass
+        except ValueError as err:
+            raise Exception("Cannot print parameters for "+key + " because "+str(err))
     print(", ".join(param_strings))
 
 
