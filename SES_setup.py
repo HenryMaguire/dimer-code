@@ -106,7 +106,7 @@ def PARAMS_setup(bias=100., w_2=2000., V = 100., pialpha_prop=0.1,
                                  silent=False, exc_diff=0, sys_dim=3):
     # Sets up the parameter dict
     N_1 = N_2 = N
-    exc = N+exc_diff
+    exc = (2*N)-exc_diff
     gap = sqrt(bias**2 +4*(V**2))
     phonon_energy = T_ph*0.695
 
