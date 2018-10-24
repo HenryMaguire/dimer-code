@@ -4,11 +4,17 @@ import numpy as np
 import scipy as sp
 from numpy import pi
 from qutip import Qobj,basis, ket, mesolve, qeye, tensor, thermal_dm, destroy, steadystate, spost, spre, sprepost, enr_destroy, enr_identity, steadystate, to_super
-import qutip.parallel as par
+import multiprocessing
+from functools import partial
 from sympy.functions import coth
 
 from utils import *
 
+
+def chunks(l, n):
+    """Yield successive n-sized chunks from l."""
+    for i in range(0, len(l), n):
+        yield l[i:i + n]
 
 def H_mapping_RC(H_sub, coupling_ops, Omega_1,
                 Omega_2, kap_1, kap_2, N_1, N_2, exc,
@@ -90,14 +96,14 @@ def dimer_ham_RC(w_1, w_2, w_xx, V, Omega_1,
     H_S = H_dim + H_RC1 + H_RC2 + H_I1 + H_I2
     return [H_dim_sub, H_S], A_1, A_2, tensor(SIGMA_1, I), tensor(SIGMA_2, I)
 
-def operator_func(j, eVals=[], eVecs=[], A_1=[], A_2=[],
+def operator_func(idx_list, eVals=[], eVecs=[], A_1=[], A_2=[],
                     gamma_1=1., gamma_2=1., beta_1=0.4, beta_2=0.4):
     """ For parallelising the Liouvillian contruction
     """
+    
     zero = 0*A_1
-    dim_ham = len(eVecs)
     Z_1, Z_2 = zero, zero # Initialise operators
-    for k in range(dim_ham):
+    for j, k in idx_list:
         try:
             # eigenvalue difference, needs to be real for coth and hermiticity
             e_jk = (eVals[j] - eVals[k]).real
@@ -127,21 +133,30 @@ def operator_func(j, eVals=[], eVecs=[], A_1=[], A_2=[],
             print e
     #if type(Chi_1) != type(1):
     #    print Chi_1.dims
-    return [Z_1, Z_2]
+    return Z_1, Z_2
 
 def RCME_operators_par(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus=0, silent=False):
     ti = time.time()
     dim_ham = H_0.shape[0]
     eVals, eVecs = H_0.eigenstates()
-    names = ['eVals', 'eVecs', 'A_1', 'A_2', 'gamma_1', 'gamma_2', 'beta_1', 'beta_2']
+    names = ['eVals', 'eVecs', 'A_1', 'A_2', 
+             'gamma_1', 'gamma_2', 'beta_1', 'beta_2']
     kwargs = dict()
     for name in names:
         kwargs[name] = eval(name)
-    l = range(dim_ham) # Previously performed two loops in one
-    Z =  par.parfor(operator_func,  l, num_cpus=num_cpus, **kwargs)
+    #l = range(dim_ham) # Previously performed two loops in one
+    l = dim_ham*range(dim_ham) # Perform two loops in one
+    i_j_gen = [(i,j) for i,j in zip(sorted(l), l)]
+    i_j_gen = chunks(i_j_gen, 32)
+    pool = multiprocessing.Pool(num_cpus)
+    Out = pool.imap_unordered(partial(operator_func,**kwargs), i_j_gen)
+    pool.close()
+    pool.join()
+    _Z = np.array([x for x in Out])
+    Z_1, Z_2 = np.sum(_Z[0]), np.sum(_Z[1])
     if not silent:
     	print "The operators took {} and have dimension {}.".format(time.time()-ti, dim_ham)
-    return H_0, sum(Z[0]), sum(Z[1])
+    return H_0, Z_1, Z_2
 
 
 def RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus=0, silent=False):
@@ -152,9 +167,6 @@ def RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus=0, 
     dim_ham = H_0.shape[0]
     Z_1, Z_2 = 0, 0
     eVals, eVecs = H_0.eigenstates()
-    #print H_0
-    #EigenDiffs = []
-    #ti = time.time()
 
     for j in range(dim_ham):
         for k in range(dim_ham):
@@ -174,7 +186,6 @@ def RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus=0, 
                 if sp.absolute(e_jk) > 0 and sp.absolute(beta_2)>0:
                     #print e_jk
                     # If e_jk is zero, coth diverges but J goes to zero so limit taken seperately
-                    #print beta_2, e_jk
                     Z_2 += 0.5*np.pi*e_jk*gamma_2 * coth(e_jk * beta_2 / 2)*A_jk_2*outer_eigen # e_jk*gamma is the spectral density
                     Z_2 += 0.5*np.pi*e_jk*gamma_2 * A_jk_2 * outer_eigen
                 else:
@@ -214,7 +225,7 @@ def liouvillian_build(H_RC, A_1, A_2, gamma_1, gamma_2,
     H_RC, Z_1, Z_2  = RCop(H_RC, A_1, A_2, gamma_1, gamma_2,
                                     beta_1, beta_2, num_cpus=num_cpus,
                                     silent=silent)
-
+    print(Z_1.shape, Z_2.shape, A_1.shape)
     L = 0
     L+=spre(A_1*Z_1)+spre(A_2*Z_2)
     L-=sprepost(Z_1, A_1)+sprepost(Z_2, A_2)

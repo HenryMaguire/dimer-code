@@ -97,11 +97,10 @@ def L_non_rwa(H_vib, sigma, PARAMS, silent=False):
     for i in xrange(d_dim):
         for j in xrange(d_dim):
             eta = eVals[i]-eVals[j]
-            s = eVecs[i]*(eVecs[j].dag())
-            #print A.matrix_element(eVecs[i].dag(), eVecs[j])
-            s*= A.matrix_element(eVecs[i].dag(), eVecs[j])
-            s*= Gamma(eta, beta, J, alpha, w_1, imag_part=False)
-            G+=s
+            aij = A.matrix_element(eVecs[i].dag(), eVecs[j])
+            g = Gamma(eta, beta, J, alpha, w_1, imag_part=False)
+            if (abs(g)>0) and (abs(aij)>0):
+                G+=g*aij*eVecs[i]*(eVecs[j].dag())
     G_dag = G.dag()
     # Initialise liouvilliian
     L =  qt.spre(A*G) - qt.sprepost(G, A)
@@ -121,16 +120,11 @@ def nonRWA_function(idx_list, **kwargs):
 
     op_contrib = 0*A
     for i, j in idx_list:
-
         eta = eVals[i]-eVals[j]
-
         g = Gamma(eta, beta, J, alpha, w_1, imag_part=False)
-
         aij = A.matrix_element(eVecs[i].dag(), eVecs[j])
-        if abs(g)>0 and abs(aij)>0:
+        if (abs(g)>0) and (abs(aij)>0):
             op_contrib+= g*aij*eVecs[i]*(eVecs[j].dag())
-        else:
-            pass
     return op_contrib
 
 
@@ -151,12 +145,13 @@ def L_non_rwa_par(H_vib, sigma, args, silent=False):
     Out = pool.imap_unordered(partial(nonRWA_function,**kwargs), i_j_gen)
     pool.close()
     pool.join()
-    G = np.sum(np.array([x for x in Out]))
+    
+    G = Qobj(np.sum(np.array([x for x in Out])), dims=H_vib.dims)
     G_dag = G.dag()
-    # Initialise liouvilliian
+    
     L =  qt.spre(A*G) - qt.sprepost(G, A)
     L += qt.spost(G_dag*A) - qt.sprepost(A, G_dag)
-    #print np.sum(X1.full()), np.sum(X2.full()), np.sum(X3.full()), np.sum(X4.full())
+    
     if not silent:
         print "It took ", time.time()-ti, " seconds to build the Non-secular RWA Liouvillian"
     return -0.5*L
