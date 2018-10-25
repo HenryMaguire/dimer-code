@@ -2,7 +2,7 @@ from SES_setup import *
 import time
 from qutip import build_preconditioner, steadystate
 
-def calculate_steadystate(H, L, fill_factor=500, tol=1e-8, persistent=False, method="iterative-lgmres", maxiter=500):
+def calculate_steadystate(H, L, fill_factor=500, tol=1e-8, persistent=False, method="iterative-lgmres", maxiter=6000):
     calculated = False
     ff = fill_factor
     ss = 0
@@ -19,11 +19,10 @@ def calculate_steadystate(H, L, fill_factor=500, tol=1e-8, persistent=False, met
                 # print m_info['ilu_fill_factor']
             ss, info = steadystate(H[1], [L], method=method, M=M,
                                     use_precond=False,
-                                    return_info=True, tol=tol, maxiter=6000)
+                                    return_info=True, tol=tol, maxiter=maxiter)
             print "Steady state took {:0.3f} seconds".format(info['solution_time'])
             return ss, info
         except Exception as err:
-            raise Exception
             print "Steadystate failed because {}.".format(err)
             if persistent:
                 if "tolerance" in str(err):

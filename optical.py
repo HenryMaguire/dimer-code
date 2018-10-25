@@ -140,7 +140,7 @@ def L_non_rwa_par(H_vib, sigma, args, silent=False):
     kwargs.update({'eVals':eVals, 'eVecs':eVecs, 'A':A})
     l = dim_ham*range(dim_ham) # Perform two loops in one
     i_j_gen = [(i,j) for i,j in zip(sorted(l), l)]
-    i_j_gen = chunks(i_j_gen, 128)
+    i_j_gen = chunks(i_j_gen, 1024)
     pool = multiprocessing.Pool(num_cpus)
     Out = pool.imap_unordered(partial(nonRWA_function,**kwargs), i_j_gen)
     pool.close()

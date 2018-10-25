@@ -133,6 +133,7 @@ def operator_func(idx_list, eVals=[], eVecs=[], A_1=[], A_2=[],
             print e
     #if type(Chi_1) != type(1):
     #    print Chi_1.dims
+    
     return Z_1, Z_2
 
 def RCME_operators_par(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus=0, silent=False):
@@ -147,13 +148,13 @@ def RCME_operators_par(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus
     #l = range(dim_ham) # Previously performed two loops in one
     l = dim_ham*range(dim_ham) # Perform two loops in one
     i_j_gen = [(i,j) for i,j in zip(sorted(l), l)]
-    i_j_gen = chunks(i_j_gen, 32)
+    i_j_gen = chunks(i_j_gen, 1024)
     pool = multiprocessing.Pool(num_cpus)
     Out = pool.imap_unordered(partial(operator_func,**kwargs), i_j_gen)
     pool.close()
     pool.join()
     _Z = np.array([x for x in Out])
-    Z_1, Z_2 = np.sum(_Z[0]), np.sum(_Z[1])
+    Z_1, Z_2 = np.sum(_Z,axis=0)[0], np.sum(_Z,axis=0)[1]
     if not silent:
     	print "The operators took {} and have dimension {}.".format(time.time()-ti, dim_ham)
     return H_0, Z_1, Z_2
