@@ -104,39 +104,38 @@ def operator_func(idx_list, eVals=[], eVecs=[], A_1=[], A_2=[],
     zero = 0*A_1
     Z_1, Z_2 = zero, zero # Initialise operators
     for j, k in idx_list:
-        try:
-            # eigenvalue difference, needs to be real for coth and hermiticity
-            e_jk = (eVals[j] - eVals[k]).real
-            # Overlap of collapse operator for site 1 with vibronic eigenbasis
-            J, K = eVecs[j], eVecs[k]
-            A_jk_1 = A_1.matrix_element(J.dag(), K)
-            outer_eigen = J*K.dag()
 
-            if sp.absolute(A_jk_1) > 0:
-                if sp.absolute(e_jk) > 0 and sp.absolute(beta_1) > 0:
-                    Z_1 += 0.5*np.pi*e_jk*gamma_1 * coth(e_jk * beta_1 / 2)*A_jk_1*outer_eigen
-                    Z_1 += 0.5*np.pi*e_jk*gamma_1 * A_jk_1 * outer_eigen
-                else:
-                    Z_1 += np.pi*gamma_1*A_jk_1*outer_eigen/beta_1 # Just return coefficients which are left over
-                    #Xi += 0 #since J_RC goes to zero
-            A_jk_2 = A_2.matrix_element(eVecs[j].dag(), eVecs[k])
-            if sp.absolute(A_jk_2) > 0:
-                if sp.absolute(e_jk) > 0 and sp.absolute(beta_2)>0:
-                    # e_jk*gamma is the spectral density
-                    Z_2 += 0.5*np.pi*e_jk*gamma_2 * coth(e_jk * beta_2 / 2)*A_jk_2*outer_eigen
-                    Z_2 += 0.5*np.pi*e_jk*gamma_2 * A_jk_2 * outer_eigen
-                else:
-                    # If e_jk is zero, coth diverges but J goes to zero so limit taken seperately
-                    Z_2 += np.pi*gamma_2*A_jk_2*outer_eigen/beta_2 # Just return coefficients which are left over
-                    #Xi += 0 #since J_RC goes to zero
-        except Exception as e:
-            print e
+        # eigenvalue difference, needs to be real for coth and hermiticity
+        e_jk = (eVals[j] - eVals[k]).real
+        # Overlap of collapse operator for site 1 with vibronic eigenbasis
+        J, K = eVecs[j], eVecs[k]
+        A_jk_1 = A_1.matrix_element(J.dag(), K)
+        outer_eigen = J*K.dag()
+
+        if sp.absolute(A_jk_1) > 0:
+            if sp.absolute(e_jk) > 0 and sp.absolute(beta_1) > 0:
+                Z_1 += 0.5*np.pi*e_jk*gamma_1 * coth(e_jk * beta_1 / 2)*A_jk_1*outer_eigen
+                Z_1 += 0.5*np.pi*e_jk*gamma_1 * A_jk_1 * outer_eigen
+            else:
+                Z_1 += np.pi*gamma_1*A_jk_1*outer_eigen/beta_1 # Just return coefficients which are left over
+                #Xi += 0 #since J_RC goes to zero
+        A_jk_2 = A_2.matrix_element(J.dag(), K)
+        if sp.absolute(A_jk_2) > 0:
+            if sp.absolute(e_jk) > 0 and sp.absolute(beta_2)>0:
+                # e_jk*gamma is the spectral density
+                Z_2 += 0.5*np.pi*e_jk*gamma_2 * coth(e_jk * beta_2 / 2)*A_jk_2*outer_eigen
+                Z_2 += 0.5*np.pi*e_jk*gamma_2 * A_jk_2 * outer_eigen
+            else:
+                # If e_jk is zero, coth diverges but J goes to zero so limit taken seperately
+                Z_2 += np.pi*gamma_2*A_jk_2*outer_eigen/beta_2 # Just return coefficients which are left over
+                #Xi += 0 #since J_RC goes to zero
     #if type(Chi_1) != type(1):
     #    print Chi_1.dims
     
     return Z_1, Z_2
 
-def RCME_operators_par(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus=0, silent=False):
+def RCME_operators_par(H_0, A_1, A_2, gamma_1, gamma_2, 
+                       beta_1, beta_2, num_cpus=0, silent=False, site_basis=True):
     ti = time.time()
     dim_ham = H_0.shape[0]
     eVals, eVecs = H_0.eigenstates()
@@ -155,12 +154,23 @@ def RCME_operators_par(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus
     pool.join()
     _Z = np.array([x for x in Out])
     Z_1, Z_2 = np.sum(_Z,axis=0)[0], np.sum(_Z,axis=0)[1]
+    eVecs = np.transpose(np.array([v.dag().full()[0] for v in eVecs])) # get into columns of evecs
+    eVecs_inv = sp.linalg.inv(eVecs) # has a very low overhead
+    if site_basis:
+        # These operators were constructed in the eig basis
+        Z_1 = to_site_basis(Z_1, eVals, eVecs, eVecs_inv)
+        Z_2 = to_site_basis(Z_2, eVals, eVecs, eVecs_inv)
+    else:
+        A_1 = to_eigenbasis(A_1, eVals, eVecs, eVecs_inv)
+        A_2 = to_eigenbasis(A_2, eVals, eVecs, eVecs_inv)
+        H_0 = to_eigenbasis(H_0, eVals, eVecs, eVecs_inv)
     if not silent:
     	print "The operators took {} and have dimension {}.".format(time.time()-ti, dim_ham)
-    return H_0, Z_1, Z_2
+    return H_0, Z_1, Z_2, A_1, A_2
 
 
-def RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus=0, silent=False):
+def RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, 
+                    num_cpus=0, silent=False, site_basis=True):
     # This function will be passed a TLS-RC hamiltonian, RC operator,
     #spectral density and beta outputs all of the operators
     # needed for the RCME (underdamped)
@@ -168,7 +178,6 @@ def RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus=0, 
     dim_ham = H_0.shape[0]
     Z_1, Z_2 = 0, 0
     eVals, eVecs = H_0.eigenstates()
-
     for j in range(dim_ham):
         for k in range(dim_ham):
             e_jk = eVals[j] - eVals[k] # eigenvalue difference
@@ -192,12 +201,22 @@ def RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, num_cpus=0, 
                 else:
                     Z_2 += np.pi*gamma_2*A_jk_2*outer_eigen/beta_2 # Just return coefficients which are left over
                     #Xi += 0 #since J_RC goes to zero
+    eVecs = np.transpose(np.array([v.dag().full()[0] for v in eVecs])) # get into columns of evecs
+    eVecs_inv = sp.linalg.inv(eVecs) # has a very low overhead
+    if site_basis:
+        # These operators were constructed in the eig basis
+        Z_1 = to_site_basis(Z_1, eVals, eVecs, eVecs_inv)
+        Z_2 = to_site_basis(Z_2, eVals, eVecs, eVecs_inv)
+    else:
+        A_1 = to_eigenbasis(A_1, eVals, eVecs, eVecs_inv)
+        A_2 = to_eigenbasis(A_2, eVals, eVecs, eVecs_inv)
+        H_0 = to_eigenbasis(H_0, eVals, eVecs, eVecs_inv)
     if not silent:
         print "The operators took {} and have dimension {}.".format(time.time()-ti, dim_ham)
-    return H_0, Z_1, Z_2
+    return H_0, Z_1, Z_2, A_1, A_2
 
 def liouvillian_build(H_RC, A_1, A_2, gamma_1, gamma_2,
-                    wRC_1, wRC_2, T_1, T_2, num_cpus=1, silent=False):
+                    wRC_1, wRC_2, T_1, T_2, num_cpus=1, silent=False, site_basis=True):
     ti = time.time()
     conversion = 0.695
     beta_1 = 0. # We want to calculate beta for each reaction coordinate, but avoid divergences
@@ -223,10 +242,9 @@ def liouvillian_build(H_RC, A_1, A_2, gamma_1, gamma_2,
         RCop = RCME_operators_par
     else:
         RCop = RCME_operators
-    H_RC, Z_1, Z_2  = RCop(H_RC, A_1, A_2, gamma_1, gamma_2,
+    H_RC, Z_1, Z_2, A_1, A_2  = RCop(H_RC, A_1, A_2, gamma_1, gamma_2,
                                     beta_1, beta_2, num_cpus=num_cpus,
-                                    silent=silent)
-    print(Z_1.shape, Z_2.shape, A_1.shape)
+                                    silent=silent, site_basis=site_basis)
     L = 0
     L+=spre(A_1*Z_1)+spre(A_2*Z_2)
     L-=sprepost(Z_1, A_1)+sprepost(Z_2, A_2)
@@ -301,7 +319,7 @@ def RC_mapping_OD(args, silent=False):
     return -L_RC, H, A_1, A_2, SIGMA_1, SIGMA_2, args
 
 
-def RC_mapping(args, silent=False, shift=True):
+def RC_mapping(args, silent=False, shift=True, site_basis=True):
     H_sub = args['H_sub']
     coupling_ops = args['coupling_ops']
     # we define all of the RC parameters by the underdamped spectral density
@@ -325,7 +343,7 @@ def RC_mapping(args, silent=False, shift=True):
                                                 shift=True)
 
     L_RC =  liouvillian_build(H[1], A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2,
-                            T_1, T_2, num_cpus=args['num_cpus'], silent=silent)
+                            T_1, T_2, num_cpus=args['num_cpus'], silent=silent, site_basis=site_basis)
     full_size = (H_sub.shape[0]*N_1*N_2)**2
     if not silent:
         print "****************************************************************"
@@ -335,48 +353,3 @@ def RC_mapping(args, silent=False, shift=True):
     return -L_RC, H, A_1, A_2, args
     #H_dim_full = w_1*XO*XO.dag() + w_2*w_1*OX*OX.dag() + w_xx*XX*XX.dag() +                    V*((SIGMA_m1+SIGMA_m1.dag())*(SIGMA_m2+SIGMA_m2.dag()))
 
-
-
-
-
-if __name__ == "__main__":
-    ev_to_inv_cm = 8065.5
-    w_1, w_2 = 1.4*ev_to_inv_cm, 1.*ev_to_inv_cm
-    V = 200.
-    w_xx = w_1+w_2+V
-    T_1, T_2 = 300., 300.
-    wRC_1, wRC_2 = 300., 300.
-    alpha_1, alpha_2 = 100./np.pi, 100./np.pi
-    wc =53.
-    N_1, N_2= 5,5
-    exc = int(N_1+N_2)
-    mu=1
-
-    OO = basis(4,0)
-    XO = basis(4,1)
-    OX = basis(4,2)
-    XX = basis(4,3)
-    SIGMA_m1 = OX*XX.dag() + OO*XO.dag()
-    SIGMA_m2 = XO*XX.dag() + OO*OX.dag()
-    SIGMA_x1 = SIGMA_m1+SIGMA_m1.dag()
-    SIGMA_x2 = SIGMA_m2+SIGMA_m2.dag()
-
-    L_RC, H_0, A_1, A_2, SIG_1, SIG_2, wRC_1, wRC_2, kap_1, kap_2 = RC_mapping_UD(w_1, w_2, w_xx, V, T_1, T_2, wRC_1,
-                                            wRC_2, alpha_1, alpha_2, wc, N_1, N_2,
-                                            exc, mu=1, num_cpus=1) # test that it works
-    H_S, A_1, A_2, A_EM = dimer_ham_RC_full(w_1, w_2, w_xx, V, mu, wRC_1, wRC_2, kap_1, kap_2, N_1, N_2)
-    H_S_, A_1_, A_2_, A_EM_ = dimer_ham_RC(w_1, w_2, w_xx, V, mu, wRC_1, wRC_2, kap_1, kap_2, N_1, N_2, exc)
-
-    for i,j in zip([H_S, A_1, A_2, A_EM], [H_S_, A_1_, A_2_, A_EM_]):
-        print i.shape, j.shape, i.dims, j.dims
-        print np.sum(i.full() == j.full()), i.shape[0]**2
-    '''
-    I = enr_identity([N_1,N_2], exc)
-    try:
-        ss = steadystate(to_super(H_0), [L_RC], method='eigen')
-        #print "Ground state population should be 1 "
-        #assert (ss*tensor(OO*OO.dag(), I)).tr().real == 1 # ptrace doesn't really work
-    except ValueError, e:
-        print "steady states error:", e
-    print "dimer_phonons is finished. It is an {}by{} of type {}.".format(L_RC.shape[0],
-                                                            L_RC.shape[0], L_RC.type)'''

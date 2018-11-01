@@ -129,7 +129,7 @@ def PARAMS_setup(bias=100., w_2=2000., V = 100., pialpha_prop=0.1,
 
     J = J_minimal
     H_sub = w_1*XO_proj + w_2*OX_proj + V*(site_coherence+site_coherence.dag())
-    coupling_ops = [XO_proj, OX_proj]
+    coupling_ops = [XO_proj, OX_proj] # system-RC operators
     PARAM_names = ['H_sub', 'coupling_ops', 'w_1', 'w_2', 'V', 'bias', 'w_xx', 'T_1', 'T_2',
                    'w0_1', 'w0_2', 'T_EM', 'alpha_EM','mu', 'num_cpus', 'J',
                    'dipole_1','dipole_2', 'Gamma_1', 'Gamma_2']

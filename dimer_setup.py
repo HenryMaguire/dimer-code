@@ -48,7 +48,7 @@ fock_ground2 = qt.enr_fock([N,N],N, (0,N))
 labels = [ 'OO', 'XO', 'OX', 'XX', 'site_coherence', 'bright', 'dark', 'eig_coherence',
              'RC1_position1', 'RC2_position', 'RC1_number', 'RC2_number', 'sigma_x', 'sigma_y']
 
-def make_expectation_operators(PARS):
+def make_expectation_operators(H, PARS, site_basis=True):
     # makes a dict: keys are names of observables values are operators
     I = enr_identity([PARS['N_1'], PARS['N_2']], PARS['exc'])
     I_dimer = qeye(PARS['sys_dim'])
@@ -77,13 +77,18 @@ def make_expectation_operators(PARS):
     subspace_ops = [position1, position2, number1, number2]
     fullspace_ops += [tensor(I_dimer, op) for op in subspace_ops]
 
+    if not site_basis:
+        print "THIS ONE IS EIG BASIS"
+        eVals, eVecs = H[1].eigenstates()
+        eVecs = np.transpose(np.array([v.dag().full()[0] for v in eVecs])) # get into columns of evecs
+        eVecs_inv = sp.linalg.inv(eVecs) # has a very low overhead
+        for j, op in enumerate(fullspace_ops):
+            fullspace_ops[j] = to_eigenbasis(op, eVals, eVecs, eVecs_inv)
 
     return dict((key_val[0], key_val[1]) for key_val in zip(labels, fullspace_ops))
 
-def get_H_and_L(PARS,silent=False, threshold=0.):
-    L_RC, H, A_1, A_2, SIG_1, SIG_2, PARAMS = RC.RC_mapping(PARS,
-                                                                silent=silent,
-                                                                shift=True)
+def get_H_and_L(PARS,silent=False, threshold=0., site_basis=True):
+    L, H, A_1, A_2, PARAMS = RC.RC_mapping(PARS,silent=silent, shift=True, site_basis=site_basis)
 
     N_1 = PARS['N_1']
     N_2 = PARS['N_2']
@@ -93,20 +98,44 @@ def get_H_and_L(PARS,silent=False, threshold=0.):
     I = enr_identity([N_1,N_2], exc)
     sigma = sigma_m1 + mu*sigma_m2
 
-    L = L_RC
-    del L_RC
     if abs(PARS['alpha_EM'])>0:
         if PARS['num_cpus']>1:
-            L_EM_full = opt.L_non_rwa_par(H[1], tensor(sigma,I), PARS, silent=silent)
+            L += opt.L_non_rwa_par(H[1], tensor(sigma,I), PARS, silent=silent, site_basis=site_basis)
         else:
-            L_EM_full = opt.L_non_rwa(H[1], tensor(sigma,I), PARS, silent=silent)
-        L+=L_EM_full
-        del L_EM_full
+            L += opt.L_non_rwa(H[1], tensor(sigma,I), PARS, silent=silent, site_basis=site_basis)
+
     else:
         print "Not including optical dissipator"
     if threshold:
         L.tidyup(threshold)
     return H, L
+
+
+def get_L(PARS,silent=False, threshold=0., site_basis=True):
+    L, H, A_1, A_2, PARAMS = RC.RC_mapping(PARS, silent=silent, shift=True,
+                                            site_basis=site_basis)
+
+    N_1 = PARS['N_1']
+    N_2 = PARS['N_2']
+    exc = PARS['exc']
+    mu = PARS['mu']
+
+    I = enr_identity([N_1,N_2], exc)
+    sigma = sigma_m1 + mu*sigma_m2
+
+    if abs(PARS['alpha_EM'])>0:
+        if PARS['num_cpus']>1:
+            L+= opt.L_non_rwa_par(H[1], tensor(sigma,I), PARS, 
+                                        silent=silent, site_basis=site_basis)
+        else:
+            L += opt.L_non_rwa(H[1], tensor(sigma,I), PARS, silent=silent, 
+                                                            site_basis=site_basis)
+    else:
+        print "Not including optical dissipator"
+    if threshold:
+        L.tidyup(threshold)
+    return -1*qt.liouvillian(H[1], c_ops=[L])
+
 
 def PARAMS_setup(bias=100., w_2=2000., V = 100., pialpha_prop=0.1,
                                  T_EM=0., T_ph =300.,
@@ -114,7 +143,7 @@ def PARAMS_setup(bias=100., w_2=2000., V = 100., pialpha_prop=0.1,
                                  num_cpus=1, w_0=200, Gamma=50., N=3,
                                  silent=False, exc_diff=0):
     N_1 = N_2 = N
-    exc = N+exc_diff
+    exc = 2*N-exc_diff
     gap = sqrt(bias**2 +4*(V**2))
     phonon_energy = T_ph*0.695
 
@@ -130,7 +159,9 @@ def PARAMS_setup(bias=100., w_2=2000., V = 100., pialpha_prop=0.1,
     w0_2, w0_1 = w_0, w_0 # underdamped SD parameter omega_0
     if not silent:
         plot_UD_SD(Gamma_1, w_2*pialpha_prop/pi, w_0, eps=w_2)
-    w_xx = w_2 + w_1
+    w_xx = w_2 + w_1 
+    H_sub = w_1*sigma_m1.dag()*sigma_m1 + w_2*sigma_m2.dag()*sigma_m2 + V*(site_coherence+site_coherence.dag())
+    coupling_ops = [sigma_m1.dag()*sigma_m1, sigma_m2.dag()*sigma_m2] # system-RC operators
     if not silent:
         print "Gap is {}. Phonon thermal energy is {}. Phonon SD peak is {}. N={}.".format(gap, phonon_energy,
                                                                                  SD_peak_position(Gamma, 1, w_0),
@@ -138,7 +169,7 @@ def PARAMS_setup(bias=100., w_2=2000., V = 100., pialpha_prop=0.1,
 
     J = J_minimal
 
-    PARAM_names = ['w_1', 'w_2', 'V', 'bias', 'w_xx', 'T_1', 'T_2',
+    PARAM_names = ['H_sub', 'coupling_ops', 'w_1', 'w_2', 'V', 'bias', 'w_xx', 'T_1', 'T_2',
                    'w0_1', 'w0_2', 'T_EM', 'alpha_EM','mu', 'num_cpus', 'J',
                    'dipole_1','dipole_2', 'Gamma_1', 'Gamma_2']
     scope = locals() # Lets eval below use local variables, not global

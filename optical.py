@@ -82,7 +82,7 @@ def Gamma(omega, beta, J, alpha, wc, imag_part=True):
         #print integrate.quad(F_m, 0, n, weight='cauchy', wvar=-abs(omega)), integrate.quad(F_p, 0, n, weight='cauchy', wvar=abs(omega))
     return G
 
-def L_non_rwa(H_vib, sigma, PARAMS, silent=False):
+def L_non_rwa(H_vib, sigma, PARAMS, silent=False, site_basis=True):
     ti = time.time()
     A = sigma + sigma.dag()
     w_1 = PARAMS['w_1']
@@ -101,6 +101,13 @@ def L_non_rwa(H_vib, sigma, PARAMS, silent=False):
             g = Gamma(eta, beta, J, alpha, w_1, imag_part=False)
             if (abs(g)>0) and (abs(aij)>0):
                 G+=g*aij*eVecs[i]*(eVecs[j].dag())
+    eVecs = np.transpose(np.array([v.dag().full()[0] for v in eVecs])) # get into columns of evecs
+    eVecs_inv = sp.linalg.inv(eVecs) # has a very low overhead
+    if site_basis:
+        G = to_site_basis(G, eVals, eVecs, eVecs_inv)
+    else:
+        A = to_eigenbasis(A, eVals, eVecs, eVecs_inv)
+        H_vib = to_eigenbasis(H_vib, eVals, eVecs, eVecs_inv)
     G_dag = G.dag()
     # Initialise liouvilliian
     L =  qt.spre(A*G) - qt.sprepost(G, A)
@@ -128,7 +135,7 @@ def nonRWA_function(idx_list, **kwargs):
     return op_contrib
 
 
-def L_non_rwa_par(H_vib, sigma, args, silent=False):
+def L_non_rwa_par(H_vib, sigma, args, silent=False, site_basis=True):
     Gamma, T, w_1, J, num_cpus = args['alpha_EM'], args['T_EM'], args['w_1'],args['J'], args['num_cpus']
     #Construct non-secular liouvillian
     ti = time.time()
@@ -147,8 +154,15 @@ def L_non_rwa_par(H_vib, sigma, args, silent=False):
     pool.join()
     
     G = Qobj(np.sum(np.array([x for x in Out])), dims=H_vib.dims)
+    eVecs = np.transpose(np.array([v.dag().full()[0] for v in eVecs])) # get into columns of evecs
+    eVecs_inv = sp.linalg.inv(eVecs) # has a very low overhead
+    if site_basis:
+        G = to_site_basis(G, eVals, eVecs, eVecs_inv)
+    else:
+        A = to_eigenbasis(A, eVals, eVecs, eVecs_inv)
+        H_vib = to_eigenbasis(H_vib, eVals, eVecs, eVecs_inv)
     G_dag = G.dag()
-    
+
     L =  qt.spre(A*G) - qt.sprepost(G, A)
     L += qt.spost(G_dag*A) - qt.sprepost(A, G_dag)
     
@@ -188,13 +202,13 @@ def nonsecular_function(args, **kwargs):
 
 
 
-def L_nonsecular_par(H_vib, A, args):
+def L_nonsecular_par(H_vib, A, args, site_basis=True):
     Gamma, T, w_1, J, num_cpus = args['alpha_EM'], args['T_EM'], args['w_1'],args['J'], args['num_cpus']
     #Construct non-secular liouvillian
     ti = time.time()
     dim_ham = H_vib.shape[0]
 
-    eVals, eVecs = H_vib.eigenstates()
+    eVals, eVecs = sorted_eig(H_vib)
     kwargs = dict(args)
     kwargs.update({'eVals':eVals, 'eVecs':eVecs, 'A':A})
     l = dim_ham*range(dim_ham) # Perform two loops in one
@@ -204,8 +218,15 @@ def L_nonsecular_par(H_vib, A, args):
     pool.close()
     pool.join()
     X_ops = np.sum(np.array([x for x in Out]), axis=0)
+    
+    eVecs_inv = sp.linalg.inv(eVecs) # has a very low overhead
+    if site_basis:
+        for j, op in enumerate(X_ops):
+            X_ops[j] = to_site_basis(op, eVals, eVecs, eVecs_inv)
+    else:
+        A = to_eigenbasis(A, eVals, eVecs, eVecs_inv)
+        H_vib = to_eigenbasis(H_vib, eVals, eVecs, eVecs_inv)
     X1, X2, X3, X4 = X_ops[0], X_ops[1], X_ops[2], X_ops[3]
-
     L = spre(A*X1) -sprepost(X1,A)+spost(X2*A)-sprepost(A,X2)
     L+= spre(A.dag()*X3)-sprepost(X3, A.dag())+spost(X4*A.dag())-sprepost(A.dag(), X4)
     #print np.sum(X1.full()), np.sum(X2.full()), np.sum(X3.full()), np.sum(X4.full())
@@ -213,12 +234,12 @@ def L_nonsecular_par(H_vib, A, args):
 
     return -0.25*L
 
-def L_nonsecular(H_vib, A, args):
+def L_nonsecular(H_vib, A, args, site_basis=True):
     Gamma, T, w_1, J = args['alpha_EM'], args['T_EM'], args['w_1'],args['J']
     #Construct non-secular liouvillian
     ti = time.time()
     dim_ham = H_vib.shape[0]
-    eVals, eVecs = H_vib.eigenstates()
+    eVals, eVecs = sorted_eig(H_vib)
     l = dim_ham*range(dim_ham) # Perform two loops in one
     X1, X2, X3, X4 = 0,0,0,0
     for i,j in zip(sorted(l), l):
@@ -244,6 +265,7 @@ def L_nonsecular(H_vib, A, args):
             X4+= r_up*A_ij*IJ
             X1+= r_up*A_ji*JI
             X2+= r_down*A_ji*JI
+    
     L = spre(A*X1) -sprepost(X1,A)+spost(X2*A)-sprepost(A,X2)
     L+= spre(A.dag()*X3)-sprepost(X3, A.dag())+spost(X4*A.dag())-sprepost(A.dag(), X4)
     #print np.sum(X1.full()), np.sum(X2.full()), np.sum(X3.full()), np.sum(X4.full())
@@ -289,7 +311,7 @@ def L_secular(H_vib, A, args, silent=False):
     ti = time.time()
     #num_cpus = args['num_cpus']
     dim_ham = H_vib.shape[0]
-    eVals, eVecs = H_vib.eigenstates()
+    eVals, eVecs = sorted_eig(H_vib)
     #print [(i, ev) for i, ev in enumerate(eVals)] # Understanding manifold structure
     #names = ['eVals', 'eVecs', 'A', 'w_1', 'Gamma', 'T', 'J']
     T = args['T_EM']

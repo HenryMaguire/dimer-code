@@ -7,6 +7,33 @@ import pickle
 import sympy
 
 
+from scipy.linalg import eig, inv
+
+def sorted_eig(_H):
+    if type(_H)==qt.Qobj:
+        _H = _H.full()
+    eigenValues, eigenVectors = eig(_H)
+    idx = eigenValues.argsort()[::-1]   
+    return eigenValues[idx], eigenVectors[:,idx]
+
+def to_eigenbasis(op, evals, evecs, evecs_inv):
+    if type(op)==qt.Qobj:
+        dims = op.dims
+        op = op.full()
+    else:
+        raise ValueError("operator must be a Qobj")
+    A = np.matmul(evecs_inv, op)
+    return qt.Qobj(np.matmul(A, evecs), dims = dims)
+
+def to_site_basis(op, evals, evecs, evecs_inv):
+    if type(op)==qt.Qobj:
+        dims = op.dims
+        op = op.full()
+    else:
+        raise ValueError("operator must be a Qobj")
+    A = np.matmul(evecs, op)
+    return qt.Qobj(np.matmul(A, evecs_inv), dims = dims)
+
 
 def Coth(x):
     return (np.exp(2*x)+1)/(np.exp(2*x)-1)
@@ -309,6 +336,9 @@ def total_elements(qobj):
 
 def nonzero_elements(qobj):
     return len(csc_matrix(qobj.data).nonzero()[0])
+
+def sparse_percentage(qobj):
+    return 100*(nonzero_elements(qobj)/float(total_elements(qobj)))
 
 def visualise_dense(qobj):
     plt.imshow(qobj.full().real)

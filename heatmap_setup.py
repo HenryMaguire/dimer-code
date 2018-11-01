@@ -2,7 +2,44 @@ from SES_setup import *
 import time
 from qutip import build_preconditioner, steadystate
 
-def calculate_steadystate(H, L, fill_factor=500, tol=1e-8, persistent=False, method="iterative-lgmres", maxiter=6000):
+from scipy.sparse.linalg import eigs
+from qutip.cy.spconvert import dense2D_to_fastcsr_fmode
+
+def expectation(rho, expval='site_coherence'):
+    e_op = ses.make_expectation_operators(PARAMS)[expval]
+    return (rho*e_op).tr()
+
+
+def vec_to_dm(evec, _H):
+    n = int(np.sqrt(evec.shape[0]))
+    data = dense2D_to_fastcsr_fmode(evec.reshape((n, n)).T, n, n)
+    data = 0.5 * (data + data.H)
+    data = qt.Qobj(data, dims=_H[1].dims, isherm=True)
+    return data/data.tr()
+
+
+
+def _steadystate(H, L, tol=1e-8, sigma=1e-12, ncv=25, print_coh=True):
+    L_full = -1*qt.liouvillian(H[1], c_ops=[L]).data
+    ti = time.time()
+    evals, evec = eigs(L_full, 1, which='LM', sigma=sigma, tol=tol, ncv=ncv)
+    print("Steadystate took {:0.3f} seconds".format(time.time() - ti))
+    rho = vec_to_dm(evec, H)
+    if print_coh:
+        print("Coherence is {}".format(coherence_exp(rho)))
+    return rho
+
+def eigen_steadystate(L, tol=1e-8, sigma=1e-12, ncv=18, print_coh=True, v0=None):
+    ti = time.time()
+    evals, evec = eigs(L.data, 1, which='LM', sigma=sigma, tol=tol, ncv=ncv, v0=v0)
+    print("Steadystate took {:0.3f} seconds".format(time.time() - ti))
+    rho = vec_to_dm(evec, H)
+    if print_coh:
+        print("Coherence is {}".format(expectation(rho)))
+    return rho
+
+def calculate_steadystate(H, L, fill_factor=500, tol=1e-8, persistent=False, 
+                          method="eigen", maxiter=6000, v0=None):
     calculated = False
     ff = fill_factor
     ss = 0
@@ -13,13 +50,14 @@ def calculate_steadystate(H, L, fill_factor=500, tol=1e-8, persistent=False, met
             if "iterative" in method:
                 ti = time.time()
                 M, m_info = build_preconditioner(H[1], [L], fill_factor=fill_factor,return_info=True,
-                                        drop_tol=1e-4, use_rcm=True, ILU_MILU='smilu_2', maxiter=maxiter)
+                                        drop_tol=1e-4, use_rcm=True, ILU_MILU='smilu_2', 
+                                                 maxiter=maxiter, x0=v0)
                 use_precond=True
                 print "Building preconditioner took {} seconds".format(time.time()-ti)
                 # print m_info['ilu_fill_factor']
             ss, info = steadystate(H[1], [L], method=method, M=M,
                                     use_precond=False,
-                                    return_info=True, tol=tol, maxiter=maxiter)
+                                    return_info=True, tol=tol, maxiter=maxiter, x0=v0)
             print "Steady state took {:0.3f} seconds".format(info['solution_time'])
             return ss, info
         except Exception as err:
