@@ -38,6 +38,46 @@ def eigen_steadystate(L, tol=1e-8, sigma=1e-12, ncv=18, print_coh=True, v0=None)
         print("Coherence is {}".format(expectation(rho)))
     return rho
 
+def calculate_steadystate_L(L, fill_factor=500, tol=1e-8, persistent=False, 
+                          method="eigen", maxiter=6000, v0=None):
+    calculated = False
+    ff = fill_factor
+    ss = 0
+    while not calculated:
+        try:
+            M=None
+            use_precond=False
+            if "iterative" in method:
+                ti = time.time()
+                M, m_info = build_preconditioner(L, fill_factor=fill_factor,return_info=True,
+                                        drop_tol=1e-4, use_rcm=True, ILU_MILU='smilu_2', 
+                                                 maxiter=maxiter, x0=v0)
+                use_precond=True
+                print "Building preconditioner took {} seconds".format(time.time()-ti)
+                # print m_info['ilu_fill_factor']
+            ss, info = steadystate(L, method=method, M=M,
+                                    use_precond=False,
+                                    return_info=True, tol=tol, maxiter=maxiter, x0=v0)
+            print "Steady state took {:0.3f} seconds".format(info['solution_time'])
+            return ss, info
+        except Exception as err:
+            print "Steadystate failed because {}.".format(err)
+            if persistent:
+                if "tolerance" in str(err):
+                    return 0, 0 # if it's a convergence error, don't bother
+                elif "preconditioner" in str(err):
+                    ff -= 5
+                    time.sleep(5) # Basically just giving the computer a breather
+                    print("Trying a smaller fill factor ({})...".format(ff))
+                    if ff<10:
+                        print("Failed with a lower limit fill factor of 38. Skipping...".format(ff))
+                        return 0, 0 # ff is too low, don't bother
+                else:
+                    raise Exception(str(err))
+            else:
+                print("Skipping...")
+                return 0, 0 # don't bother"""
+
 def calculate_steadystate(H, L, fill_factor=500, tol=1e-8, persistent=False, 
                           method="eigen", maxiter=6000, v0=None):
     calculated = False

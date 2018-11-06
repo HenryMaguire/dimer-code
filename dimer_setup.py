@@ -9,11 +9,11 @@ import matplotlib.pyplot as plt
 import phonons as RC
 import optical as opt
 
-from phonons import RC_mapping
-from optical import L_non_rwa, L_phenom
+import optical as opt
 from qutip import basis, qeye, enr_identity, enr_destroy, tensor, enr_thermal_dm, steadystate
 from utils import *
-
+reload(RC)
+reload(opt)
 
 OO = basis(4,0)
 XO = basis(4,1)
@@ -100,9 +100,11 @@ def get_H_and_L(PARS,silent=False, threshold=0., site_basis=True):
 
     if abs(PARS['alpha_EM'])>0:
         if PARS['num_cpus']>1:
-            L += opt.L_non_rwa_par(H[1], tensor(sigma,I), PARS, silent=silent, site_basis=site_basis)
+            #L += opt.L_non_rwa_par(H[1], tensor(sigma,I), PARS, silent=silent, site_basis=site_basis)
+            L += opt.L_nonsecular_par(H[1], tensor(sigma,I), PARS, silent=silent, site_basis=site_basis)
         else:
-            L += opt.L_non_rwa(H[1], tensor(sigma,I), PARS, silent=silent, site_basis=site_basis)
+            #L += opt.L_non_rwa(H[1], tensor(sigma,I), PARS, silent=silent, site_basis=site_basis)
+            L += opt.L_nonsecular(H[1], tensor(sigma,I), PARS, silent=silent, site_basis=site_basis)
 
     else:
         print "Not including optical dissipator"
@@ -132,9 +134,10 @@ def get_L(PARS,silent=False, threshold=0., site_basis=True):
                                                             site_basis=site_basis)
     else:
         print "Not including optical dissipator"
+    L = -1*qt.liouvillian(H[1], c_ops=[L])
     if threshold:
         L.tidyup(threshold)
-    return -1*qt.liouvillian(H[1], c_ops=[L])
+    return L
 
 
 def PARAMS_setup(bias=100., w_2=2000., V = 100., pialpha_prop=0.1,

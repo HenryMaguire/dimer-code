@@ -189,7 +189,7 @@ def nonsecular_function(args, **kwargs):
         IJ = eVecs[i]*eVecs[j].dag()
         JI = eVecs[j]*eVecs[i].dag()
 
-        if eps_ij == 0:
+        if eps_ij < 1e-11:
             JN = Gamma/(2*pi*w_1*beta_f(T))
             r_up = 2*pi*JN
             r_down = 2*pi*JN
@@ -202,13 +202,13 @@ def nonsecular_function(args, **kwargs):
 
 
 
-def L_nonsecular_par(H_vib, A, args, site_basis=True):
+def L_nonsecular_par(H_vib, A, args, site_basis=True, silent=False):
     Gamma, T, w_1, J, num_cpus = args['alpha_EM'], args['T_EM'], args['w_1'],args['J'], args['num_cpus']
     #Construct non-secular liouvillian
     ti = time.time()
     dim_ham = H_vib.shape[0]
 
-    eVals, eVecs = sorted_eig(H_vib)
+    eVals, eVecs = H_vib.eigenstates()
     kwargs = dict(args)
     kwargs.update({'eVals':eVals, 'eVecs':eVecs, 'A':A})
     l = dim_ham*range(dim_ham) # Perform two loops in one
@@ -230,16 +230,18 @@ def L_nonsecular_par(H_vib, A, args, site_basis=True):
     L = spre(A*X1) -sprepost(X1,A)+spost(X2*A)-sprepost(A,X2)
     L+= spre(A.dag()*X3)-sprepost(X3, A.dag())+spost(X4*A.dag())-sprepost(A.dag(), X4)
     #print np.sum(X1.full()), np.sum(X2.full()), np.sum(X3.full()), np.sum(X4.full())
-    print "It took ", time.time()-ti, " seconds to build the Non-secular RWA Liouvillian"
+    if not silent:
+        print "It took ", time.time()-ti, " seconds to build the Non-secular RWA Liouvillian"
 
     return -0.25*L
 
-def L_nonsecular(H_vib, A, args, site_basis=True):
+def L_nonsecular(H_vib, A, args, site_basis=True, silent=False):
     Gamma, T, w_1, J = args['alpha_EM'], args['T_EM'], args['w_1'],args['J']
     #Construct non-secular liouvillian
+    print "Serial mode on optical"
     ti = time.time()
     dim_ham = H_vib.shape[0]
-    eVals, eVecs = sorted_eig(H_vib)
+    eVals, eVecs = H_vib.eigenstates()
     l = dim_ham*range(dim_ham) # Perform two loops in one
     X1, X2, X3, X4 = 0,0,0,0
     for i,j in zip(sorted(l), l):
@@ -254,13 +256,12 @@ def L_nonsecular(H_vib, A, args, site_basis=True):
             JI = eVecs[j]*eVecs[i].dag()
             r_up = 0
             r_down = 0
-            if eps_ij == 0:
-                JN = Gamma/(2*pi*w_1*beta_f(T))
-                r_up = 2*pi*JN
-                r_down = 2*pi*JN
+            if eps_ij <1e-11:
+                alpha = Gamma/(2*pi*w_1)
+                r_up = r_down = 0.5*alpha/beta_f(T)
             else:
-                r_up = 2*pi*J(eps_ij, Gamma, w_1)*Occ
-                r_down = 2*pi*J(eps_ij, Gamma, w_1)*(Occ+1)
+                r_up = J(eps_ij, Gamma, w_1)*Occ
+                r_down = J(eps_ij, Gamma, w_1)*(Occ+1)
             X3+= r_down*A_ij*IJ
             X4+= r_up*A_ij*IJ
             X1+= r_up*A_ji*JI
@@ -269,8 +270,10 @@ def L_nonsecular(H_vib, A, args, site_basis=True):
     L = spre(A*X1) -sprepost(X1,A)+spost(X2*A)-sprepost(A,X2)
     L+= spre(A.dag()*X3)-sprepost(X3, A.dag())+spost(X4*A.dag())-sprepost(A.dag(), X4)
     #print np.sum(X1.full()), np.sum(X2.full()), np.sum(X3.full()), np.sum(X4.full())
-    print "It took ", time.time()-ti, " seconds to build the Non-secular RWA Liouvillian"
-    return -0.25*L
+    if not silent:
+        print "It took ", time.time()-ti, " seconds to build the Non-secular RWA Liouvillian"
+    return -0.5*L
+
 
 def secular_function(args, eVecs=[], eVals=[], T_EM=0.,
                             w_1=1., alpha_EM=0.,

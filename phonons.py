@@ -40,8 +40,8 @@ def H_mapping_RC(H_sub, coupling_ops, Omega_1,
     a_RC_exc = [tensor(I_sub, aa) for aa in atemp] # annhilation ops in exc restr basis
     A_1 = a_RC_exc[0].dag() + a_RC_exc[0]
     A_2 = a_RC_exc[1].dag() + a_RC_exc[1]
-    H_I1 = kap_1*tensor(coupling_ops[0], I)*A_1
-    H_I2 = kap_2*tensor(coupling_ops[1], I)*A_2
+    H_I1 = -kap_1*tensor(coupling_ops[0], I)*A_1
+    H_I2 = -kap_2*tensor(coupling_ops[1], I)*A_2
 
     H_RC1 = Omega_1*a_RC_exc[0].dag()*a_RC_exc[0]
     H_RC2 = Omega_2*a_RC_exc[1].dag()*a_RC_exc[1]
@@ -52,7 +52,9 @@ def H_mapping_RC(H_sub, coupling_ops, Omega_1,
 def dimer_ham_RC(w_1, w_2, w_xx, V, Omega_1,
                 Omega_2, kap_1, kap_2, N_1, N_2, exc,
                 shift=True):
-    """ Builds RC Hamiltonian in excitation restricted subspace
+    """
+    Deprecated function
+    Builds RC Hamiltonian in excitation restricted subspace
 
     Input: System splitting, RC freq., system-RC coupling
     and Hilbert space dimension Output: Hamiltonian, all
