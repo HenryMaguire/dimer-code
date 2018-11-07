@@ -9,6 +9,18 @@ import sympy
 
 from scipy.linalg import eig, inv
 
+
+
+def chunks(l, n):
+    """Yield successive n-sized chunks from l."""
+    for i in range(0, len(l), n):
+        yield l[i:i + n]
+
+def i_j_generator(dim_ham, num_cpus):
+    l = dim_ham*range(dim_ham) # Perform two loops in one
+    i_j_gen = [(i,j) for i,j in zip(sorted(l), l)]
+    return chunks(i_j_gen, 1+len(i_j_gen)//int(num_cpus))
+
 def sorted_eig(_H):
     if type(_H)==qt.Qobj:
         _H = _H.full()
@@ -16,7 +28,7 @@ def sorted_eig(_H):
     idx = eigenValues.argsort()[::-1]   
     return eigenValues[idx], eigenVectors[:,idx]
 
-def to_eigenbasis(op, evals, evecs, evecs_inv):
+def to_eigenbasis(op, evecs, evecs_inv):
     if type(op)==qt.Qobj:
         dims = op.dims
         op = op.full()
@@ -25,7 +37,7 @@ def to_eigenbasis(op, evals, evecs, evecs_inv):
     A = np.matmul(evecs_inv, op)
     return qt.Qobj(np.matmul(A, evecs), dims = dims)
 
-def to_site_basis(op, evals, evecs, evecs_inv):
+def to_site_basis(op, evecs, evecs_inv):
     if type(op)==qt.Qobj:
         dims = op.dims
         op = op.full()
@@ -34,6 +46,19 @@ def to_site_basis(op, evals, evecs, evecs_inv):
     A = np.matmul(evecs, op)
     return qt.Qobj(np.matmul(A, evecs_inv), dims = dims)
 
+def change_basis(ops, eVecs, eig_to_site=True):
+    eVecs = np.transpose(np.array([v.dag().full()[0] for v in eVecs])) # get into columns of evecs
+    eVecs_inv = sp.linalg.inv(eVecs) # has a very low overhead
+    if eig_to_site:
+        basis_change_op = to_site_basis
+    else:
+        basis_change_op = to_eigenbasis
+    
+    return (basis_change_op(op, eVecs, eVecs_inv) for op in ops)
+    
+def thermal_state(T, H):
+    p = (-beta_f(T)*H).expm()
+    return p/p.tr()
 
 def Coth(x):
     return (np.exp(2*x)+1)/(np.exp(2*x)-1)

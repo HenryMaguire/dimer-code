@@ -145,11 +145,8 @@ def L_non_rwa_par(H_vib, sigma, args, silent=False, site_basis=True):
     eVals, eVecs = H_vib.eigenstates()
     kwargs = dict(args)
     kwargs.update({'eVals':eVals, 'eVecs':eVecs, 'A':A})
-    l = dim_ham*range(dim_ham) # Perform two loops in one
-    i_j_gen = [(i,j) for i,j in zip(sorted(l), l)]
-    i_j_gen = chunks(i_j_gen, 1024)
     pool = multiprocessing.Pool(num_cpus)
-    Out = pool.imap_unordered(partial(nonRWA_function,**kwargs), i_j_gen)
+    Out = pool.imap_unordered(partial(nonRWA_function,**kwargs), i_j_generator(dim_ham, num_cpus))
     pool.close()
     pool.join()
     
@@ -170,78 +167,85 @@ def L_non_rwa_par(H_vib, sigma, args, silent=False, site_basis=True):
         print "It took ", time.time()-ti, " seconds to build the Non-secular RWA Liouvillian"
     return -0.5*L
 
-def nonsecular_function(args, **kwargs):
-    i, j = args[0], args[1]
-    A = kwargs['A']
-    eVecs = kwargs['eVecs']
-    eVals = kwargs['eVals']
-    T = kwargs['T_EM']
-    w_1, Gamma, J = kwargs['w_1'], kwargs['alpha_EM'], kwargs['J']
-    eps_ij = abs(eVals[i]-eVals[j])
 
-    A_ij = A.matrix_element(eVecs[i].dag(), eVecs[j])
-    A_ji = (A.dag()).matrix_element(eVecs[j].dag(), eVecs[i])
-    Occ = Occupation(eps_ij, T)
-    zero = 0*A
-
-    # 0.5*np.pi*alpha*(N+1)
-    if abs(A_ij)>0 or abs(A_ji)>0:
-        IJ = eVecs[i]*eVecs[j].dag()
-        JI = eVecs[j]*eVecs[i].dag()
-
-        if eps_ij < 1e-11:
-            JN = Gamma/(2*pi*w_1*beta_f(T))
-            r_up = 2*pi*JN
-            r_down = 2*pi*JN
-        else:
-            r_up = 2*pi*J(eps_ij, Gamma, w_1)*Occ
-            r_down = 2*pi*J(eps_ij, Gamma, w_1)*(Occ+1)
-        return Qobj(r_up*A_ji*JI), Qobj(r_down*A_ji*JI), Qobj(r_down*A_ij*IJ), Qobj(r_up*A_ij*IJ)
-    else:
-        return zero, zero, zero, zero
-
-
-
-def L_nonsecular_par(H_vib, A, args, site_basis=True, silent=False):
+def L_BMME(H_vib, A, args, ME_type='nonsecular', site_basis=True, silent=False):
     Gamma, T, w_1, J, num_cpus = args['alpha_EM'], args['T_EM'], args['w_1'],args['J'], args['num_cpus']
+    operators = eval('nonsecular'+'_ops')
+    
     #Construct non-secular liouvillian
     ti = time.time()
-    dim_ham = H_vib.shape[0]
-
     eVals, eVecs = H_vib.eigenstates()
-    kwargs = dict(args)
-    kwargs.update({'eVals':eVals, 'eVecs':eVecs, 'A':A})
-    l = dim_ham*range(dim_ham) # Perform two loops in one
-    i_j_gen = ((i,j) for i,j in zip(sorted(l), l))
-    pool = multiprocessing.Pool(num_cpus)
-    Out = pool.imap_unordered(partial(nonsecular_function,**kwargs), i_j_gen)
-    pool.close()
-    pool.join()
-    X_ops = np.sum(np.array([x for x in Out]), axis=0)
-    
-    eVecs_inv = sp.linalg.inv(eVecs) # has a very low overhead
-    if site_basis:
-        for j, op in enumerate(X_ops):
-            X_ops[j] = to_site_basis(op, eVals, eVecs, eVecs_inv)
+    if num_cpus <= 1:
+        operators = eval(ME_type+'_ops')
+        X_ops = operators(eVals, eVecs, A, args, silent=False)
     else:
-        A = to_eigenbasis(A, eVals, eVecs, eVecs_inv)
-        H_vib = to_eigenbasis(H_vib, eVals, eVecs, eVecs_inv)
-    X1, X2, X3, X4 = X_ops[0], X_ops[1], X_ops[2], X_ops[3]
+        operators = eval(ME_type+'_ops_par')
+        X_ops = operators(eVals, eVecs, A, args, silent=False)
+    # rotate operators to required basis
+    if site_basis:
+        pass
+        #X1, X2, X3, X4 = change_basis(X_ops, eVecs, eig_to_site=site_basis)
+        X1, X2, X3, X4 = (op for op in X_ops)
+    else:
+        X1, X2, X3, X4 = (op for op in X_ops)
     L = spre(A*X1) -sprepost(X1,A)+spost(X2*A)-sprepost(A,X2)
     L+= spre(A.dag()*X3)-sprepost(X3, A.dag())+spost(X4*A.dag())-sprepost(A.dag(), X4)
     #print np.sum(X1.full()), np.sum(X2.full()), np.sum(X3.full()), np.sum(X4.full())
     if not silent:
         print "It took ", time.time()-ti, " seconds to build the Non-secular RWA Liouvillian"
+    return -0.5*L
 
-    return -0.25*L
 
-def L_nonsecular(H_vib, A, args, site_basis=True, silent=False):
-    Gamma, T, w_1, J = args['alpha_EM'], args['T_EM'], args['w_1'],args['J']
-    #Construct non-secular liouvillian
-    print "Serial mode on optical"
+def nonsecular_function(idx_list, **kwargs):
+    A = kwargs['A']
+    eVecs = kwargs['eVecs']
+    eVals = kwargs['eVals']
+    T = kwargs['T_EM']
+    w_1, Gamma, J = kwargs['w_1'], kwargs['alpha_EM'], kwargs['J']
+    
+    zero = 0*A
+    X = np.array([zero, zero, zero, zero]) # Initialise operators
+    for i, j in idx_list:
+        # 0.5*np.pi*alpha*(N+1)
+        eps_ij = abs(eVals[i]-eVals[j])
+
+        A_ij = A.matrix_element(eVecs[i].dag(), eVecs[j])
+        A_ji = (A.dag()).matrix_element(eVecs[j].dag(), eVecs[i])
+        Occ = Occupation(eps_ij, T)
+        if abs(A_ij)>0 or abs(A_ji)>0:
+            IJ = eVecs[i]*eVecs[j].dag()
+            JI = eVecs[j]*eVecs[i].dag()
+
+            if eps_ij < 1e-11:
+                JN = Gamma/(2*pi*w_1*beta_f(T))
+                r_up = 2*pi*JN
+                r_down = 2*pi*JN
+            else:
+                r_up = 2*pi*J(eps_ij, Gamma, w_1)*Occ
+                r_down = 2*pi*J(eps_ij, Gamma, w_1)*(Occ+1)
+            X += np.array([Qobj(r_up*A_ji*JI), Qobj(r_down*A_ji*JI), Qobj(r_down*A_ij*IJ), Qobj(r_up*A_ij*IJ)])
+    return X[0], X[1], X[2], X[3]
+
+def nonsecular_ops_par(eVals, eVecs, A, args, silent=False):
+    Gamma, T, w_1, J, num_cpus = args['alpha_EM'], args['T_EM'], args['w_1'],args['J'], args['num_cpus']
+    print (num_cpus)
+    #Construct non-secular ops in eigenbasis
     ti = time.time()
-    dim_ham = H_vib.shape[0]
-    eVals, eVecs = H_vib.eigenstates()
+    dim_ham = eVecs[0].shape[0]
+
+    kwargs = dict(args)
+    kwargs.update({'eVals':eVals, 'eVecs':eVecs, 'A':A})
+    
+    pool = multiprocessing.Pool(num_cpus)
+    Out = pool.imap_unordered(partial(nonsecular_function,**kwargs), i_j_generator(dim_ham, num_cpus))
+    pool.close()
+    pool.join()
+    X_ops = np.sum(np.array([x for x in Out]), axis=0)
+    return X_ops
+
+def nonsecular_ops(eVals, eVecs, A, args, silent=False):
+    Gamma, T, w_1, J= args['alpha_EM'], args['T_EM'], args['w_1'],args['J']
+    dim_ham = eVecs[0].shape[0]
     l = dim_ham*range(dim_ham) # Perform two loops in one
     X1, X2, X3, X4 = 0,0,0,0
     for i,j in zip(sorted(l), l):
@@ -256,7 +260,7 @@ def L_nonsecular(H_vib, A, args, site_basis=True, silent=False):
             JI = eVecs[j]*eVecs[i].dag()
             r_up = 0
             r_down = 0
-            if eps_ij <1e-11:
+            if eps_ij <1e-10:
                 alpha = Gamma/(2*pi*w_1)
                 r_up = r_down = 0.5*alpha/beta_f(T)
             else:
@@ -266,13 +270,30 @@ def L_nonsecular(H_vib, A, args, site_basis=True, silent=False):
             X4+= r_up*A_ij*IJ
             X1+= r_up*A_ji*JI
             X2+= r_down*A_ji*JI
-    
+    return np.array([X1, X2, X3, X4])
+
+def L_nonsecular(H_vib, A, args, site_basis=True, silent=False):
+    Gamma, T, w_1, J, num_cpus = args['alpha_EM'], args['T_EM'], args['w_1'],args['J'], args['num_cpus']
+    #Construct non-secular liouvillian
+    ti = time.time()
+    eVals, eVecs = H_vib.eigenstates()
+    if num_cpus <= 1:
+        print "Serial mode on optical"
+        print num_cpus
+        X_ops = nonsecular_ops(eVals, eVecs, A, args, silent=False)
+    else:
+        X_ops = nonsecular_ops_par(eVals, eVecs, A, args, silent=False)
+    # rotate operators to required basis
+    if site_basis:
+        X1, X2, X3, X4 = change_basis(X_ops, eVecs, eig_to_site=site_basis)
+    else:
+        X1, X2, X3, X4 = (op for op in X_ops)
     L = spre(A*X1) -sprepost(X1,A)+spost(X2*A)-sprepost(A,X2)
     L+= spre(A.dag()*X3)-sprepost(X3, A.dag())+spost(X4*A.dag())-sprepost(A.dag(), X4)
     #print np.sum(X1.full()), np.sum(X2.full()), np.sum(X3.full()), np.sum(X4.full())
     if not silent:
         print "It took ", time.time()-ti, " seconds to build the Non-secular RWA Liouvillian"
-    return -0.5*L
+    return -L
 
 
 def secular_function(args, eVecs=[], eVals=[], T_EM=0.,
@@ -363,10 +384,8 @@ def L_secular_par(H_vib, A, args):
     kwargs.update({'eVals':eVals, 'eVecs':eVecs, 'A':A})
     #for name in names:
     #    kwargs[name] = eval(name)
-    l = dim_ham*range(dim_ham)
-    i_j_gen = ((i,j) for i,j in zip(sorted(l), l))
     pool = multiprocessing.Pool(num_cpus)
-    L = pool.imap_unordered(partial(secular_function,**kwargs), i_j_gen)
+    L = pool.imap_unordered(partial(secular_function,**kwargs), i_j_generator(dim_ham))
     pool.close()
     pool.join()
     print "It took ", time.time()-ti, " seconds to build the secular RWA Liouvillian"

@@ -46,7 +46,7 @@ fock_ground2 = qt.enr_fock([N,N],N, (0,N))
 """
 
 labels = [ 'OO', 'XO', 'OX', 'XX', 'site_coherence', 'bright', 'dark', 'eig_coherence',
-             'RC1_position1', 'RC2_position', 'RC1_number', 'RC2_number', 'sigma_x', 'sigma_y']
+             'RC1_position1', 'RC2_position', 'RC1_number', 'RC2_number', 'RC_sigma_x', 'RC_sigma_y']
 
 def make_expectation_operators(H, PARS, site_basis=True):
     # makes a dict: keys are names of observables values are operators
@@ -76,35 +76,24 @@ def make_expectation_operators(H, PARS, site_basis=True):
 
     subspace_ops = [position1, position2, number1, number2]
     fullspace_ops += [tensor(I_dimer, op) for op in subspace_ops]
-
+    _, eVecs = H[1].eigenstates()
     if not site_basis:
-        print "THIS ONE IS EIG BASIS"
-        eVals, eVecs = H[1].eigenstates()
-        eVecs = np.transpose(np.array([v.dag().full()[0] for v in eVecs])) # get into columns of evecs
-        eVecs_inv = sp.linalg.inv(eVecs) # has a very low overhead
-        for j, op in enumerate(fullspace_ops):
-            fullspace_ops[j] = to_eigenbasis(op, eVals, eVecs, eVecs_inv)
-
+        fullspace_ops = list(change_basis(fullspace_ops, eVecs, eig_to_site=site_basis))
     return dict((key_val[0], key_val[1]) for key_val in zip(labels, fullspace_ops))
 
-def get_H_and_L(PARS,silent=False, threshold=0., site_basis=True):
-    L, H, A_1, A_2, PARAMS = RC.RC_mapping(PARS,silent=silent, shift=True, site_basis=site_basis)
+def get_H_and_L(PARAMS,silent=False, threshold=0., site_basis=True):
+    L, H, A_1, A_2, PARAMS = RC.RC_mapping(PARAMS,silent=silent, shift=True, site_basis=site_basis)
 
-    N_1 = PARS['N_1']
-    N_2 = PARS['N_2']
-    exc = PARS['exc']
-    mu = PARS['mu']
+    N_1 = PARAMS['N_1']
+    N_2 = PARAMS['N_2']
+    exc = PARAMS['exc']
+    mu = PARAMS['mu']
 
     I = enr_identity([N_1,N_2], exc)
     sigma = sigma_m1 + mu*sigma_m2
 
-    if abs(PARS['alpha_EM'])>0:
-        if PARS['num_cpus']>1:
-            #L += opt.L_non_rwa_par(H[1], tensor(sigma,I), PARS, silent=silent, site_basis=site_basis)
-            L += opt.L_nonsecular_par(H[1], tensor(sigma,I), PARS, silent=silent, site_basis=site_basis)
-        else:
-            #L += opt.L_non_rwa(H[1], tensor(sigma,I), PARS, silent=silent, site_basis=site_basis)
-            L += opt.L_nonsecular(H[1], tensor(sigma,I), PARS, silent=silent, site_basis=site_basis)
+    if abs(PARAMS['alpha_EM'])>0:
+        L += opt.L_BMME(H[1], tensor(sigma,I), PARAMS, ME_type='nonsecular', site_basis=site_basis, silent=silent)
 
     else:
         print "Not including optical dissipator"

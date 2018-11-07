@@ -11,10 +11,6 @@ from sympy.functions import coth
 from utils import *
 
 
-def chunks(l, n):
-    """Yield successive n-sized chunks from l."""
-    for i in range(0, len(l), n):
-        yield l[i:i + n]
 
 def H_mapping_RC(H_sub, coupling_ops, Omega_1,
                 Omega_2, kap_1, kap_2, N_1, N_2, exc,
@@ -22,8 +18,8 @@ def H_mapping_RC(H_sub, coupling_ops, Omega_1,
     """ Builds RC Hamiltonian in excitation restricted subspace
 
     Input: Hamiltonian and system operators which couple to phonon bath 1 and 2
-     Output: Hamiltonian, all
-    collapse operators in the vibronic Hilbert space
+     Output: site basis Hamiltonian, all
+    collapse operators in the enlarged space
     """
 
     I_sub = qeye(H_sub.shape[0])
@@ -40,8 +36,8 @@ def H_mapping_RC(H_sub, coupling_ops, Omega_1,
     a_RC_exc = [tensor(I_sub, aa) for aa in atemp] # annhilation ops in exc restr basis
     A_1 = a_RC_exc[0].dag() + a_RC_exc[0]
     A_2 = a_RC_exc[1].dag() + a_RC_exc[1]
-    H_I1 = -kap_1*tensor(coupling_ops[0], I)*A_1
-    H_I2 = -kap_2*tensor(coupling_ops[1], I)*A_2
+    H_I1 = kap_1*tensor(coupling_ops[0], I)*A_1
+    H_I2 = kap_2*tensor(coupling_ops[1], I)*A_2
 
     H_RC1 = Omega_1*a_RC_exc[0].dag()*a_RC_exc[0]
     H_RC2 = Omega_2*a_RC_exc[1].dag()*a_RC_exc[1]
@@ -49,54 +45,6 @@ def H_mapping_RC(H_sub, coupling_ops, Omega_1,
     H = H_S + H_RC1 + H_RC2 + H_I1 + H_I2
     return [H_sub, H], A_1, A_2
 
-def dimer_ham_RC(w_1, w_2, w_xx, V, Omega_1,
-                Omega_2, kap_1, kap_2, N_1, N_2, exc,
-                shift=True):
-    """
-    Deprecated function
-    Builds RC Hamiltonian in excitation restricted subspace
-
-    Input: System splitting, RC freq., system-RC coupling
-    and Hilbert space dimension Output: Hamiltonian, all
-    collapse operators in the vibronic Hilbert space
-    """
-    OO = basis(4,0)
-    XO = basis(4,1)
-    OX = basis(4,2)
-    XX = basis(4,3)
-    SIGMA_1 = OX*XX.dag() + OO*XO.dag()
-    SIGMA_2 = XO*XX.dag() + OO*OX.dag()
-    assert SIGMA_1*OX == SIGMA_2*XO
-    #I_RC_1 = qeye(N_1)
-    #I_RC_2 = qeye(N_2)
-    I_dim = qeye(4)
-    I = enr_identity([N_1,N_2], exc)
-    shift1, shift2 = (kap_1**2)/Omega_1, (kap_2**2)/Omega_2
-    if shift:
-        w_1 += shift1
-        w_2 += shift2
-        w_xx += shift1+shift2
-    H_dim_sub = w_1*XO*XO.dag()
-    H_dim_sub += w_2*OX*OX.dag() + w_xx*XX*XX.dag()
-    H_dim_sub += V*(XO*OX.dag() + OX*XO.dag())
-
-    #shift1, shift2 = (kap_1**2)/Omega_1, (kap_2**2)/Omega_2
-    #print H_dim_sub
-    H_dim = tensor(H_dim_sub, I)
-
-    atemp = enr_destroy([N_1,N_2], exc)
-
-    a_RC_exc = [tensor(I_dim, aa) for aa in atemp] # annhilation ops in exc restr basis
-    A_1 = a_RC_exc[0].dag() + a_RC_exc[0]
-    A_2 = a_RC_exc[1].dag() + a_RC_exc[1]
-    H_I1 = kap_1*tensor(SIGMA_1.dag()*SIGMA_1, I)*A_1
-    H_I2 = kap_2*tensor(SIGMA_2.dag()*SIGMA_2, I)*A_2
-
-    H_RC1 = Omega_1*a_RC_exc[0].dag()*a_RC_exc[0]
-    H_RC2 = Omega_2*a_RC_exc[1].dag()*a_RC_exc[1]
-
-    H_S = H_dim + H_RC1 + H_RC2 + H_I1 + H_I2
-    return [H_dim_sub, H_S], A_1, A_2, tensor(SIGMA_1, I), tensor(SIGMA_2, I)
 
 def operator_func(idx_list, eVals=[], eVecs=[], A_1=[], A_2=[],
                     gamma_1=1., gamma_2=1., beta_1=0.4, beta_2=0.4):
@@ -136,50 +84,32 @@ def operator_func(idx_list, eVals=[], eVecs=[], A_1=[], A_2=[],
     
     return Z_1, Z_2
 
-def RCME_operators_par(H_0, A_1, A_2, gamma_1, gamma_2, 
-                       beta_1, beta_2, num_cpus=0, silent=False, site_basis=True):
-    ti = time.time()
-    dim_ham = H_0.shape[0]
-    eVals, eVecs = H_0.eigenstates()
+def RCME_operators_par(eVals, eVecs, A_1, A_2, gamma_1, gamma_2, 
+                       beta_1, beta_2, num_cpus=0):
+    dim_ham = eVecs[0].shape[0]
     names = ['eVals', 'eVecs', 'A_1', 'A_2', 
              'gamma_1', 'gamma_2', 'beta_1', 'beta_2']
     kwargs = dict()
     for name in names:
         kwargs[name] = eval(name)
-    #l = range(dim_ham) # Previously performed two loops in one
-    l = dim_ham*range(dim_ham) # Perform two loops in one
-    i_j_gen = [(i,j) for i,j in zip(sorted(l), l)]
-    i_j_gen = chunks(i_j_gen, 1024)
     pool = multiprocessing.Pool(num_cpus)
-    Out = pool.imap_unordered(partial(operator_func,**kwargs), i_j_gen)
+    Out = pool.imap_unordered(partial(operator_func,**kwargs), i_j_generator(dim_ham, num_cpus))
     pool.close()
     pool.join()
     _Z = np.array([x for x in Out])
     Z_1, Z_2 = np.sum(_Z,axis=0)[0], np.sum(_Z,axis=0)[1]
-    eVecs = np.transpose(np.array([v.dag().full()[0] for v in eVecs])) # get into columns of evecs
-    eVecs_inv = sp.linalg.inv(eVecs) # has a very low overhead
-    if site_basis:
-        # These operators were constructed in the eig basis
-        Z_1 = to_site_basis(Z_1, eVals, eVecs, eVecs_inv)
-        Z_2 = to_site_basis(Z_2, eVals, eVecs, eVecs_inv)
-    else:
-        A_1 = to_eigenbasis(A_1, eVals, eVecs, eVecs_inv)
-        A_2 = to_eigenbasis(A_2, eVals, eVecs, eVecs_inv)
-        H_0 = to_eigenbasis(H_0, eVals, eVecs, eVecs_inv)
-    if not silent:
-    	print "The operators took {} and have dimension {}.".format(time.time()-ti, dim_ham)
-    return H_0, Z_1, Z_2, A_1, A_2
+    return Z_1, Z_2, A_1, A_2
 
 
-def RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, 
-                    num_cpus=0, silent=False, site_basis=True):
+def RCME_operators(eVals, eVecs, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, 
+                    num_cpus=0):
     # This function will be passed a TLS-RC hamiltonian, RC operator,
     #spectral density and beta outputs all of the operators
     # needed for the RCME (underdamped)
     ti = time.time()
-    dim_ham = H_0.shape[0]
+    dim_ham = eVecs[0].shape[0]
     Z_1, Z_2 = 0, 0
-    eVals, eVecs = H_0.eigenstates()
+    
     for j in range(dim_ham):
         for k in range(dim_ham):
             e_jk = eVals[j] - eVals[k] # eigenvalue difference
@@ -203,19 +133,7 @@ def RCME_operators(H_0, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2,
                 else:
                     Z_2 += np.pi*gamma_2*A_jk_2*outer_eigen/beta_2 # Just return coefficients which are left over
                     #Xi += 0 #since J_RC goes to zero
-    eVecs = np.transpose(np.array([v.dag().full()[0] for v in eVecs])) # get into columns of evecs
-    eVecs_inv = sp.linalg.inv(eVecs) # has a very low overhead
-    if site_basis:
-        # These operators were constructed in the eig basis
-        Z_1 = to_site_basis(Z_1, eVals, eVecs, eVecs_inv)
-        Z_2 = to_site_basis(Z_2, eVals, eVecs, eVecs_inv)
-    else:
-        A_1 = to_eigenbasis(A_1, eVals, eVecs, eVecs_inv)
-        A_2 = to_eigenbasis(A_2, eVals, eVecs, eVecs_inv)
-        H_0 = to_eigenbasis(H_0, eVals, eVecs, eVecs_inv)
-    if not silent:
-        print "The operators took {} and have dimension {}.".format(time.time()-ti, dim_ham)
-    return H_0, Z_1, Z_2, A_1, A_2
+    return Z_1, Z_2, A_1, A_2
 
 def liouvillian_build(H_RC, A_1, A_2, gamma_1, gamma_2,
                     wRC_1, wRC_2, T_1, T_2, num_cpus=1, silent=False, site_basis=True):
@@ -244,17 +162,65 @@ def liouvillian_build(H_RC, A_1, A_2, gamma_1, gamma_2,
         RCop = RCME_operators_par
     else:
         RCop = RCME_operators
-    H_RC, Z_1, Z_2, A_1, A_2  = RCop(H_RC, A_1, A_2, gamma_1, gamma_2,
-                                    beta_1, beta_2, num_cpus=num_cpus,
-                                    silent=silent, site_basis=site_basis)
+    
+    eVals, eVecs = H_RC.eigenstates()
+    Z_1, Z_2, A_1, A_2  = RCop(eVals, eVecs, A_1, A_2, gamma_1, gamma_2,
+                                    beta_1, beta_2, num_cpus=num_cpus)
+    
+    if site_basis:
+        # These operators were constructed in the eig basis
+        pass
+        #Z_1, Z_2 = change_basis([Z_1, Z_2], eVecs, eig_to_site=site_basis)
+    else:
+        A_1, A_2, H_RC = change_basis([A_1, A_2, H_RC], eVecs, eig_to_site=site_basis)
+    if not silent:
+        print "The operators took {} and have dimension {}.".format(time.time()-ti, H_RC.shape[0])
+    
     L = 0
     L+=spre(A_1*Z_1)+spre(A_2*Z_2)
-    L-=sprepost(Z_1, A_1)+sprepost(Z_2, A_2)
-    L-=sprepost(A_1, Z_1.dag())+sprepost(A_2, Z_2.dag())
-    L+=spost(Z_1.dag()*A_1)+spost(Z_2.dag()*A_2)
+    L-=sprepost(Z_1, A_1) + sprepost(Z_2, A_2)
+    L-=sprepost(A_1, Z_1.dag()) + sprepost(A_2, Z_2.dag())
+    L+=spost(Z_1.dag()*A_1) + spost(Z_2.dag()*A_2)
     if not silent:
         print "Building the RC Liouvillian took {:0.3f} seconds.".format(time.time()-ti)
-    return L
+    return H_RC, L
+
+
+def RC_mapping(args, silent=False, shift=True, site_basis=True):
+    H_sub = args['H_sub']
+    coupling_ops = args['coupling_ops']
+    # we define all of the RC parameters by the underdamped spectral density
+    w_1, w_2, w_xx, V = args['w_1'], args['w_2'], args['w_xx'], args['V']
+    T_1, T_2, mu = args['T_1'], args['T_2'], args['mu']
+    wRC_1, wRC_2, alpha_1, alpha_2 = args['w0_1'], args['w0_2'], args['alpha_1'], args['alpha_2']
+    N_1, N_2, exc = args['N_1'], args['N_2'], args['exc']
+    Gamma_1, Gamma_2 = args['Gamma_1'], args['Gamma_2']
+    gamma_1 = Gamma_1 / (2. * np.pi * wRC_1)
+    kappa_1 = np.sqrt(np.pi * alpha_1 * wRC_1 / 2.)  # coupling strength between the TLS and RC
+
+    gamma_2 = Gamma_2 / (2. * np.pi * wRC_2)
+    kappa_2 = np.sqrt(np.pi * alpha_2 * wRC_2 / 2.)
+    shift1, shift2 = (kappa_1**2)/wRC_1, (kappa_2**2)/wRC_2
+    if not shift:
+        shift1, shift2 = 0., 0.
+    args.update({'gamma_1': gamma_1, 'gamma_2': gamma_2, 'w0_1': wRC_1, 'w0_2': wRC_2, 'kappa_1':kappa_1, 'kappa_2':kappa_2,'shift1':shift1, 'shift2':shift2})
+    #print args
+    H_site, A_1, A_2 = H_mapping_RC(H_sub, coupling_ops, wRC_1,
+                                    wRC_2, kappa_1, kappa_2, N_1, N_2, exc,
+                                                shift=True)
+
+    H_RC, L_RC =  liouvillian_build(H_site[1], A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2,
+                            T_1, T_2, num_cpus=args['num_cpus'], silent=silent, site_basis=site_basis)
+    full_size = (H_sub.shape[0]*N_1*N_2)**2
+    if not silent:
+        print "****************************************************************"
+        note = (L_RC.shape[0], L_RC.shape[0], full_size, full_size)
+        print "It is {}by{}. The full basis would be {}by{}".format(L_RC.shape[0],
+                                            L_RC.shape[0], full_size, full_size)
+    return -L_RC, [H_site[0], H_RC], A_1, A_2, args
+    #H_dim_full = w_1*XO*XO.dag() + w_2*w_1*OX*OX.dag() + w_xx*XX*XX.dag() +                    V*((SIGMA_m1+SIGMA_m1.dag())*(SIGMA_m2+SIGMA_m2.dag()))
+
+
 
 def rate_operators(args):
     # we define all of the RC parameters by the underdamped spectral density
@@ -320,38 +286,51 @@ def RC_mapping_OD(args, silent=False):
                                             L_RC.shape[0], full_size, full_size)
     return -L_RC, H, A_1, A_2, SIGMA_1, SIGMA_2, args
 
+def dimer_ham_RC(w_1, w_2, w_xx, V, Omega_1,
+                Omega_2, kap_1, kap_2, N_1, N_2, exc,
+                shift=True):
+    """
+    Deprecated function
+    Builds RC Hamiltonian in excitation restricted subspace
 
-def RC_mapping(args, silent=False, shift=True, site_basis=True):
-    H_sub = args['H_sub']
-    coupling_ops = args['coupling_ops']
-    # we define all of the RC parameters by the underdamped spectral density
-    w_1, w_2, w_xx, V = args['w_1'], args['w_2'], args['w_xx'], args['V']
-    T_1, T_2, mu = args['T_1'], args['T_2'], args['mu']
-    wRC_1, wRC_2, alpha_1, alpha_2 = args['w0_1'], args['w0_2'], args['alpha_1'], args['alpha_2']
-    N_1, N_2, exc = args['N_1'], args['N_2'], args['exc']
-    Gamma_1, Gamma_2 = args['Gamma_1'], args['Gamma_2']
-    gamma_1 = Gamma_1 / (2. * np.pi * wRC_1)
-    kappa_1 = np.sqrt(np.pi * alpha_1 * wRC_1 / 2.)  # coupling strength between the TLS and RC
+    Input: System splitting, RC freq., system-RC coupling
+    and Hilbert space dimension Output: Hamiltonian, all
+    collapse operators in the vibronic Hilbert space
+    """
+    OO = basis(4,0)
+    XO = basis(4,1)
+    OX = basis(4,2)
+    XX = basis(4,3)
+    SIGMA_1 = OX*XX.dag() + OO*XO.dag()
+    SIGMA_2 = XO*XX.dag() + OO*OX.dag()
+    assert SIGMA_1*OX == SIGMA_2*XO
+    #I_RC_1 = qeye(N_1)
+    #I_RC_2 = qeye(N_2)
+    I_dim = qeye(4)
+    I = enr_identity([N_1,N_2], exc)
+    shift1, shift2 = (kap_1**2)/Omega_1, (kap_2**2)/Omega_2
+    if shift:
+        w_1 += shift1
+        w_2 += shift2
+        w_xx += shift1+shift2
+    H_dim_sub = w_1*XO*XO.dag()
+    H_dim_sub += w_2*OX*OX.dag() + w_xx*XX*XX.dag()
+    H_dim_sub += V*(XO*OX.dag() + OX*XO.dag())
 
-    gamma_2 = Gamma_2 / (2. * np.pi * wRC_2)
-    kappa_2 = np.sqrt(np.pi * alpha_2 * wRC_2 / 2.)
-    shift1, shift2 = (kappa_1**2)/wRC_1, (kappa_2**2)/wRC_2
-    if not shift:
-        shift1, shift2 = 0., 0.
-    args.update({'gamma_1': gamma_1, 'gamma_2': gamma_2, 'w0_1': wRC_1, 'w0_2': wRC_2, 'kappa_1':kappa_1, 'kappa_2':kappa_2,'shift1':shift1, 'shift2':shift2})
-    #print args
-    H, A_1, A_2 = H_mapping_RC(H_sub, coupling_ops, wRC_1,
-                                                wRC_2, kappa_1, kappa_2, N_1, N_2, exc,
-                                                shift=True)
+    #shift1, shift2 = (kap_1**2)/Omega_1, (kap_2**2)/Omega_2
+    #print H_dim_sub
+    H_dim = tensor(H_dim_sub, I)
 
-    L_RC =  liouvillian_build(H[1], A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2,
-                            T_1, T_2, num_cpus=args['num_cpus'], silent=silent, site_basis=site_basis)
-    full_size = (H_sub.shape[0]*N_1*N_2)**2
-    if not silent:
-        print "****************************************************************"
-        note = (L_RC.shape[0], L_RC.shape[0], full_size, full_size)
-        print "It is {}by{}. The full basis would be {}by{}".format(L_RC.shape[0],
-                                            L_RC.shape[0], full_size, full_size)
-    return -L_RC, H, A_1, A_2, args
-    #H_dim_full = w_1*XO*XO.dag() + w_2*w_1*OX*OX.dag() + w_xx*XX*XX.dag() +                    V*((SIGMA_m1+SIGMA_m1.dag())*(SIGMA_m2+SIGMA_m2.dag()))
+    atemp = enr_destroy([N_1,N_2], exc)
 
+    a_RC_exc = [tensor(I_dim, aa) for aa in atemp] # annhilation ops in exc restr basis
+    A_1 = a_RC_exc[0].dag() + a_RC_exc[0]
+    A_2 = a_RC_exc[1].dag() + a_RC_exc[1]
+    H_I1 = kap_1*tensor(SIGMA_1.dag()*SIGMA_1, I)*A_1
+    H_I2 = kap_2*tensor(SIGMA_2.dag()*SIGMA_2, I)*A_2
+
+    H_RC1 = Omega_1*a_RC_exc[0].dag()*a_RC_exc[0]
+    H_RC2 = Omega_2*a_RC_exc[1].dag()*a_RC_exc[1]
+
+    H_S = H_dim + H_RC1 + H_RC2 + H_I1 + H_I2
+    return [H_dim_sub, H_S], A_1, A_2, tensor(SIGMA_1, I), tensor(SIGMA_2, I)
