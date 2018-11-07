@@ -183,14 +183,11 @@ def L_BMME(H_vib, A, args, ME_type='nonsecular', site_basis=True, silent=False):
         X_ops = operators(eVals, eVecs, A, args, silent=False)
     # rotate operators to required basis
     if site_basis:
-        pass
-        #X1, X2, X3, X4 = change_basis(X_ops, eVecs, eig_to_site=site_basis)
         X1, X2, X3, X4 = (op for op in X_ops)
     else:
-        X1, X2, X3, X4 = (op for op in X_ops)
+        X1, X2, X3, X4 = change_basis(X_ops, eVals, eVecs, eig_to_site=False)
     L = spre(A*X1) -sprepost(X1,A)+spost(X2*A)-sprepost(A,X2)
     L+= spre(A.dag()*X3)-sprepost(X3, A.dag())+spost(X4*A.dag())-sprepost(A.dag(), X4)
-    #print np.sum(X1.full()), np.sum(X2.full()), np.sum(X3.full()), np.sum(X4.full())
     if not silent:
         print "It took ", time.time()-ti, " seconds to build the Non-secular RWA Liouvillian"
     return -0.5*L
@@ -228,7 +225,6 @@ def nonsecular_function(idx_list, **kwargs):
 
 def nonsecular_ops_par(eVals, eVecs, A, args, silent=False):
     Gamma, T, w_1, J, num_cpus = args['alpha_EM'], args['T_EM'], args['w_1'],args['J'], args['num_cpus']
-    print (num_cpus)
     #Construct non-secular ops in eigenbasis
     ti = time.time()
     dim_ham = eVecs[0].shape[0]

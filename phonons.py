@@ -42,7 +42,7 @@ def H_mapping_RC(H_sub, coupling_ops, Omega_1,
     H_RC1 = Omega_1*a_RC_exc[0].dag()*a_RC_exc[0]
     H_RC2 = Omega_2*a_RC_exc[1].dag()*a_RC_exc[1]
 
-    H = H_S + H_RC1 + H_RC2 + H_I1 + H_I2
+    H = H_S + H_RC1 + H_RC2 - H_I1 - H_I2
     return [H_sub, H], A_1, A_2
 
 
@@ -100,6 +100,39 @@ def RCME_operators_par(eVals, eVecs, A_1, A_2, gamma_1, gamma_2,
     Z_1, Z_2 = np.sum(_Z,axis=0)[0], np.sum(_Z,axis=0)[1]
     return Z_1, Z_2, A_1, A_2
 
+def _RCME_operators(eVals, eVecs, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, 
+                    num_cpus=0):
+    # This function will be passed a TLS-RC hamiltonian, RC operator,
+    #spectral density and beta outputs all of the operators
+    # needed for the RCME (underdamped)
+    ti = time.time()
+    dim_ham = eVecs[0].shape[0]
+    Z_1, Z_2 = 0, 0
+    
+    for j in range(dim_ham):
+        for k in range(dim_ham):
+            e_jk = eVals[j] - eVals[k] # eigenvalue difference
+            #EigenDiffs.append(e_jk)
+            A_jk_1 = A_1.matrix_element(eVecs[j].dag(), eVecs[k])
+            outer_eigen = eVecs[j] * (eVecs[k].dag())
+            if sp.absolute(A_jk_1) > 0:
+                if sp.absolute(e_jk) > 0 and sp.absolute(beta_1) > 0:
+                    Z_1 += 0.5*np.pi*e_jk*gamma_1 * coth(e_jk * beta_1 / 2)*A_jk_1*outer_eigen
+                    Z_1 += 0.5*np.pi*e_jk*gamma_1 * A_jk_1 * outer_eigen
+                else:
+                    Z_1 += np.pi*gamma_1*A_jk_1*outer_eigen/beta_1 # Just return coefficients which are left over
+                    #Xi += 0 #since J_RC goes to zero
+            A_jk_2 = A_2.matrix_element(eVecs[j].dag(), eVecs[k])
+            if sp.absolute(A_jk_2) > 0:
+                if sp.absolute(e_jk) > 1e-11 and sp.absolute(beta_2)>1e-11:
+                    #print e_jk
+                    # If e_jk is zero, coth diverges but J goes to zero so limit taken seperately
+                    Z_2 += 0.5*np.pi*e_jk*gamma_2 * coth(e_jk * beta_2 / 2)*A_jk_2*outer_eigen # e_jk*gamma is the spectral density
+                    Z_2 += 0.5*np.pi*e_jk*gamma_2 * A_jk_2 * outer_eigen
+                else:
+                    Z_2 += np.pi*gamma_2*A_jk_2*outer_eigen/beta_2 # Just return coefficients which are left over
+                    #Xi += 0 #since J_RC goes to zero
+    return Z_1, Z_2, A_1, A_2
 
 def RCME_operators(eVals, eVecs, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, 
                     num_cpus=0):
@@ -125,7 +158,7 @@ def RCME_operators(eVals, eVecs, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2,
                     #Xi += 0 #since J_RC goes to zero
             A_jk_2 = A_2.matrix_element(eVecs[j].dag(), eVecs[k])
             if sp.absolute(A_jk_2) > 0:
-                if sp.absolute(e_jk) > 0 and sp.absolute(beta_2)>0:
+                if sp.absolute(e_jk) > 1e-11 and sp.absolute(beta_2)>1e-11:
                     #print e_jk
                     # If e_jk is zero, coth diverges but J goes to zero so limit taken seperately
                     Z_2 += 0.5*np.pi*e_jk*gamma_2 * coth(e_jk * beta_2 / 2)*A_jk_2*outer_eigen # e_jk*gamma is the spectral density
@@ -164,23 +197,25 @@ def liouvillian_build(H_RC, A_1, A_2, gamma_1, gamma_2,
         RCop = RCME_operators
     
     eVals, eVecs = H_RC.eigenstates()
+    # Z = Chi +Xi # I have fixed this to match Ahsan's code - not certain it's correct
     Z_1, Z_2, A_1, A_2  = RCop(eVals, eVecs, A_1, A_2, gamma_1, gamma_2,
                                     beta_1, beta_2, num_cpus=num_cpus)
-    
-    if site_basis:
-        # These operators were constructed in the eig basis
-        pass
-        #Z_1, Z_2 = change_basis([Z_1, Z_2], eVecs, eig_to_site=site_basis)
-    else:
-        A_1, A_2, H_RC = change_basis([A_1, A_2, H_RC], eVecs, eig_to_site=site_basis)
+
+    #print(Z_1.eigenenergies())
+    #print(Z_2.eigenenergies())
+    #print(A_2.eigenenergies())
+    #print(A_1.eigenenergies())
+    if not site_basis:
+        Z_1, Z_2, A_1, A_2, H_RC = change_basis([Z_1, Z_2, A_1, A_2, H_RC], 
+                                                eVals, eVecs, eig_to_site=False)
     if not silent:
         print "The operators took {} and have dimension {}.".format(time.time()-ti, H_RC.shape[0])
     
     L = 0
-    L+=spre(A_1*Z_1)+spre(A_2*Z_2)
-    L-=sprepost(Z_1, A_1) + sprepost(Z_2, A_2)
-    L-=sprepost(A_1, Z_1.dag()) + sprepost(A_2, Z_2.dag())
-    L+=spost(Z_1.dag()*A_1) + spost(Z_2.dag()*A_2)
+    L+=spre(A_1*Z_1.dag())+spre(A_2*Z_2.dag())
+    L-=sprepost(Z_1.dag(), A_1) + sprepost(Z_2.dag(), A_2)
+    L-=sprepost(A_1, Z_1) + sprepost(A_2, Z_2)
+    L+=spost(Z_1*A_1) + spost(Z_2*A_2)
     if not silent:
         print "Building the RC Liouvillian took {:0.3f} seconds.".format(time.time()-ti)
     return H_RC, L
@@ -205,11 +240,11 @@ def RC_mapping(args, silent=False, shift=True, site_basis=True):
         shift1, shift2 = 0., 0.
     args.update({'gamma_1': gamma_1, 'gamma_2': gamma_2, 'w0_1': wRC_1, 'w0_2': wRC_2, 'kappa_1':kappa_1, 'kappa_2':kappa_2,'shift1':shift1, 'shift2':shift2})
     #print args
-    H_site, A_1, A_2 = H_mapping_RC(H_sub, coupling_ops, wRC_1,
-                                    wRC_2, kappa_1, kappa_2, N_1, N_2, exc,
+    H, A_1, A_2 = H_mapping_RC(H_sub, coupling_ops, wRC_1,
+                              wRC_2, kappa_1, kappa_2, N_1, N_2, exc,
                                                 shift=True)
 
-    H_RC, L_RC =  liouvillian_build(H_site[1], A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2,
+    H_RC, L_RC =  liouvillian_build(H[1], A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2,
                             T_1, T_2, num_cpus=args['num_cpus'], silent=silent, site_basis=site_basis)
     full_size = (H_sub.shape[0]*N_1*N_2)**2
     if not silent:
@@ -217,7 +252,7 @@ def RC_mapping(args, silent=False, shift=True, site_basis=True):
         note = (L_RC.shape[0], L_RC.shape[0], full_size, full_size)
         print "It is {}by{}. The full basis would be {}by{}".format(L_RC.shape[0],
                                             L_RC.shape[0], full_size, full_size)
-    return -L_RC, [H_site[0], H_RC], A_1, A_2, args
+    return -L_RC, [H[0], H_RC], A_1, A_2, args
     #H_dim_full = w_1*XO*XO.dag() + w_2*w_1*OX*OX.dag() + w_xx*XX*XX.dag() +                    V*((SIGMA_m1+SIGMA_m1.dag())*(SIGMA_m2+SIGMA_m2.dag()))
 
 

@@ -76,9 +76,9 @@ def make_expectation_operators(H, PARS, site_basis=True):
 
     subspace_ops = [position1, position2, number1, number2]
     fullspace_ops += [tensor(I_dimer, op) for op in subspace_ops]
-    _, eVecs = H[1].eigenstates()
+    eVals, eVecs = H[1].eigenstates()
     if not site_basis:
-        fullspace_ops = list(change_basis(fullspace_ops, eVecs, eig_to_site=site_basis))
+        fullspace_ops = list(change_basis(fullspace_ops, eVals, eVecs, eig_to_site=site_basis))
     return dict((key_val[0], key_val[1]) for key_val in zip(labels, fullspace_ops))
 
 def get_H_and_L(PARAMS,silent=False, threshold=0., site_basis=True):
@@ -129,7 +129,7 @@ def get_L(PARS,silent=False, threshold=0., site_basis=True):
     return L
 
 
-def PARAMS_setup(bias=100., w_2=2000., V = 100., pialpha_prop=0.1,
+def PARAMS_setup(bias=100., w_2=2000., V = 100., alpha=0.1,
                                  T_EM=0., T_ph =300.,
                                  alpha_EM=1., shift=True,
                                  num_cpus=1, w_0=200, Gamma=50., N=3,
@@ -138,8 +138,6 @@ def PARAMS_setup(bias=100., w_2=2000., V = 100., pialpha_prop=0.1,
     exc = 2*N-exc_diff
     gap = sqrt(bias**2 +4*(V**2))
     phonon_energy = T_ph*0.695
-
-    alpha = w_2*pialpha_prop/pi
 
     w_1 = w_2 + bias
     dipole_1, dipole_2 = 1., 1.
@@ -150,20 +148,19 @@ def PARAMS_setup(bias=100., w_2=2000., V = 100., pialpha_prop=0.1,
     Gamma_1 = Gamma_2 = Gamma
     w0_2, w0_1 = w_0, w_0 # underdamped SD parameter omega_0
     if not silent:
-        plot_UD_SD(Gamma_1, w_2*pialpha_prop/pi, w_0, eps=w_2)
+        plot_UD_SD(Gamma_1, alpha, w_0, eps=w_2)
     w_xx = w_2 + w_1 
     H_sub = w_1*sigma_m1.dag()*sigma_m1 + w_2*sigma_m2.dag()*sigma_m2 + V*(site_coherence+site_coherence.dag())
     coupling_ops = [sigma_m1.dag()*sigma_m1, sigma_m2.dag()*sigma_m2] # system-RC operators
     if not silent:
-        print "Gap is {}. Phonon thermal energy is {}. Phonon SD peak is {}. N={}.".format(gap, phonon_energy,
-                                                                                 SD_peak_position(Gamma, 1, w_0),
-                                                                                           N)
+        print "Gap is {}. Phonon thermal energy is {}. Phonon SD peak is {}. N={}.".format(gap, phonon_energy, SD_peak_position(Gamma, 1, w_0),N)
 
     J = J_minimal
 
-    PARAM_names = ['H_sub', 'coupling_ops', 'w_1', 'w_2', 'V', 'bias', 'w_xx', 'T_1', 'T_2',
-                   'w0_1', 'w0_2', 'T_EM', 'alpha_EM','mu', 'num_cpus', 'J',
-                   'dipole_1','dipole_2', 'Gamma_1', 'Gamma_2']
+    PARAM_names = ['H_sub', 'coupling_ops', 'w_1', 'w_2', 
+                    'V', 'bias', 'w_xx', 'T_1', 'T_2', 'w0_1', 
+                    'w0_2', 'T_EM', 'alpha_EM','mu', 'num_cpus', 
+                    'J','dipole_1','dipole_2', 'Gamma_1', 'Gamma_2']
     scope = locals() # Lets eval below use local variables, not global
     PARAMS = dict((name, eval(name, scope)) for name in PARAM_names)
 
