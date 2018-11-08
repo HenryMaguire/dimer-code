@@ -45,10 +45,10 @@ fock_ground = qt.enr_fock([N,N],N, (N,0))
 fock_ground2 = qt.enr_fock([N,N],N, (0,N))
 """
 
-labels = [ 'OO', 'XO', 'OX', 'XX', 'site_coherence', 'bright', 'dark', 'eig_coherence',
-             'RC1_position1', 'RC2_position', 'RC1_number', 'RC2_number', 'RC_sigma_x', 'RC_sigma_y']
+labels = [ 'OO', 'XO', 'OX', 'XX', 'site_coherence', 'bright', 'dark', 'eig_coherence', 'sigma_x', 'sigma_y',
+             'RC1_position1', 'RC2_position', 'RC1_number', 'RC2_number']
 
-def make_expectation_operators(H, PARS, site_basis=True):
+def make_expectation_operators(PARS, H=None, site_basis=True):
     # makes a dict: keys are names of observables values are operators
     I = enr_identity([PARS['N_1'], PARS['N_2']], PARS['exc'])
     I_dimer = qeye(PARS['sys_dim'])
@@ -76,9 +76,10 @@ def make_expectation_operators(H, PARS, site_basis=True):
 
     subspace_ops = [position1, position2, number1, number2]
     fullspace_ops += [tensor(I_dimer, op) for op in subspace_ops]
-    eVals, eVecs = H[1].eigenstates()
-    if not site_basis:
-        fullspace_ops = list(change_basis(fullspace_ops, eVals, eVecs, eig_to_site=site_basis))
+    if H:
+        eVals, eVecs = H[1].eigenstates()
+        if not site_basis:
+            fullspace_ops = list(change_basis(fullspace_ops, eVals, eVecs, eig_to_site=site_basis))
     return dict((key_val[0], key_val[1]) for key_val in zip(labels, fullspace_ops))
 
 def get_H_and_L(PARAMS,silent=False, threshold=0., site_basis=True):
@@ -97,8 +98,12 @@ def get_H_and_L(PARAMS,silent=False, threshold=0., site_basis=True):
 
     else:
         print "Not including optical dissipator"
+    spar0 = sparse_percentage(L)
     if threshold:
         L.tidyup(threshold)
+    if not silent:
+        print("Chopping reduced the sparsity from {:0.3f}% to {:0.3f}%".format(spar0, sparse_percentage(L)))
+
     return H, L
 
 

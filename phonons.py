@@ -209,9 +209,12 @@ def liouvillian_build(H_RC, A_1, A_2, gamma_1, gamma_2,
         Z_1, Z_2, A_1, A_2, H_RC = change_basis([Z_1, Z_2, A_1, A_2, H_RC], 
                                                 eVals, eVecs, eig_to_site=False)
     if not silent:
+        print "****************************************************************"
         print "The operators took {} and have dimension {}.".format(time.time()-ti, H_RC.shape[0])
     
     L = 0
+    #Z_1 = Z_1.dag()
+    #Z_2 = Z_2.dag()
     L+=spre(A_1*Z_1.dag())+spre(A_2*Z_2.dag())
     L-=sprepost(Z_1.dag(), A_1) + sprepost(Z_2.dag(), A_2)
     L-=sprepost(A_1, Z_1) + sprepost(A_2, Z_2)
@@ -248,7 +251,6 @@ def RC_mapping(args, silent=False, shift=True, site_basis=True):
                             T_1, T_2, num_cpus=args['num_cpus'], silent=silent, site_basis=site_basis)
     full_size = (H_sub.shape[0]*N_1*N_2)**2
     if not silent:
-        print "****************************************************************"
         note = (L_RC.shape[0], L_RC.shape[0], full_size, full_size)
         print "It is {}by{}. The full basis would be {}by{}".format(L_RC.shape[0],
                                             L_RC.shape[0], full_size, full_size)

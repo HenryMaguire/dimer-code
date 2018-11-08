@@ -1,4 +1,4 @@
-from SES_setup import *
+from dimer_setup import *
 import time
 from qutip import build_preconditioner, steadystate
 
@@ -95,10 +95,14 @@ def calculate_steadystate(H, L, fill_factor=500, tol=1e-8, persistent=False,
                 use_precond=True
                 print "Building preconditioner took {} seconds".format(time.time()-ti)
                 # print m_info['ilu_fill_factor']
-            ss, info = steadystate(H[1], [L], method=method, M=M,
-                                    use_precond=False,
-                                    return_info=True, tol=tol, maxiter=maxiter, x0=v0)
-            print "Steady state took {:0.3f} seconds".format(info['solution_time'])
+            #print H[1].shape, np.sqrt(L.shape)
+            #ss, info = steadystate(H[1], [L], method=method, M=M,
+            #                        use_precond=use_precond,
+            #                        return_info=True, tol=tol, maxiter=maxiter, x0=v0)
+            ss, info = steadystate(H[1], [L], method=method, 
+                                    return_info=True, tol=tol, maxiter=maxiter)
+            #print ss.shape
+            print "Steady state took {:0.3f} seconds with {}".format(info['solution_time'], method)
             return ss, info
         except Exception as err:
             print "Steadystate failed because {}.".format(err)
@@ -170,16 +174,19 @@ def heat_map_calculator(PARAMS,
                 silent = False
             H, L = get_H_and_L(PARAMS,silent=silent, threshold=threshold)
             tf = time.time()
-            print "N_1 = {}, N_2 = {}, exc= {}".format(PARAMS['N_1'], PARAMS['N_2'], PARAMS['exc'])
+            print "N_1 = {}, N_2 = {}, exc= {}, H_dim={}".format(PARAMS['N_1'], PARAMS['N_2'], PARAMS['exc'], H[1].shape[0])
             
             ss, info = calculate_steadystate(H, L, fill_factor=fill_factor,
-                                                    persistent=persistent, method=method)
+                                             persistent=persistent, method=method)
+            ops = make_expectation_operators(PARAMS, H=None, site_basis=True)
+            #print ss.shape, H[1].shape, np.sqrt(L.shape[0])
             del H, L
             ss_array[i][j], info_array[i][j] = ss, info
+            
             try:
                 ts = info['solution_time']
-                print "Build time: {:0.3f} \t | \t Solution time: {:0.3f}".format(tf-ti,
-                                                                                  ts)
+                print "Build time: {:0.3f} \t | \t Solution time: {:0.3f} \t | \t Sigma x {}".format(tf-ti,
+                                                                                  ts, (ops['sigma_x']*ss).tr().real)
             except TypeError:
                 print "N_1 = {}, N_2 = {}, exc= {} - Calculation skipped...".format(PARAMS['N_1'],
                                                                                       PARAMS['N_2'],

@@ -23,7 +23,7 @@ PARAMS = PARAMS_setup(bias=bias, w_2=w_2,
                       num_cpus=4, N=N, Gamma=Gamma, w_0=w_0,
                       silent=True, exc_diff=0)
 
-H, L = get_H_and_L(PARAMS, silent=False, threshold=1e-10, site_basis=site_basis)
+H, L = get_H_and_L(PARAMS, silent=False, threshold=1e-7, site_basis=site_basis)
 #print H[1].eigenenergies()[::-1]
 L_total = qt.liouvillian(H[1], [L])
 print(nonzero_elements(L_total), total_elements(L_total), sparse_percentage(L_total))
