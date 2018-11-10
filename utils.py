@@ -87,8 +87,8 @@ def exciton_states(PARS, shift=False):
     v_p = qt.Qobj(np.array([0., np.sqrt(eta+eps), np.sqrt(eta-eps), 0.]))/np.sqrt(2*eta)
     v_m = qt.Qobj(np.array([0., np.sqrt(eta-eps), -np.sqrt(eta+eps), 0.]))/np.sqrt(2*eta)
     if PARS['sys_dim'] == 3:
-        v_p.eliminate_states([3])
-        v_m.eliminate_states([3])
+        v_p= v_p.eliminate_states([3])
+        v_m= v_m.eliminate_states([3])
     return [lam_m, lam_p], [v_m, v_p]
 
 #new ptrace for ENR states.   rho is the state, sel is the same as the normal ptrace

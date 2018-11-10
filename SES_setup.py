@@ -38,15 +38,16 @@ reload(RC)
 reload(opt)
 
 labels = [ 'OO', 'XO', 'OX', 'site_coherence', 
-            'bright', 'dark', 'eig_coherence',
+            'bright', 'dark', 'eig_coherence', 'sigma_x', 'sigma_y',
              'RC1_position1', 'RC2_position', 
-             'RC1_number', 'RC2_number', 'sigma_x', 'sigma_y']
+             'RC1_number', 'RC2_number']
 
-def make_expectation_operators(PARS):
+def make_expectation_operators(PARAMS, H=None, site_basis=True):
     # makes a dict: keys are names of observables values are operators
-    I_sys=qeye(PARS['sys_dim'])
-    I = enr_identity([PARS['N_1'], PARS['N_2']], PARS['exc'])
-    energies, states = exciton_states(PARS, shift=False)
+    I_sys=qeye(PARAMS['sys_dim'])
+    I = enr_identity([PARAMS['N_1'], PARAMS['N_2']], PARAMS['exc'])
+    N_1, N_2, exc = PARAMS['N_1'], PARAMS['N_2'], PARAMS['exc']
+    energies, states = exciton_states(PARAMS, shift=False)
     bright_vec = states[1]
     dark_vec = states[0]
     # electronic operators
@@ -61,7 +62,7 @@ def make_expectation_operators(PARS):
     # RC operators
     # RC positions, RC number state1, RC number state1, RC upper N fock, RC ground fock
 
-    N_1, N_2, exc = PARS['N_1'], PARS['N_2'], PARS['exc']
+    
     a_enr_ops = enr_destroy([N_1, N_2], exc)
     position1 = a_enr_ops[0].dag() + a_enr_ops[0]
     position2 = a_enr_ops[1].dag() + a_enr_ops[1]
@@ -73,44 +74,41 @@ def make_expectation_operators(PARS):
 
     return dict((key_val[0], key_val[1]) for key_val in zip(labels, fullspace_ops))
 
-def get_H_and_L(PARS,silent=False, threshold=0.):
-    L_RC, H, A_1, A_2, PARAMS = RC.RC_mapping(PARS, silent=silent, shift=True)
+def get_H_and_L(PARAMS,silent=False, threshold=0.):
+    L, H, A_1, A_2, PARAMS = RC.RC_mapping(PARAMS, silent=silent, shift=True, site_basis=True)
 
-    N_1 = PARS['N_1']
-    N_2 = PARS['N_2']
-    exc = PARS['exc']
-    mu = PARS['mu']
+    N_1 = PARAMS['N_1']
+    N_2 = PARAMS['N_2']
+    exc = PARAMS['exc']
+    mu = PARAMS['mu']
 
     I = enr_identity([N_1,N_2], exc)
     sigma = sigma_m1 + mu*sigma_m2
 
-    L = L_RC
-    del L_RC # free up some memory
-    if abs(PARS['alpha_EM'])>0:
-        if PARS['num_cpus']>1:
-            L_EM_full = opt.L_non_rwa_par(H[1], tensor(sigma,I), PARS, silent=silent)
-        else:
-            L_EM_full = opt.L_non_rwa(H[1], tensor(sigma,I), PARS, silent=silent)
-        L+=L_EM_full
-        del L_EM_full
+    if abs(PARAMS['alpha_EM'])>0:
+        L += opt.L_BMME(H[1], tensor(sigma,I), PARAMS, ME_type='nonsecular', site_basis=True, silent=silent)
+
     else:
         print "Not including optical dissipator"
-    if threshold: # Chop off tiny values if you like
+    spar0 = sparse_percentage(L)
+    if threshold:
         L.tidyup(threshold)
+    if not silent:
+        print("Chopping reduced the sparsity from {:0.3f}% to {:0.3f}%".format(spar0, sparse_percentage(L)))
+
     return H, L
 
-def PARAMS_setup(bias=100., w_2=2000., V = 100., pialpha_prop=0.1,
+def PARAMS_setup(bias=100., w_2=2000., V = 100., alpha=100.,
                                  T_EM=0., T_ph =300.,
                                  alpha_EM=1., shift=True,
                                  num_cpus=1, w_0=200, Gamma=50., N=3,
                                  silent=False, exc_diff=0, sys_dim=3):
     # Sets up the parameter dict
     N_1 = N_2 = N
-    exc = (2*N)-exc_diff
+    exc = N+exc_diff
     gap = sqrt(bias**2 +4*(V**2))
     phonon_energy = T_ph*0.695
 
-    alpha = w_2*pialpha_prop/pi
 
     w_1 = w_2 + bias
     dipole_1, dipole_2 = 1., 1.
@@ -121,7 +119,7 @@ def PARAMS_setup(bias=100., w_2=2000., V = 100., pialpha_prop=0.1,
     Gamma_1 = Gamma_2 = Gamma
     w0_2, w0_1 = w_0, w_0 # underdamped SD parameter omega_0
     if not silent:
-        plot_UD_SD(Gamma_1, w_2*pialpha_prop/pi, w_0, eps=w_2)
+        plot_UD_SD(Gamma_1, alpha, w_0, eps=w_2)
     w_xx = w_2 + w_1
     if not silent:
         print("Gap is {}. Phonon thermal energy is {}. Phonon SD peak is {}. N={}.".format(gap, phonon_energy, 
@@ -129,7 +127,7 @@ def PARAMS_setup(bias=100., w_2=2000., V = 100., pialpha_prop=0.1,
 
     J = J_minimal
     H_sub = w_1*XO_proj + w_2*OX_proj + V*(site_coherence+site_coherence.dag())
-    coupling_ops = [XO_proj, OX_proj] # system-RC operators
+    coupling_ops = [sigma_m1.dag()*sigma_m1, sigma_m2.dag()*sigma_m2] # system-RC operators
     PARAM_names = ['H_sub', 'coupling_ops', 'w_1', 'w_2', 'V', 'bias', 'w_xx', 'T_1', 'T_2',
                    'w0_1', 'w0_2', 'T_EM', 'alpha_EM','mu', 'num_cpus', 'J',
                    'dipole_1','dipole_2', 'Gamma_1', 'Gamma_2']

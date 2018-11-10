@@ -48,11 +48,11 @@ fock_ground2 = qt.enr_fock([N,N],N, (0,N))
 labels = [ 'OO', 'XO', 'OX', 'XX', 'site_coherence', 'bright', 'dark', 'eig_coherence', 'sigma_x', 'sigma_y',
              'RC1_position1', 'RC2_position', 'RC1_number', 'RC2_number']
 
-def make_expectation_operators(PARS, H=None, site_basis=True):
+def make_expectation_operators(PARAMS, H=None, site_basis=True):
     # makes a dict: keys are names of observables values are operators
-    I = enr_identity([PARS['N_1'], PARS['N_2']], PARS['exc'])
-    I_dimer = qeye(PARS['sys_dim'])
-    energies, states = exciton_states(PARS, shift=False)
+    I = enr_identity([PARAMS['N_1'], PARAMS['N_2']], PARAMS['exc'])
+    I_dimer = qeye(PARAMS['sys_dim'])
+    energies, states = exciton_states(PARAMS, shift=False)
     bright_vec = states[1]
     dark_vec = states[0]
     # electronic operators
@@ -67,7 +67,7 @@ def make_expectation_operators(PARS, H=None, site_basis=True):
     # RC operators
     # RC positions, RC number state1, RC number state1, RC upper N fock, RC ground fock
 
-    N_1, N_2, exc = PARS['N_1'], PARS['N_2'], PARS['exc']
+    N_1, N_2, exc = PARAMS['N_1'], PARAMS['N_2'], PARAMS['exc']
     a_enr_ops = enr_destroy([N_1, N_2], exc)
     position1 = a_enr_ops[0].dag() + a_enr_ops[0]
     position2 = a_enr_ops[1].dag() + a_enr_ops[1]
@@ -85,13 +85,8 @@ def make_expectation_operators(PARS, H=None, site_basis=True):
 def get_H_and_L(PARAMS,silent=False, threshold=0., site_basis=True):
     L, H, A_1, A_2, PARAMS = RC.RC_mapping(PARAMS,silent=silent, shift=True, site_basis=site_basis)
 
-    N_1 = PARAMS['N_1']
-    N_2 = PARAMS['N_2']
-    exc = PARAMS['exc']
-    mu = PARAMS['mu']
-
-    I = enr_identity([N_1,N_2], exc)
-    sigma = sigma_m1 + mu*sigma_m2
+    I = enr_identity([PARAMS['N_1'], PARAMS['N_2']], PARAMS['exc'])
+    sigma = sigma_m1 + PARAMS['mu']*sigma_m2
 
     if abs(PARAMS['alpha_EM'])>0:
         L += opt.L_BMME(H[1], tensor(sigma,I), PARAMS, ME_type='nonsecular', site_basis=site_basis, silent=silent)

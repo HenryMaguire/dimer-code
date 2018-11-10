@@ -1,4 +1,4 @@
-from dimer_setup import *
+from SES_setup import *
 import time
 from qutip import build_preconditioner, steadystate
 
@@ -164,10 +164,10 @@ def heat_map_calculator(PARAMS,
             for param_labels in x_axis_parameters:
                 PARAMS.update({param_labels : x})
             if 'exc' in x_axis_parameters:
-                PARAMS.update({'exc': PARAMS['N_2']+PARAMS['N_1']-PARAMS['exc_diff']})
+                PARAMS.update({'exc': PARAMS['N_2']+PARAMS['exc_diff']})
             if 'exc_diff' in y_axis_parameters:
                 #print (PARAMS['N_2'], PARAMS['N_1'], PARAMS['exc_diff'])
-                PARAMS.update({'exc': PARAMS['N_2']+PARAMS['N_1']-PARAMS['exc_diff']})
+                PARAMS.update({'exc': PARAMS['N_2']+PARAMS['exc_diff']})
             ti = time.time()
             silent = True
             if PARAMS['N_1'] >=8:
@@ -185,8 +185,10 @@ def heat_map_calculator(PARAMS,
             
             try:
                 ts = info['solution_time']
+                print ops['sigma_x'].shape, ss.shape
                 print "Build time: {:0.3f} \t | \t Solution time: {:0.3f} \t | \t Sigma x {}".format(tf-ti,
                                                                                   ts, (ops['sigma_x']*ss).tr().real)
+                #print "Build time: {:0.3f} \t | \t Solution time: {:0.3f} \t | \t Sigma x {}".format(tf-ti,ts, 'none')                                                                  
             except TypeError:
                 print "N_1 = {}, N_2 = {}, exc= {} - Calculation skipped...".format(PARAMS['N_1'],
                                                                                       PARAMS['N_2'],
