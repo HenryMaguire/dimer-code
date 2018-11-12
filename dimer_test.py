@@ -29,7 +29,8 @@ L_total = qt.liouvillian(H[1], [L])
 print(nonzero_elements(L_total), total_elements(L_total), sparse_percentage(L_total))
 
 ssL, info = calculate_steadystate(H, L, method="power", persistent=True)
-exps = make_expectation_operators(H, PARAMS, site_basis=site_basis)
+print ssL.shape
+exps = make_expectation_operators(PARAMS, site_basis=site_basis)
 
 ss_therm = thermal_state(PARAMS["T_EM"], H[1])
 for key, op in exps.items():

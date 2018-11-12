@@ -135,7 +135,7 @@ def PARAMS_setup(bias=100., w_2=2000., V = 100., alpha=0.1,
                                  num_cpus=1, w_0=200, Gamma=50., N=3,
                                  silent=False, exc_diff=0):
     N_1 = N_2 = N
-    exc = 2*N-exc_diff
+    exc = N+exc_diff
     gap = sqrt(bias**2 +4*(V**2))
     phonon_energy = T_ph*0.695
 

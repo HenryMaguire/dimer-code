@@ -42,6 +42,18 @@ labels = [ 'OO', 'XO', 'OX', 'site_coherence',
              'RC1_position1', 'RC2_position', 
              'RC1_number', 'RC2_number']
 
+tex_labels = [ '$\\rho_0$', '$\\rho_1$', '$\\rho_2$', '$\\rho_12$', 
+            '$|+ \\rangle$', '$|- \\rangle$', '$|- \\rangle \\langle + |$', '$\\sigma_x$', '$\\sigma_y$',
+             r'$\hat{x_1}$', r'$\hat{x_2}$', 
+             r'$\hat{N_1}$', r'$\hat{N_2}$']
+print("YES")
+
+def make_expectation_labels():
+    # makes a dict: keys are names of observables, values are latex friendly labels
+    assert(len(tex_labels) == len(labels))
+    return dict((key_val[0], key_val[1]) for key_val in zip(labels, tex_labels))
+
+
 def make_expectation_operators(PARAMS, H=None, site_basis=True):
     # makes a dict: keys are names of observables values are operators
     I_sys=qeye(PARAMS['sys_dim'])
