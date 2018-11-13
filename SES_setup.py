@@ -115,6 +115,7 @@ def PARAMS_setup(bias=100., w_2=2000., V = 100., alpha=100.,
                                  alpha_EM=1., shift=True,
                                  num_cpus=1, w_0=200, Gamma=50., N=3,
                                  silent=False, exc_diff=0, sys_dim=3):
+
     # Sets up the parameter dict
     N_1 = N_2 = N
     exc = N+exc_diff
@@ -125,7 +126,6 @@ def PARAMS_setup(bias=100., w_2=2000., V = 100., alpha=100.,
     w_1 = w_2 + bias
     dipole_1, dipole_2 = 1., 1.
     mu = (w_2*dipole_2)/(w_1*dipole_1)
-    sigma = sigma_m1 + mu*sigma_m2
     T_1, T_2 = T_ph, T_ph # Phonon bath temperature
 
     Gamma_1 = Gamma_2 = Gamma
@@ -150,3 +150,20 @@ def PARAMS_setup(bias=100., w_2=2000., V = 100., alpha=100.,
     PARAMS.update({'N_1': N_1, 'N_2': N_2, 'exc': exc})
     PARAMS.update({'sys_dim' : sys_dim})
     return PARAMS
+
+def PARAMS_update_bias(PARAMS_init=None, bias_value=10.):
+    # Sets up the parameter dict
+
+    bias = bias_value
+    w_2 = PARAMS_init['w_2']
+    w_1 = w_2 + bias
+    dipole_1, dipole_2 = 1., 1.
+    mu = (w_2*dipole_2)/(w_1*dipole_1)
+
+    w_xx = w_2 + w_1
+
+    H_sub = w_1*XO_proj + w_2*OX_proj + PARAMS_init['V']*(site_coherence+site_coherence.dag())
+    PARAM_names = ['H_sub', 'w_1', 'w_2', 'bias', 'w_xx', 'mu']
+    scope = locals() # Lets eval below use local variables, not global
+    PARAMS_init.update(dict((name, eval(name, scope)) for name in PARAM_names))
+    return PARAMS_init

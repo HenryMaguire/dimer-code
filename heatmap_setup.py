@@ -199,12 +199,15 @@ def heat_map_calculator(PARAMS,
                         y_values=[70., 200., 600.],
                         dir_name='heatmap_oG', fill_factor=47,
                         save_data=True, persistent=False, method='direct',
-                        threshold=1e-9,conv_percent_tol=0.05):
+                        threshold=1e-9, conv_percent_tol=0.05):
     info_array = np.zeros(( len(y_values), len(x_values)), dtype=dict)
     ss_array = np.zeros(( len(y_values), len(x_values)), dtype=qt.Qobj)
+    k = 1
     for i, y in enumerate(y_values):
         for param_labels in y_axis_parameters:
             PARAMS.update({param_labels : y})
+        if 'bias' in y_axis_parameters:
+            PARAMS = PARAMS_update_bias(PARAMS_init=PARAMS, bias_value=y)
         for j, x in enumerate(x_values):
             # scan over each combination of parameters and update the PARAMS dict
             # for each point on the grid
@@ -221,7 +224,7 @@ def heat_map_calculator(PARAMS,
                 silent = False
             if ('N_1' in x_axis_parameters) or ('exc_diff' in y_axis_parameters):
                 # don't use converged steadystate solver
-                H, L = get_H_and_L(PARAMS,silent=silent, threshold=threshold)
+                H, L = get_H_and_L(PARAMS, silent=silent, threshold=threshold)
                 tf = time.time()
                 print "N_1 = {}, N_2 = {}, exc= {}, H_dim={}".format(PARAMS['N_1'], PARAMS['N_2'], PARAMS['exc'], H[1].shape[0])
                 
@@ -246,7 +249,7 @@ def heat_map_calculator(PARAMS,
             else:
                 ss_array[i][j], info_array[i][j] = calculate_converged_steadystate(PARAMS, conv_percent_tol=conv_percent_tol, etol=1e-8, N_min=3,
                           method="direct", maxiter=6000, v0=None, observable='sigma_x')
-                print "calculation converged"
+                print "calculation converged - {:0.1f}, {:0.1f} ({}/{})".format(x, y, k, len(x_values)*len(y_values))
     # Pass variables through so heatmap_plotter knows what to do
     PARAMS.update({'x_axis_parameters': x_axis_parameters,
                              'y_axis_parameters': y_axis_parameters,
