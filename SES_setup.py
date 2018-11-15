@@ -38,15 +38,16 @@ reload(RC)
 reload(opt)
 
 labels = [ 'OO', 'XO', 'OX', 'site_coherence', 
-            'bright', 'dark', 'eig_coherence', 'sigma_x', 'sigma_y',
+            'bright', 'dark', 'eig_x', 'eig_y', 'eig_z', 'eig_x_equiv', 'sigma_x', 'sigma_y', 'sigma_z',
              'RC1_position1', 'RC2_position', 
              'RC1_number', 'RC2_number']
 
 tex_labels = [ '$\\rho_0$', '$\\rho_1$', '$\\rho_2$', '$\\rho_12$', 
-            '$|+ \\rangle$', '$|- \\rangle$', '$|- \\rangle \\langle + |$', '$\\sigma_x$', '$\\sigma_y$',
+            '$|+ \\rangle$', '$|- \\rangle$', '$\\tilde{\\sigma}_x$', '$\\tilde{\\sigma}_y^{\prime}$','$\\tilde{\\sigma}_z^{\prime}$', 'eig_x_equiv',
+            '$\\sigma_x$', '$\\sigma_y$','$\\sigma_z$',
              r'$\hat{x_1}$', r'$\hat{x_2}$', 
              r'$\hat{N_1}$', r'$\hat{N_2}$']
-print("YES")
+
 
 def make_expectation_labels():
     # makes a dict: keys are names of observables, values are latex friendly labels
@@ -62,13 +63,20 @@ def make_expectation_operators(PARAMS, H=None, site_basis=True):
     energies, states = exciton_states(PARAMS, shift=False)
     bright_vec = states[1]
     dark_vec = states[0]
+    sigma_x = site_coherence+site_coherence.dag()
+    sigma_y = 1j*(site_coherence-site_coherence.dag())
+    sigma_z = XO_proj - OX_proj
+    eta = np.sqrt(PARAMS['bias']**2 + 4*PARAMS['V']**2)
+    eig_x_equiv = (PARAMS['V']/eta)*sigma_z - (0.5*PARAMS['bias']/eta)*sigma_x
+
     # electronic operators
      # site populations site coherences, eig pops, eig cohs
     subspace_ops = [OO_proj, XO_proj, OX_proj, site_coherence,
                    bright_vec*bright_vec.dag(), dark_vec*dark_vec.dag(),
-                   dark_vec*bright_vec.dag(),
-                    site_coherence+site_coherence.dag(),
-                    1j*(site_coherence-site_coherence.dag())]
+                   dark_vec*bright_vec.dag()+dark_vec.dag()*bright_vec,
+                   1j*(dark_vec*bright_vec.dag()-dark_vec.dag()*bright_vec),
+                   bright_vec*bright_vec.dag()-dark_vec.dag()*dark_vec, eig_x_equiv,
+                    sigma_x, sigma_y, sigma_z]
     # put operators into full RC tensor product basis
     fullspace_ops = [tensor(op, I) for op in subspace_ops]
     # RC operators
@@ -167,3 +175,5 @@ def PARAMS_update_bias(PARAMS_init=None, bias_value=10.):
     scope = locals() # Lets eval below use local variables, not global
     PARAMS_init.update(dict((name, eval(name, scope)) for name in PARAM_names))
     return PARAMS_init
+
+print("SES_setup loaded globally")

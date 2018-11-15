@@ -34,9 +34,10 @@ plt.rcParams["axes.grid"] = True
 plt.rcParams["axes.edgecolor"] = "0.15"
 plt.rcParams["axes.linewidth"]  = 1.5
 plt.rcParams['axes.facecolor'] = 'white'
-plt.rcParams['font.size'] = 13
+plt.rcParams['font.size'] = 18
 plt.rcParams['legend.fontsize'] = 'large'
 plt.rcParams['figure.titlesize'] = 'medium'
+
 
 colors = [c['color'] for c in plt.rcParams['axes.prop_cycle']]
 colors+=colors

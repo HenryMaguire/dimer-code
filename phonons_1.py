@@ -52,8 +52,7 @@ def operator_func(idx_list, eVals=[], eVecs=[], A_1=[], A_2=[],
     """
     
     zero = 0*A_1
-    #Z_1, Z_2 = zero, zero # Initialise operators
-    Xi_1, Chi_1, Xi_2, Chi_2 = zero, zero, zero, zero
+    Z_1, Z_2 = zero, zero # Initialise operators
     for j, k in idx_list:
 
         # eigenvalue difference, needs to be real for coth and hermiticity
@@ -65,25 +64,25 @@ def operator_func(idx_list, eVals=[], eVecs=[], A_1=[], A_2=[],
 
         if sp.absolute(A_jk_1) > 0:
             if sp.absolute(e_jk) > 0 and sp.absolute(beta_1) > 0:
-                Chi_1 += 0.5*np.pi*e_jk*gamma_1 * coth(e_jk * beta_1 / 2)*A_jk_1*outer_eigen
-                Xi_1 += 0.5*np.pi*e_jk*gamma_1 * A_jk_1 * outer_eigen
+                Z_1 += 0.5*np.pi*e_jk*gamma_1 * coth(e_jk * beta_1 / 2)*A_jk_1*outer_eigen
+                Z_1 += 0.5*np.pi*e_jk*gamma_1 * A_jk_1 * outer_eigen
             else:
-                Chi_1 += np.pi*gamma_1*A_jk_1*outer_eigen/beta_1 # Just return coefficients which are left over
+                Z_1 += np.pi*gamma_1*A_jk_1*outer_eigen/beta_1 # Just return coefficients which are left over
                 #Xi += 0 #since J_RC goes to zero
         A_jk_2 = A_2.matrix_element(J.dag(), K)
         if sp.absolute(A_jk_2) > 0:
             if sp.absolute(e_jk) > 0 and sp.absolute(beta_2)>0:
                 # e_jk*gamma is the spectral density
-                Chi_2 += 0.5*np.pi*e_jk*gamma_2 * coth(e_jk * beta_2 / 2)*A_jk_2*outer_eigen
-                Xi_2 += 0.5*np.pi*e_jk*gamma_2 * A_jk_2 * outer_eigen
+                Z_2 += 0.5*np.pi*e_jk*gamma_2 * coth(e_jk * beta_2 / 2)*A_jk_2*outer_eigen
+                Z_2 += 0.5*np.pi*e_jk*gamma_2 * A_jk_2 * outer_eigen
             else:
                 # If e_jk is zero, coth diverges but J goes to zero so limit taken seperately
-                Chi_2 += np.pi*gamma_2*A_jk_2*outer_eigen/beta_2 # Just return coefficients which are left over
+                Z_2 += np.pi*gamma_2*A_jk_2*outer_eigen/beta_2 # Just return coefficients which are left over
                 #Xi += 0 #since J_RC goes to zero
     #if type(Chi_1) != type(1):
     #    print Chi_1.dims
     
-    return Xi_1, Chi_1, Xi_2, Chi_2
+    return Z_1, Z_2
 
 def RCME_operators_par(eVals, eVecs, A_1, A_2, gamma_1, gamma_2, 
                        beta_1, beta_2, num_cpus=0):
@@ -98,18 +97,17 @@ def RCME_operators_par(eVals, eVecs, A_1, A_2, gamma_1, gamma_2,
     pool.close()
     pool.join()
     _Z = np.array([x for x in Out])
-    Xi_1, Chi_1, Xi_2, Chi_2= np.sum(_Z,axis=0)[0], np.sum(_Z,axis=0)[1], np.sum(_Z,axis=0)[2], np.sum(_Z,axis=0)[3]
-    return Xi_1, Chi_1, Xi_2, Chi_2, A_1, A_2
+    Z_1, Z_2 = np.sum(_Z,axis=0)[0], np.sum(_Z,axis=0)[1]
+    return Z_1, Z_2, A_1, A_2
 
-
-def RCME_operators(eVals, eVecs, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, 
+def _RCME_operators(eVals, eVecs, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, 
                     num_cpus=0):
     # This function will be passed a TLS-RC hamiltonian, RC operator,
     #spectral density and beta outputs all of the operators
     # needed for the RCME (underdamped)
     ti = time.time()
     dim_ham = eVecs[0].shape[0]
-    Xi_1, Chi_1, Xi_2, Chi_2 = 0, 0, 0, 0
+    Z_1, Z_2 = 0, 0
     
     for j in range(dim_ham):
         for k in range(dim_ham):
@@ -119,22 +117,56 @@ def RCME_operators(eVals, eVecs, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2,
             outer_eigen = eVecs[j] * (eVecs[k].dag())
             if sp.absolute(A_jk_1) > 0:
                 if sp.absolute(e_jk) > 0 and sp.absolute(beta_1) > 0:
-                    Chi_1 += 0.5*np.pi*e_jk*gamma_1 * coth(e_jk * beta_1 / 2)*A_jk_1*outer_eigen
-                    Xi_1 += 0.5*np.pi*e_jk*gamma_1 * A_jk_1 * outer_eigen
+                    Z_1 += 0.5*np.pi*e_jk*gamma_1 * coth(e_jk * beta_1 / 2)*A_jk_1*outer_eigen
+                    Z_1 += 0.5*np.pi*e_jk*gamma_1 * A_jk_1 * outer_eigen
                 else:
-                    Chi_1 += np.pi*gamma_1*A_jk_1*outer_eigen/beta_1 # Just return coefficients which are left over
+                    Z_1 += np.pi*gamma_1*A_jk_1*outer_eigen/beta_1 # Just return coefficients which are left over
                     #Xi += 0 #since J_RC goes to zero
             A_jk_2 = A_2.matrix_element(eVecs[j].dag(), eVecs[k])
             if sp.absolute(A_jk_2) > 0:
                 if sp.absolute(e_jk) > 1e-11 and sp.absolute(beta_2)>1e-11:
                     #print e_jk
                     # If e_jk is zero, coth diverges but J goes to zero so limit taken seperately
-                    Chi_2 += 0.5*np.pi*e_jk*gamma_2 * coth(e_jk * beta_2 / 2)*A_jk_2*outer_eigen # e_jk*gamma is the spectral density
-                    Xi_2 += 0.5*np.pi*e_jk*gamma_2 * A_jk_2 * outer_eigen
+                    Z_2 += 0.5*np.pi*e_jk*gamma_2 * coth(e_jk * beta_2 / 2)*A_jk_2*outer_eigen # e_jk*gamma is the spectral density
+                    Z_2 += 0.5*np.pi*e_jk*gamma_2 * A_jk_2 * outer_eigen
                 else:
-                    Chi_2 += np.pi*gamma_2*A_jk_2*outer_eigen/beta_2 # Just return coefficients which are left over
+                    Z_2 += np.pi*gamma_2*A_jk_2*outer_eigen/beta_2 # Just return coefficients which are left over
                     #Xi += 0 #since J_RC goes to zero
-    return Xi_1, Chi_1, Xi_2, Chi_2, A_1, A_2
+    return Z_1, Z_2, A_1, A_2
+
+def RCME_operators(eVals, eVecs, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2, 
+                    num_cpus=0):
+    # This function will be passed a TLS-RC hamiltonian, RC operator,
+    #spectral density and beta outputs all of the operators
+    # needed for the RCME (underdamped)
+    ti = time.time()
+    dim_ham = eVecs[0].shape[0]
+    Z_1, Z_2 = 0, 0
+    
+    for j in range(dim_ham):
+        for k in range(dim_ham):
+            e_jk = eVals[j] - eVals[k] # eigenvalue difference
+            #EigenDiffs.append(e_jk)
+            A_jk_1 = A_1.matrix_element(eVecs[j].dag(), eVecs[k])
+            outer_eigen = eVecs[j] * (eVecs[k].dag())
+            if sp.absolute(A_jk_1) > 0:
+                if sp.absolute(e_jk) > 0 and sp.absolute(beta_1) > 0:
+                    Z_1 += 0.5*np.pi*e_jk*gamma_1 * coth(e_jk * beta_1 / 2)*A_jk_1*outer_eigen
+                    Z_1 += 0.5*np.pi*e_jk*gamma_1 * A_jk_1 * outer_eigen
+                else:
+                    Z_1 += np.pi*gamma_1*A_jk_1*outer_eigen/beta_1 # Just return coefficients which are left over
+                    #Xi += 0 #since J_RC goes to zero
+            A_jk_2 = A_2.matrix_element(eVecs[j].dag(), eVecs[k])
+            if sp.absolute(A_jk_2) > 0:
+                if sp.absolute(e_jk) > 1e-11 and sp.absolute(beta_2)>1e-11:
+                    #print e_jk
+                    # If e_jk is zero, coth diverges but J goes to zero so limit taken seperately
+                    Z_2 += 0.5*np.pi*e_jk*gamma_2 * coth(e_jk * beta_2 / 2)*A_jk_2*outer_eigen # e_jk*gamma is the spectral density
+                    Z_2 += 0.5*np.pi*e_jk*gamma_2 * A_jk_2 * outer_eigen
+                else:
+                    Z_2 += np.pi*gamma_2*A_jk_2*outer_eigen/beta_2 # Just return coefficients which are left over
+                    #Xi += 0 #since J_RC goes to zero
+    return Z_1, Z_2, A_1, A_2
 
 def liouvillian_build(H_RC, A_1, A_2, gamma_1, gamma_2,
                     wRC_1, wRC_2, T_1, T_2, num_cpus=1, silent=False, site_basis=True):
@@ -166,18 +198,16 @@ def liouvillian_build(H_RC, A_1, A_2, gamma_1, gamma_2,
     
     eVals, eVecs = H_RC.eigenstates()
     # Z = Chi +Xi # I have fixed this to match Ahsan's code - not certain it's correct
-    Xi_1, Chi_1, Xi_2, Chi_2, A_1, A_2  = RCop(eVals, eVecs, A_1, A_2, gamma_1, gamma_2,
+    Z_1, Z_2, A_1, A_2  = RCop(eVals, eVecs, A_1, A_2, gamma_1, gamma_2,
                                     beta_1, beta_2, num_cpus=num_cpus)
-    Chi_ = [Chi_1, Chi_2]
-    Xi_ = [Xi_1, Xi_2]
-    A_ = [A_1, A_2]
+
     #print(Z_1.eigenenergies())
     #print(Z_2.eigenenergies())
     #print(A_2.eigenenergies())
     #print(A_1.eigenenergies())
-    """if not site_basis:
+    if not site_basis:
         Z_1, Z_2, A_1, A_2, H_RC = change_basis([Z_1, Z_2, A_1, A_2, H_RC], 
-                                                eVals, eVecs, eig_to_site=False)"""
+                                                eVals, eVecs, eig_to_site=False)
     if not silent:
         print "****************************************************************"
         print "The operators took {} and have dimension {}.".format(time.time()-ti, H_RC.shape[0])
@@ -185,16 +215,10 @@ def liouvillian_build(H_RC, A_1, A_2, gamma_1, gamma_2,
     L = 0
     #Z_1 = Z_1.dag() # if these are uncommented, code is not like Ahsan's
     #Z_2 = Z_2.dag()
-    for A, Chi, Xi in zip(A_, Chi_, Xi_):
-        L-=spre(A*Chi)
-        L+=sprepost(A, Chi)
-        L+=sprepost(Chi, A)
-        L-=spost(Chi*A)
-
-        L+=spre(A*Xi)
-        L+=sprepost(A, Xi)
-        L-=sprepost(Xi, A)
-        L-=spost(Xi*A)
+    L+=spre(A_1*Z_1.dag())+spre(A_2*Z_2.dag())
+    L-=sprepost(Z_1.dag(), A_1) + sprepost(Z_2.dag(), A_2)
+    L-=sprepost(A_1, Z_1) + sprepost(A_2, Z_2)
+    L+=spost(Z_1*A_1) + spost(Z_2*A_2)
     if not silent:
         print "Building the RC Liouvillian took {:0.3f} seconds.".format(time.time()-ti)
     return H_RC, L

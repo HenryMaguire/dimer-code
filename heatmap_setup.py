@@ -199,7 +199,7 @@ def heat_map_calculator(PARAMS,
                         y_values=[70., 200., 600.],
                         dir_name='heatmap_oG', fill_factor=47,
                         save_data=True, persistent=False, method='direct',
-                        threshold=1e-9, conv_percent_tol=0.05):
+                        threshold=1e-9, etol=1e-10, conv_percent_tol=0.05, conv_obs='sigma_x'):
     info_array = np.zeros(( len(y_values), len(x_values)), dtype=dict)
     ss_array = np.zeros(( len(y_values), len(x_values)), dtype=qt.Qobj)
     k = 1
@@ -247,9 +247,15 @@ def heat_map_calculator(PARAMS,
                                                                                         PARAMS['N_2'],
                                                                                         PARAMS['exc'])
             else:
-                ss_array[i][j], info_array[i][j] = calculate_converged_steadystate(PARAMS, conv_percent_tol=conv_percent_tol, etol=1e-8, N_min=3,
-                          method="direct", maxiter=6000, v0=None, observable='sigma_x')
+                N_max = 10
+                if ('alpha_1' in x_axis_parameters) and PARAMS['alpha_1']<1:
+                    print True
+                    etol = 1e-13
+                    N_max=4
+                ss_array[i][j], info_array[i][j] = calculate_converged_steadystate(PARAMS, conv_percent_tol=conv_percent_tol, etol=etol, N_min=2, N_max=N_max,
+                          method="direct", maxiter=6000, v0=None, observable=conv_obs)
                 print "calculation converged - {:0.1f}, {:0.1f} ({}/{})".format(x, y, k, len(x_values)*len(y_values))
+                k+=1
     # Pass variables through so heatmap_plotter knows what to do
     PARAMS.update({'x_axis_parameters': x_axis_parameters,
                              'y_axis_parameters': y_axis_parameters,
