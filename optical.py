@@ -170,7 +170,7 @@ def L_non_rwa_par(H_vib, sigma, args, silent=False, site_basis=True):
 
 def L_BMME(H_vib, A, args, ME_type='nonsecular', site_basis=True, silent=False):
     Gamma, T, w_1, J, num_cpus = args['alpha_EM'], args['T_EM'], args['w_1'],args['J'], args['num_cpus']
-    operators = eval('nonsecular'+'_ops')
+    operators = eval(ME_type+'_ops') # not tested
     
     #Construct non-secular liouvillian
     ti = time.time()

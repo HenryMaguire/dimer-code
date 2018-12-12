@@ -67,7 +67,7 @@ def make_expectation_operators(PARAMS, H=None, site_basis=True):
     sigma_y = 1j*(site_coherence-site_coherence.dag())
     sigma_z = XO_proj - OX_proj
     eta = np.sqrt(PARAMS['bias']**2 + 4*PARAMS['V']**2)
-    eig_x_equiv = (PARAMS['V']/eta)*sigma_z - (0.5*PARAMS['bias']/eta)*sigma_x
+    eig_x_equiv = (2*PARAMS['V']/eta)*sigma_z - (0.5*PARAMS['bias']/eta)*sigma_x
 
     # electronic operators
      # site populations site coherences, eig pops, eig cohs
@@ -96,7 +96,7 @@ def make_expectation_operators(PARAMS, H=None, site_basis=True):
 
 def get_H_and_L(PARAMS,silent=False, threshold=0.):
     L, H, A_1, A_2, PARAMS = RC.RC_mapping(PARAMS, silent=silent, shift=True, site_basis=True)
-
+    L_add = L
     N_1 = PARAMS['N_1']
     N_2 = PARAMS['N_2']
     exc = PARAMS['exc']
@@ -105,6 +105,30 @@ def get_H_and_L(PARAMS,silent=False, threshold=0.):
     I = enr_identity([N_1,N_2], exc)
     sigma = sigma_m1 + mu*sigma_m2
 
+    if abs(PARAMS['alpha_EM'])>0:
+        L += opt.L_BMME(H[1], tensor(sigma,I), PARAMS, ME_type='nonsecular', site_basis=True, silent=silent)
+        L_add += opt.L_BMME(tensor(H[0],I), tensor(sigma,I), PARAMS, ME_type='nonsecular', site_basis=True, silent=silent)
+    else:
+        print "Not including optical dissipator"
+    spar0 = sparse_percentage(L)
+    if threshold:
+        L.tidyup(threshold)
+    if not silent:
+        print("Chopping reduced the sparsity from {:0.3f}% to {:0.3f}%".format(spar0, sparse_percentage(L)))
+
+    return H, L, L_add
+
+def get_H_and_L_additive(PARAMS,silent=False, threshold=0.):
+    L, H, A_1, A_2, PARAMS = RC.RC_mapping(PARAMS, silent=silent, shift=True, site_basis=True)
+
+    N_1 = PARAMS['N_1']
+    N_2 = PARAMS['N_2']
+    exc = PARAMS['exc']
+    mu = PARAMS['mu']
+
+    I = enr_identity([N_1,N_2], exc)
+    sigma = sigma_m1 + mu*sigma_m2
+    
     if abs(PARAMS['alpha_EM'])>0:
         L += opt.L_BMME(H[1], tensor(sigma,I), PARAMS, ME_type='nonsecular', site_basis=True, silent=silent)
 
@@ -122,8 +146,8 @@ def PARAMS_setup(bias=100., w_2=2000., V = 100., alpha=100.,
                                  T_EM=0., T_ph =300.,
                                  alpha_EM=1., shift=True,
                                  num_cpus=1, w_0=200, Gamma=50., N=3,
-                                 silent=False, exc_diff=0, sys_dim=3):
-
+                                 silent=False, exc_diff=0, sys_dim=3, alpha_bias=0.):
+    # alpha_1 = alpha+alpha_bias
     # Sets up the parameter dict
     N_1 = N_2 = N
     exc = N+exc_diff
@@ -154,7 +178,7 @@ def PARAMS_setup(bias=100., w_2=2000., V = 100., alpha=100.,
     scope = locals() # Lets eval below use local variables, not global
     PARAMS = dict((name, eval(name, scope)) for name in PARAM_names)
 
-    PARAMS.update({'alpha_1': alpha, 'alpha_2': alpha})
+    PARAMS.update({'alpha_1': alpha+alpha_bias, 'alpha_2': alpha})
     PARAMS.update({'N_1': N_1, 'N_2': N_2, 'exc': exc})
     PARAMS.update({'sys_dim' : sys_dim})
     return PARAMS

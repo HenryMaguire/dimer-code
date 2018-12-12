@@ -79,11 +79,11 @@ def calculate_steadystate_L(L, fill_factor=500, tol=1e-8, persistent=False,
                 return 0, 0 # don't bother"""
 
 
-def calculate_converged_steadystate(PARAMS, conv_percent_tol=1e-2, etol=1e-8, N_min=3,
-                          method="direct", maxiter=6000, v0=None, observable='sigma_x'):
+def calculate_converged_steadystate(PARAMS, conv_percent_tol=1e-2, etol=1e-8, N_min=3, N_max=10,
+                          method="direct", maxiter=6000, v0=None, observable='sigma_x', additive=False):
     converged = False
     PARAMS.update({'N_1':N_min, 'N_2':N_min, 'exc':N_min})
-    H, L = get_H_and_L(PARAMS, silent=True)
+    H, L, L_add = 0,0,0 #get_H_and_L(PARAMS, silent=True)
     ss = 0 # init steadystate
     ss_obs_old = np.random.random()
     N = PARAMS['N_1']
@@ -91,7 +91,9 @@ def calculate_converged_steadystate(PARAMS, conv_percent_tol=1e-2, etol=1e-8, N_
     while not converged:
         if N<8:
             silent = True
-        H, L = get_H_and_L(PARAMS, silent=silent)
+        H, L, L_add = get_H_and_L(PARAMS, silent=silent)
+        if additive:
+            L = L_add
         op = make_expectation_operators(PARAMS)[observable]
         try:
             M=None
@@ -108,21 +110,22 @@ def calculate_converged_steadystate(PARAMS, conv_percent_tol=1e-2, etol=1e-8, N_
                                    return_info=True, tol=etol, maxiter=maxiter)
             
             conv_percent = abs(100*(ss_obs_old - (ss*op).tr())/ss_obs_old).real
-            print( "Steady state for {} took {:0.3f} seconds with {}, {} changed by {:0.4f}%".format(N, info['solution_time'], method, observable, conv_percent))
-            
-            if (conv_percent < conv_percent_tol) or N>=10:
+            print( "Steady state for {} took {:0.3f} seconds with {}, {} changed by {:0.4f}%".format(N, info['solution_time'], 
+                                                                                                     method, observable, conv_percent))
+            if (conv_percent < conv_percent_tol) or N>=N_max:
                 converged = True
-                info.update({'N':N, 'exc' : exc})
+                info.update({'N' : N, 'exc' : exc})
                 return ss, info
             else:
                 ss_obs_old=(ss*op).tr()
+                # iterate
                 N = PARAMS['N_1'] + 1
                 exc = PARAMS['exc'] + 1
-                PARAMS.update({'N_1' :N, 'N_2' : N, 'exc' : exc})
+                PARAMS.update({'N_1' : N, 'N_2' : N, 'exc' : exc})
         except Exception as err:
-            print("Steadystate failed due to {}.".format(err))
-            return 0,0
-        
+            print( "Steadystate failed due to {}.".format(err) )
+            return 0, 0
+
 
 def calculate_steadystate(H, L, fill_factor=500, tol=1e-8, persistent=False, 
                           method="eigen", maxiter=6000, v0=None):
@@ -169,29 +172,6 @@ def calculate_steadystate(H, L, fill_factor=500, tol=1e-8, persistent=False,
                 print("Skipping...")
                 return 0, 0 # don't bother"""
 
-def calculate_steadystate_bootstrap(H, L_full, chop_threshold=1e-8, fill_factor=500, method="iterative-lgmres", maxiter=1000):
-    # return ss, info
-    # uses chopped L for the preconditioner, but the full Liouvillian for the krylov subspace bit
-    from utils import chop
-    try:
-        M=None
-        use_precond = False
-        if "iterative" in method:
-            ti = time.time()
-            M, m_info = build_preconditioner(H[1], [chop(L_full, threshold=chop_threshold)], fill_factor=500,
-                                        return_info=True,drop_tol=1e-4, use_rcm=True, ILU_MILU='smilu_2')
-            print m_info
-            use_precond = True
-            print "Building preconditioner took {} seconds".format(time.time()-ti)
-        return steadystate(H[1], [L_full], method=method, M=M,
-                                    use_precond=True, 
-                                    return_info=True, tol=1e-8)
-
-    except Exception as err:
-        print(err)
-        return (None, None)
-
-
 def heat_map_calculator(PARAMS,
                         x_axis_parameters=['w0_1', 'w0_2'],
                         y_axis_parameters=['Gamma_1', 'Gamma_2'],
@@ -199,7 +179,7 @@ def heat_map_calculator(PARAMS,
                         y_values=[70., 200., 600.],
                         dir_name='heatmap_oG', fill_factor=47,
                         save_data=True, persistent=False, method='direct',
-                        threshold=1e-9, etol=1e-10, conv_percent_tol=0.05, conv_obs='sigma_x'):
+                        threshold=1e-9, etol=1e-10, conv_percent_tol=0.05, conv_obs='sigma_x', additive=False):
     info_array = np.zeros(( len(y_values), len(x_values)), dtype=dict)
     ss_array = np.zeros(( len(y_values), len(x_values)), dtype=qt.Qobj)
     k = 1
@@ -224,7 +204,9 @@ def heat_map_calculator(PARAMS,
                 silent = False
             if ('N_1' in x_axis_parameters) or ('exc_diff' in y_axis_parameters):
                 # don't use converged steadystate solver
-                H, L = get_H_and_L(PARAMS, silent=silent, threshold=threshold)
+                H, L, L_add = get_H_and_L(PARAMS, silent=silent, threshold=threshold)
+                if additive:
+                    L = L_add
                 tf = time.time()
                 print "N_1 = {}, N_2 = {}, exc= {}, H_dim={}".format(PARAMS['N_1'], PARAMS['N_2'], PARAMS['exc'], H[1].shape[0])
                 
@@ -234,8 +216,7 @@ def heat_map_calculator(PARAMS,
                 #print ss.shape, H[1].shape, np.sqrt(L.shape[0])
                 del H, L
                 info.update({'exc' : PARAMS['exc']})
-                ss_array[i][j], info_array[i][j] = ss, info
-                
+                ss_array[i][j], info_array[i][j] = ss, info                
                 try:
                     ts = info['solution_time']
                     print ops['sigma_x'].shape, ss.shape
@@ -252,14 +233,16 @@ def heat_map_calculator(PARAMS,
                     print True
                     etol = 1e-13
                     N_max=4
-                ss_array[i][j], info_array[i][j] = calculate_converged_steadystate(PARAMS, conv_percent_tol=conv_percent_tol, etol=etol, N_min=2, N_max=N_max,
-                          method="direct", maxiter=6000, v0=None, observable=conv_obs)
+                ss_array[i][j], info_array[i][j] = calculate_converged_steadystate(PARAMS, conv_percent_tol=conv_percent_tol,
+                                                                                   etol=etol, N_min=2, N_max=N_max,
+                                                                                   method="direct", maxiter=6000, v0=None, observable=conv_obs, additive=additive)
                 print "calculation converged - {:0.1f}, {:0.1f} ({}/{})".format(x, y, k, len(x_values)*len(y_values))
                 k+=1
     # Pass variables through so heatmap_plotter knows what to do
     PARAMS.update({'x_axis_parameters': x_axis_parameters,
-                             'y_axis_parameters': y_axis_parameters,
-                          'x_values': x_values, 'y_values': y_values})
+                   'y_axis_parameters': y_axis_parameters,
+                   'x_values': x_values,
+                   'y_values': y_values})
     if save_data:
         k = 1
         saved = False
