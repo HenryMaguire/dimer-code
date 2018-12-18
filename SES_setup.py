@@ -4,16 +4,15 @@ import time
 import numpy as np
 from numpy import pi, sqrt
 import matplotlib.pyplot as plt
-
+import copy 
 
 import phonons as RC
 import optical as opt
 
 from phonons import RC_mapping
-from optical import L_non_rwa, L_phenom
+from optical import L_non_rwa, L_phenom_SES
 from qutip import basis, qeye, enr_identity, enr_destroy, tensor, enr_thermal_dm, steadystate
 from utils import *
-
 
 
 OO = basis(3,0)
@@ -96,7 +95,7 @@ def make_expectation_operators(PARAMS, H=None, site_basis=True):
 
 def get_H_and_L(PARAMS,silent=False, threshold=0.):
     L, H, A_1, A_2, PARAMS = RC.RC_mapping(PARAMS, silent=silent, shift=True, site_basis=True)
-    L_add = L
+    L_add = copy.deepcopy(L)
     N_1 = PARAMS['N_1']
     N_2 = PARAMS['N_2']
     exc = PARAMS['exc']
@@ -104,14 +103,16 @@ def get_H_and_L(PARAMS,silent=False, threshold=0.):
 
     I = enr_identity([N_1,N_2], exc)
     sigma = sigma_m1 + mu*sigma_m2
-
+    H_unshifted = PARAMS['w_1']*XO_proj + PARAMS['w_2']*OX_proj
     if abs(PARAMS['alpha_EM'])>0:
         L += opt.L_BMME(H[1], tensor(sigma,I), PARAMS, ME_type='nonsecular', site_basis=True, silent=silent)
-        L_add += opt.L_BMME(tensor(H[0],I), tensor(sigma,I), PARAMS, ME_type='nonsecular', site_basis=True, silent=silent)
+        L_add += opt.L_BMME(tensor(H_unshifted,I), tensor(sigma,I), PARAMS, ME_type='nonsecular',                                 site_basis=True, silent=silent)
+        #L_add += opt.L_phenom_SES(PARAMS)
     else:
         print "Not including optical dissipator"
     spar0 = sparse_percentage(L)
     if threshold:
+        L_add.tidyup(threshold)
         L.tidyup(threshold)
     if not silent:
         print("Chopping reduced the sparsity from {:0.3f}% to {:0.3f}%".format(spar0, sparse_percentage(L)))

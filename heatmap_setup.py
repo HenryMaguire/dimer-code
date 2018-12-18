@@ -179,7 +179,7 @@ def heat_map_calculator(PARAMS,
                         y_values=[70., 200., 600.],
                         dir_name='heatmap_oG', fill_factor=47,
                         save_data=True, persistent=False, method='direct',
-                        threshold=1e-9, etol=1e-10, conv_percent_tol=0.05, conv_obs='sigma_x', additive=False):
+                        threshold=1e-9, etol=1e-10, conv_percent_tol=0.05, conv_obs='sigma_x', additive=False, N_min=2):
     info_array = np.zeros(( len(y_values), len(x_values)), dtype=dict)
     ss_array = np.zeros(( len(y_values), len(x_values)), dtype=qt.Qobj)
     k = 1
@@ -206,7 +206,9 @@ def heat_map_calculator(PARAMS,
                 # don't use converged steadystate solver
                 H, L, L_add = get_H_and_L(PARAMS, silent=silent, threshold=threshold)
                 if additive:
+                    print "Using additive theory"
                     L = L_add
+                    N_min = 5
                 tf = time.time()
                 print "N_1 = {}, N_2 = {}, exc= {}, H_dim={}".format(PARAMS['N_1'], PARAMS['N_2'], PARAMS['exc'], H[1].shape[0])
                 
@@ -230,11 +232,12 @@ def heat_map_calculator(PARAMS,
             else:
                 N_max = 10
                 if ('alpha_1' in x_axis_parameters) and PARAMS['alpha_1']<1:
-                    print True
                     etol = 1e-13
                     N_max=4
+                if additive:
+                    N_min = 4
                 ss_array[i][j], info_array[i][j] = calculate_converged_steadystate(PARAMS, conv_percent_tol=conv_percent_tol,
-                                                                                   etol=etol, N_min=2, N_max=N_max,
+                                                                                   etol=etol, N_min=N_min, N_max=N_max,
                                                                                    method="direct", maxiter=6000, v0=None, observable=conv_obs, additive=additive)
                 print "calculation converged - {:0.1f}, {:0.1f} ({}/{})".format(x, y, k, len(x_values)*len(y_values))
                 k+=1

@@ -388,7 +388,34 @@ def L_secular_par(H_vib, A, args):
     L = [l for l in L]
     return -np.sum(L)*0.25
 
-def L_phenom(I, args):
+def L_phenom_SES(args):
+    I = qt.enr_identity([args["N_1"], args['N_2']], args['exc'])
+    ti = time.time()
+    eps, V, w_xx = args['bias'], args['V'], args['w_xx']
+    mu, gamma, w_1, J, T = args['mu'], args['alpha_EM'], args['w_1'], args['J'], args['T_EM']
+    H_sub = qt.Qobj([[0,0,0,0],[0,w_1,V,0],[0,V,w_1-eps,0],[0,0,0,(2*(w_1-eps))+eps]])
+    energies, states = exciton_states(args)
+    dark, lm = states[0], energies[0]
+    bright, lp = states[1], energies[1]
+    OO = basis(3,0)
+    eta = np.sqrt(4*V**2+eps**2)
+    pre_1 = (sqrt(eta-eps)+mu*sqrt(eta+eps))/sqrt(2*eta) # A_wxx_lp
+    pre_2 = -(sqrt(eta+eps)-mu*sqrt(eta-eps))/sqrt(2*eta) # A_wxx_lm
+    pre_3 = (sqrt(eta+eps)+mu*sqrt(eta-eps))/sqrt(2*eta) # A_lp
+    pre_4 = (sqrt(eta-eps)-mu*sqrt(eta+eps))/sqrt(2*eta) # A_lm
+    #print pre_p, pre_p
+    A_lp = pre_3*tensor(OO*bright.dag(), I)
+    A_lm= pre_4*tensor(OO*dark.dag(), I)
+    L = rate_up(lp, T, gamma, J, w_1)*lin_construct(A_lp.dag())
+    L += rate_up(lm, T, gamma, J, w_1)*lin_construct(A_lm.dag())
+    L += rate_down(lp, T, gamma, J, w_1)*lin_construct(A_lp)
+    L += rate_down(lm, T, gamma, J, w_1)*lin_construct(A_lm)
+    #print [(i, cf) for i, cf in enumerate(coeffs)]
+
+    print "It took {} seconds to build the phenomenological Liouvillian".format(time.time()-ti)
+    return L
+
+def L_phenom_dimer(I, args):
     ti = time.time()
     eps, V, w_xx = args['bias'], args['V'], args['w_xx']
     mu, gamma, w_1, J, T = args['mu'], args['alpha_EM'], args['w_1'], args['J'], args['T_EM']
