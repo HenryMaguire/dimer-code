@@ -200,7 +200,7 @@ def liouvillian_build(H_RC, A_1, A_2, gamma_1, gamma_2,
     return H_RC, L
 
 
-def RC_mapping(args, silent=False, shift=True, site_basis=True):
+def RC_mapping(args, silent=False, shift=True, site_basis=True, parity_flip=False):
     H_sub = args['H_sub']
     coupling_ops = args['coupling_ops']
     # we define all of the RC parameters by the underdamped spectral density
@@ -213,7 +213,10 @@ def RC_mapping(args, silent=False, shift=True, site_basis=True):
     kappa_1 = np.sqrt(np.pi * alpha_1 * wRC_1 / 2.)  # coupling strength between the TLS and RC
 
     gamma_2 = Gamma_2 / (2. * np.pi * wRC_2)
+    
     kappa_2 = np.sqrt(np.pi * alpha_2 * wRC_2 / 2.)
+    if parity_flip:
+        kappa_2*=-1 # Relative sign flip
     shift1, shift2 = (kappa_1**2)/wRC_1, (kappa_2**2)/wRC_2
     if not shift:
         shift1, shift2 = 0., 0.

@@ -234,11 +234,9 @@ def heat_map_calculator(PARAMS,
                 if ('alpha_1' in x_axis_parameters) and PARAMS['alpha_1']<1:
                     etol = 1e-13
                     N_max=4
-                if additive:
+                if additive and PARAMS['bias']==0.:
                     N_min = 4
-                ss_array[i][j], info_array[i][j] = calculate_converged_steadystate(PARAMS, conv_percent_tol=conv_percent_tol,
-                                                                                   etol=etol, N_min=N_min, N_max=N_max,
-                                                                                   method="direct", maxiter=6000, v0=None, observable=conv_obs, additive=additive)
+                ss_array[i][j], info_array[i][j] = calculate_converged_steadystate(PARAMS, conv_percent_tol=conv_percent_tol,                                                                                 etol=etol, N_min=N_min, N_max=N_max,method="direct",                                                                       maxiter=6000, v0=None, observable=conv_obs, additive=additive)
                 print "calculation converged - {:0.1f}, {:0.1f} ({}/{})".format(x, y, k, len(x_values)*len(y_values))
                 k+=1
     # Pass variables through so heatmap_plotter knows what to do

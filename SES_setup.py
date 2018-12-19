@@ -94,7 +94,7 @@ def make_expectation_operators(PARAMS, H=None, site_basis=True):
     return dict((key_val[0], key_val[1]) for key_val in zip(labels, fullspace_ops))
 
 def get_H_and_L(PARAMS,silent=False, threshold=0.):
-    L, H, A_1, A_2, PARAMS = RC.RC_mapping(PARAMS, silent=silent, shift=True, site_basis=True)
+    L, H, A_1, A_2, PARAMS = RC.RC_mapping(PARAMS, silent=silent, shift=True, site_basis=True, parity_flip=PARAMS['parity_flip'])
     L_add = copy.deepcopy(L)
     N_1 = PARAMS['N_1']
     N_2 = PARAMS['N_2']
@@ -147,7 +147,7 @@ def PARAMS_setup(bias=100., w_2=2000., V = 100., alpha=100.,
                                  T_EM=0., T_ph =300.,
                                  alpha_EM=1., shift=True,
                                  num_cpus=1, w_0=200, Gamma=50., N=3,
-                                 silent=False, exc_diff=0, sys_dim=3, alpha_bias=0.):
+                                 silent=False, exc_diff=0, sys_dim=3, alpha_bias=0., parity_flip=False):
     # alpha_1 = alpha+alpha_bias
     # Sets up the parameter dict
     N_1 = N_2 = N
@@ -175,7 +175,7 @@ def PARAMS_setup(bias=100., w_2=2000., V = 100., alpha=100.,
     coupling_ops = [sigma_m1.dag()*sigma_m1, sigma_m2.dag()*sigma_m2] # system-RC operators
     PARAM_names = ['H_sub', 'coupling_ops', 'w_1', 'w_2', 'V', 'bias', 'w_xx', 'T_1', 'T_2',
                    'w0_1', 'w0_2', 'T_EM', 'alpha_EM','mu', 'num_cpus', 'J',
-                   'dipole_1','dipole_2', 'Gamma_1', 'Gamma_2']
+                   'dipole_1','dipole_2', 'Gamma_1', 'Gamma_2', 'parity_flip']
     scope = locals() # Lets eval below use local variables, not global
     PARAMS = dict((name, eval(name, scope)) for name in PARAM_names)
 

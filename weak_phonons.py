@@ -31,7 +31,7 @@ def cauchyIntegrands(omega, beta, J, alpha, Gamma, omega_0, ver):
 def integral_converge(f, a, omega):
     x = 30
     I = 0
-    while abs(f(x))>0.01:
+    while abs(f(x))>0.001:
         #print a, x
         I += integrate.quad(f, a, x, weight='cauchy', wvar=omega)[0]
         a+=30
@@ -83,9 +83,9 @@ def auto_L(PARAMS, A, T, alpha):
         for eig_j in eig:
             omega = eig_i[0]-eig_j[0]
             A_ij = eig_i[1]*eig_j[1].dag()*A.matrix_element(eig_i[1].dag(), eig_j[1])
-            L += Gamma(omega, beta, J_overdamped, alpha, PARAMS['wc'], imag_part=False) * commutate(A, A_ij)
+            L += Gamma(omega, beta, J_underdamped, alpha, PARAMS['wc'], imag_part=False) * commutate(A, A_ij)
             # Imaginary part
-            G = Gamma(omega, beta, J_overdamped, alpha, PARAMS['wc'], imag_part=True)
+            G = Gamma(omega, beta, J_underdamped, alpha, PARAMS['wc'], imag_part=True)
             print G
             L += G.imag * commutate(A, A_ij, anti=True)
     return -0.5*L
@@ -194,7 +194,7 @@ def L_weak_phonon_SES(PARAMS, silent=False):
     #print site_1, site_2
     if not silent:
         print "Weak coupling Liouvillian took {:0.2f} seconds".format(time.time()-ti)
-    return L
+    return -L
 
 def get_wc_H_and_L(PARAMS,silent=False, threshold=0.):
     import optical as opt
@@ -205,7 +205,6 @@ def get_wc_H_and_L(PARAMS,silent=False, threshold=0.):
     sigma_m2 =  OO*OX.dag()
     eps = PARAMS['bias']
     V = PARAMS['V']
-
     H = w_1*XO*XO.dag() + w_2*OX*OX.dag() + V*(OX*XO.dag() + XO*OX.dag())
     L = L_weak_phonon_SES(PARAMS, silent=False)
     N_1 = PARAMS['N_1']
