@@ -93,6 +93,41 @@ def make_expectation_operators(PARAMS, H=None, site_basis=True):
 
     return dict((key_val[0], key_val[1]) for key_val in zip(labels, fullspace_ops))
 
+def get_H_and_L_local(PARAMS, silent=False, threshold=0.):
+    V = PARAMS['V']
+    PARAMS['H_sub'] = PARAMS['w_1']*XO_proj + PARAMS['w_2']*OX_proj 
+    PARAMS.update({'V': 0.})
+    L, H, A_1, A_2, PARAMS = RC.RC_mapping(PARAMS, silent=silent, shift=True, site_basis=True, parity_flip=PARAMS['parity_flip'])
+    L_add = copy.deepcopy(L)
+    N_1 = PARAMS['N_1']
+    N_2 = PARAMS['N_2']
+    exc = PARAMS['exc']
+    mu = PARAMS['mu']
+
+    I = enr_identity([N_1,N_2], exc)
+    sigma = sigma_m1 + mu*sigma_m2
+    PARAMS['H_sub'] += V*(site_coherence+site_coherence.dag())
+    PARAMS.update({'V': V})
+    H, A_1, A_2 = RC.H_mapping_RC(PARAMS['H_sub'], PARAMS['coupling_ops'], PARAMS['w_1'],
+                PARAMS['w_2'], PARAMS['kappa_1'], PARAMS['kappa_2'], PARAMS['N_1'], PARAMS['N_2'], PARAMS['exc'],
+                shift=True)
+    
+    if abs(PARAMS['alpha_EM'])>0:
+        L += opt.L_BMME(H[1], tensor(sigma,I), PARAMS, ME_type='nonsecular', site_basis=True, silent=silent)
+        L_add += opt.L_BMME(tensor(PARAMS['H_sub'],I), tensor(sigma,I), PARAMS, ME_type='nonsecular', site_basis=True, silent=silent)
+        #L_add += opt.L_phenom_SES(PARAMS)
+    else:
+        print "Not including optical dissipator"
+    spar0 = sparse_percentage(L)
+    if threshold:
+        L_add.tidyup(threshold)
+        L.tidyup(threshold)
+    if not silent:
+        print("Chopping reduced the sparsity from {:0.3f}% to {:0.3f}%".format(spar0, sparse_percentage(L)))
+    PARAMS.update({'V': V})
+    
+    return H, L, L_add
+
 def get_H_and_L(PARAMS,silent=False, threshold=0.):
     L, H, A_1, A_2, PARAMS = RC.RC_mapping(PARAMS, silent=silent, shift=True, site_basis=True, parity_flip=PARAMS['parity_flip'])
     L_add = copy.deepcopy(L)
@@ -103,7 +138,7 @@ def get_H_and_L(PARAMS,silent=False, threshold=0.):
 
     I = enr_identity([N_1,N_2], exc)
     sigma = sigma_m1 + mu*sigma_m2
-    H_unshifted = PARAMS['w_1']*XO_proj + PARAMS['w_2']*OX_proj
+    H_unshifted = PARAMS['w_1']*XO_proj + PARAMS['w_2']*OX_proj + PARAMS['V']*(site_coherence+site_coherence.dag())
     if abs(PARAMS['alpha_EM'])>0:
         L += opt.L_BMME(H[1], tensor(sigma,I), PARAMS, ME_type='nonsecular', site_basis=True, silent=silent)
         L_add += opt.L_BMME(tensor(H_unshifted,I), tensor(sigma,I), PARAMS, ME_type='nonsecular',                                 site_basis=True, silent=silent)
