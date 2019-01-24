@@ -237,7 +237,6 @@ def RC_mapping(args, silent=False, shift=True, site_basis=True, parity_flip=Fals
     #H_dim_full = w_1*XO*XO.dag() + w_2*w_1*OX*OX.dag() + w_xx*XX*XX.dag() +                    V*((SIGMA_m1+SIGMA_m1.dag())*(SIGMA_m2+SIGMA_m2.dag()))
 
 
-
 def rate_operators(args):
     # we define all of the RC parameters by the underdamped spectral density
     w_1, w_2, w_xx, V = args['w_1'], args['w_2'], args['w_xx'], args['V']

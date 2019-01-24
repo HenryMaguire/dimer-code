@@ -80,7 +80,8 @@ def calculate_steadystate_L(L, fill_factor=500, tol=1e-8, persistent=False,
 
 
 def calculate_converged_steadystate(PARAMS, conv_percent_tol=1e-2, etol=1e-8, N_min=3, N_max=10,
-                          method="direct", maxiter=6000, v0=None, observable='sigma_x', additive=False):
+                          method="direct", maxiter=6000, v0=None, observable='sigma_x', 
+                          additive=False, threshold=0., local=False):
     converged = False
     PARAMS.update({'N_1':N_min, 'N_2':N_min, 'exc':N_min})
     H, L, L_add = 0,0,0 #get_H_and_L(PARAMS, silent=True)
@@ -91,7 +92,10 @@ def calculate_converged_steadystate(PARAMS, conv_percent_tol=1e-2, etol=1e-8, N_
     while not converged:
         if N<8:
             silent = True
-        H, L, L_add = get_H_and_L(PARAMS, silent=silent)
+        if local:
+            H, L, L_add = get_H_and_L_local(PARAMS, silent=silent, threshold=threshold)
+        else:
+            H, L, L_add = get_H_and_L(PARAMS, silent=silent, threshold=threshold)
         if additive:
             L = L_add
         op = make_expectation_operators(PARAMS)[observable]
