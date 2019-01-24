@@ -234,7 +234,7 @@ def J_minimal_hard(omega, Gamma, omega_0, cutoff):
 def J_flat(omega, Gamma, omega_0):
     return Gamma#/(2*np.pi)
 
-def J_underdamped(omega, alpha, Gamma, omega_0):
+def J_underdamped(omega, alpha, omega_0, Gamma=0.):
     return alpha*Gamma*pow(omega_0,2)*omega/(pow(pow(omega_0,2)-pow(omega,2),2)+(Gamma**2 *omega**2))
 
 def J_overdamped(omega, alpha, wc):

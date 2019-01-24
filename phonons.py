@@ -122,7 +122,7 @@ def RCME_operators(eVals, eVecs, A_1, A_2, gamma_1, gamma_2, beta_1, beta_2,
                     Chi_1 += 0.5*np.pi*e_jk*gamma_1 * coth(e_jk * beta_1 / 2)*A_jk_1*outer_eigen
                     Xi_1 += 0.5*np.pi*e_jk*gamma_1 * A_jk_1 * outer_eigen
                 else:
-                    Chi_1 += np.pi*gamma_1*A_jk_1*outer_eigen/beta_1 # Just return coefficients which are left over
+                    Chi_1 += np.pi*gamma_1*A_jk_1*outer_eigen/beta_1 # Limit as omega-> 0 is 2*gamma/beta
                     #Xi += 0 #since J_RC goes to zero
             A_jk_2 = A_2.matrix_element(eVecs[j].dag(), eVecs[k])
             if sp.absolute(A_jk_2) > 0:

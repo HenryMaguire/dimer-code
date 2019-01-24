@@ -45,37 +45,46 @@ def cauchyIntegrands(omega, beta, J, alpha, wc, ver):
 def integral_converge(f, a, omega):
     x = 30
     I = 0
-    while abs(f(x))>0.01:
+    while abs(f(x))>1e-6:
         print a, x
         I += integrate.quad(f, a, x, weight='cauchy', wvar=omega)[0]
         a+=30
         x+=30
     return I # Converged integral
 
-def Gamma(omega, beta, J, alpha, wc, imag_part=True):
+def DecayRate(omega, beta, J, alpha, w0, imag_part=True, Gamma=0.):
     G = 0
     # Here I define the functions which "dress" the integrands so they
     # have only 1 free parameter for Quad.
-    F_p = (lambda x: (cauchyIntegrands(x, beta, J, alpha, wc, 1)))
-    F_m = (lambda x: (cauchyIntegrands(x, beta, J, alpha, wc, -1)))
-    F_0 = (lambda x: (cauchyIntegrands(x, beta, J, alpha, wc, 0)))
+    F_p = (lambda x: (cauchyIntegrands(x, beta, J, alpha, w0, 1)))
+    F_m = (lambda x: (cauchyIntegrands(x, beta, J, alpha, w0, -1)))
+    F_0 = (lambda x: (cauchyIntegrands(x, beta, J, alpha, w0, 0)))
     w='cauchy'
     if omega>0.:
         # These bits do the Cauchy integrals too
-        G = (np.pi/2)*(coth(beta*omega/2.)-1)*J(omega,alpha, wc)
+        G = (np.pi/2)*(coth(beta*omega/2.)-1)*J(omega,alpha, w0)
         if imag_part:
             G += (1j/2.)*(integral_converge(F_m, 0,omega))
             G -= (1j/2.)*(integral_converge(F_p, 0,-omega))
 
         #print integrate.quad(F_m, 0, n, weight='cauchy', wvar=omega), integrate.quad(F_p, 0, n, weight='cauchy', wvar=-omega)
     elif omega==0.:
-        G = (np.pi/2)*(2*alpha/beta)
-        # The limit as omega tends to zero is zero for superohmic case?
+        #G =  #  old 
+        if J == J_minimal:
+            G=2*alpha/(beta*w0)
+        elif J == J_multipolar:
+            G = 0
+        elif J == J_underdamped:
+            print 'TRUE'
+            print alpha, Gamma, beta, w0
+            G = (pi/2)*(2*alpha*Gamma)/(beta*(w0**2))
+        else:
+            raise ValueError("Only supports Ohmic, Cubic or Lorenztian spectral densities")
         if imag_part:
             G += -(1j)*integral_converge(F_0, -1e-12,0)
         #print (integrate.quad(F_0, -1e-12, 20, weight='cauchy', wvar=0)[0])
     elif omega<0.:
-        G = (np.pi/2)*(coth(beta*abs(omega)/2.)+1)*J(abs(omega),alpha, wc)
+        G = (np.pi/2)*(coth(beta*abs(omega)/2.)+1)*J(abs(omega),alpha, w0)
         if imag_part:
             G += (1j/2.)*integral_converge(F_m, 0,-abs(omega))
             G -= (1j/2.)*integral_converge(F_p, 0,abs(omega))
@@ -98,7 +107,7 @@ def L_non_rwa(H_vib, sigma, PARAMS, silent=False, site_basis=True):
         for j in xrange(d_dim):
             eta = eVals[i]-eVals[j]
             aij = A.matrix_element(eVecs[i].dag(), eVecs[j])
-            g = Gamma(eta, beta, J, alpha, w_1, imag_part=False)
+            g = DecayRate(eta, beta, J, alpha, w_1, imag_part=False)
             if (abs(g)>0) and (abs(aij)>0):
                 G+=g*aij*eVecs[i]*(eVecs[j].dag())
     eVecs = np.transpose(np.array([v.dag().full()[0] for v in eVecs])) # get into columns of evecs
@@ -128,7 +137,7 @@ def nonRWA_function(idx_list, **kwargs):
     op_contrib = 0*A
     for i, j in idx_list:
         eta = eVals[i]-eVals[j]
-        g = Gamma(eta, beta, J, alpha, w_1, imag_part=False)
+        g = DecayRate(eta, beta, J, alpha, w_1, imag_part=False)
         aij = A.matrix_element(eVecs[i].dag(), eVecs[j])
         if (abs(g)>0) and (abs(aij)>0):
             op_contrib+= g*aij*eVecs[i]*(eVecs[j].dag())
@@ -169,13 +178,13 @@ def L_non_rwa_par(H_vib, sigma, args, silent=False, site_basis=True):
 
 
 def L_BMME(H_vib, A, args, ME_type='nonsecular', site_basis=True, silent=False):
-    Gamma, T, w_1, J, num_cpus = args['alpha_EM'], args['T_EM'], args['w_1'],args['J'], args['num_cpus']
+
     operators = eval(ME_type+'_ops') # not tested
     
     #Construct non-secular liouvillian
     ti = time.time()
     eVals, eVecs = H_vib.eigenstates()
-    if num_cpus <= 1:
+    if args['num_cpus'] <= 1:
         operators = eval(ME_type+'_ops')
         X_ops = operators(eVals, eVecs, A, args, silent=False)
     else:
@@ -199,7 +208,6 @@ def nonsecular_function(idx_list, **kwargs):
     eVals = kwargs['eVals']
     T = kwargs['T_EM']
     w_1, Gamma, J = kwargs['w_1'], kwargs['alpha_EM'], kwargs['J']
-    
     zero = 0*A
     X = np.array([zero, zero, zero, zero]) # Initialise operators
     for i, j in idx_list:
@@ -273,7 +281,7 @@ def L_nonsecular(H_vib, A, args, site_basis=True, silent=False):
     #Construct non-secular liouvillian
     ti = time.time()
     eVals, eVecs = H_vib.eigenstates()
-    if num_cpus <= 1:
+    if args['num_cpus'] <= 1:
         print "Serial mode on optical"
         print num_cpus
         X_ops = nonsecular_ops(eVals, eVecs, A, args, silent=False)

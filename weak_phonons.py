@@ -55,8 +55,8 @@ def Decay(omega, beta, J, alpha, Gamma, omega_0, imag_part=True):
 
         #print integrate.quad(F_m, 0, n, weight='cauchy', wvar=omega), integrate.quad(F_p, 0, n, weight='cauchy', wvar=-omega)
     elif omega==0.:
-        G = (np.pi/2)*(2*alpha/beta)
-        # The limit as omega tends to zero is zero for superohmic case?
+        #G = (np.pi/2)*(2*alpha/beta)
+        G = (pi*alpha*Gamma)/(beta*(omega_0**2))
         if imag_part:
             G += -(1j)*integral_converge(F_0, -1e-12,0)
         #print (integrate.quad(F_0, -1e-12, 20, weight='cauchy', wvar=0)[0])
@@ -163,7 +163,6 @@ def L_weak_phonon_SES(PARAMS, silent=False):
 
     eps = PARAMS['bias']
     V = PARAMS['V']
-
     energies, states = exciton_states(PARAMS)
     psi_m = states[0]
     psi_p = states[1]
@@ -196,7 +195,33 @@ def L_weak_phonon_SES(PARAMS, silent=False):
         print "Weak coupling Liouvillian took {:0.2f} seconds".format(time.time()-ti)
     return -L
 
-def get_wc_H_and_L(PARAMS,silent=False, threshold=0.):
+
+def L_wc_auto(H_vib, A, w_0, Gamma, T_EM, J, principal=False, 
+                                silent=False, alpha=0.):
+    import optical as opt
+    reload(opt)
+    ti = time.time()
+    eVals, eVecs = H_vib.eigenstates()
+    d_dim = len(eVals)
+    beta = beta_f(T_EM)
+    G = 0
+    for i in xrange(d_dim):
+        for j in xrange(d_dim):
+            eta = eVals[i]-eVals[j]
+            aij = A.matrix_element(eVecs[i].dag(), eVecs[j])
+            g = opt.DecayRate(eta, beta, J, alpha, w_0, imag_part=True, Gamma=Gamma)
+            if (abs(g)>0) and (abs(aij)>0):
+                G+=g*aij*eVecs[i]*(eVecs[j].dag())
+                
+    G_dag = G.dag()
+    # Initialise liouvilliian
+    L =  qt.spre(A*G) - qt.sprepost(G, A)
+    L += qt.spost(G_dag*A) - qt.sprepost(A, G_dag)
+    if not silent:
+        print "Full optical Liouvillian took {} seconds.".format(time.time()- ti)
+    return -L*0.5
+
+def get_wc_H_and_L(PARAMS,silent=False, threshold=0., auto=False):
     import optical as opt
     w_1 = PARAMS['w_1']
     w_2 = PARAMS['w_2']
@@ -205,18 +230,25 @@ def get_wc_H_and_L(PARAMS,silent=False, threshold=0.):
     sigma_m2 =  OO*OX.dag()
     eps = PARAMS['bias']
     V = PARAMS['V']
-    H = w_1*XO*XO.dag() + w_2*OX*OX.dag() + V*(OX*XO.dag() + XO*OX.dag())
-    L = L_weak_phonon_SES(PARAMS, silent=False)
-    N_1 = PARAMS['N_1']
-    N_2 = PARAMS['N_2']
-    exc = PARAMS['exc']
+    H = PARAMS['H_sub'] #w_1*XO*XO.dag() + w_2*OX*OX.dag() + V*(OX*XO.dag() + XO*OX.dag())
+    if auto:
+        print "Auto"
+        ti = time.time()
+        L = L_wc_auto(H, sigma_m1.dag()*sigma_m1, PARAMS['w0_1'], PARAMS['Gamma_1'], PARAMS['T_1'], J_underdamped, principal=True, 
+                                silent=False, alpha=PARAMS['alpha_1'])
+        L += L_wc_auto(H, sigma_m2.dag()*sigma_m2, PARAMS['w0_2'], PARAMS['Gamma_2'], PARAMS['T_2'], J_underdamped, principal=True, 
+                                silent=False, alpha=PARAMS['alpha_2'])
+        print "auto wc phonon liouvs took {} seconds".format(time.time() - ti)
+    else:
+        L = L_weak_phonon_SES(PARAMS, silent=False)
+
+    
     mu = PARAMS['mu']
 
     sigma = sigma_m1 + mu*sigma_m2
-    
     if abs(PARAMS['alpha_EM'])>0:
         L += opt.L_BMME(H, sigma, PARAMS, ME_type='nonsecular', site_basis=True, silent=silent)
-    
+    H += 0.5*pi*(PARAMS['alpha_1']*sigma_m1.dag()*sigma_m1 + PARAMS['alpha_2']*sigma_m2.dag()*sigma_m2)
     return H, L
 
 def get_dynamics(w_2=100., bias=10., V=10., alpha_1=1., alpha_2=1., end_time=1):
