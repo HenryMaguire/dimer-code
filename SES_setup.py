@@ -103,10 +103,9 @@ def get_H_and_L(PARAMS,silent=False, threshold=0.):
 
     I = enr_identity([N_1,N_2], exc)
     sigma = sigma_m1 + mu*sigma_m2
-    H_unshifted = PARAMS['w_1']*XO_proj + PARAMS['w_2']*OX_proj
     if abs(PARAMS['alpha_EM'])>0:
         L += opt.L_BMME(H[1], tensor(sigma,I), PARAMS, ME_type='nonsecular', site_basis=True, silent=silent)
-        L_add += opt.L_BMME(tensor(H_unshifted,I), tensor(sigma,I), PARAMS, ME_type='nonsecular',                                 site_basis=True, silent=silent)
+        L_add += opt.L_BMME(tensor(PARAMS["H_sub"],I), tensor(sigma,I), PARAMS, ME_type='nonsecular',                                 site_basis=True, silent=silent)
         #L_add += opt.L_phenom_SES(PARAMS)
     else:
         print "Not including optical dissipator"

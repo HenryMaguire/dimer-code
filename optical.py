@@ -204,6 +204,7 @@ def nonsecular_function(idx_list, **kwargs):
     X = np.array([zero, zero, zero, zero]) # Initialise operators
     for i, j in idx_list:
         # 0.5*np.pi*alpha*(N+1)
+        
         eps_ij = abs(eVals[i]-eVals[j])
 
         A_ij = A.matrix_element(eVecs[i].dag(), eVecs[j])
