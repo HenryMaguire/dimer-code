@@ -138,10 +138,6 @@ def get_H_and_L(PARAMS,silent=False, threshold=0.):
 
     I = enr_identity([N_1,N_2], exc)
     sigma = sigma_m1 + mu*sigma_m2
-<<<<<<< HEAD
-=======
-    H_unshifted = PARAMS['w_1']*XO_proj + PARAMS['w_2']*OX_proj + PARAMS['V']*(site_coherence+site_coherence.dag())
->>>>>>> 2898e71b728bcfe6cc73311cbbb833758ca49d9b
     if abs(PARAMS['alpha_EM'])>0:
         L += opt.L_BMME(H[1], tensor(sigma,I), PARAMS, ME_type='nonsecular', site_basis=True, silent=silent)
         L_add += opt.L_BMME(tensor(PARAMS["H_sub"],I), tensor(sigma,I), PARAMS, ME_type='nonsecular',                                 site_basis=True, silent=silent)
@@ -156,6 +152,29 @@ def get_H_and_L(PARAMS,silent=False, threshold=0.):
         print("Chopping reduced the sparsity from {:0.3f}% to {:0.3f}%".format(spar0, sparse_percentage(L)))
 
     return H, L, L_add
+
+def get_H_and_L_full(PARAMS,silent=False, threshold=0.):
+    L, H, A_1, A_2, PARAMS = RC.RC_mapping(PARAMS, silent=silent, shift=True, site_basis=True, parity_flip=PARAMS['parity_flip'])
+    N_1 = PARAMS['N_1']
+    N_2 = PARAMS['N_2']
+    exc = PARAMS['exc']
+    mu = PARAMS['mu']
+
+    I = enr_identity([N_1,N_2], exc)
+    sigma = sigma_m1 + mu*sigma_m2
+    L_EM=None
+    if abs(PARAMS['alpha_EM'])>0:
+        L_EM = opt.L_BMME(H[1], tensor(sigma,I), PARAMS, ME_type='nonsecular', site_basis=True, silent=silent)
+    else:
+        print "Not including optical dissipator"
+    spar0 = sparse_percentage(L)
+    if threshold:
+        L.tidyup(threshold)
+    if not silent:
+        print("Chopping reduced the sparsity from {:0.3f}% to {:0.3f}%".format(spar0, sparse_percentage(L)))
+
+    return H, L, L_EM, PARAMS
+
 
 def get_H_and_L_additive(PARAMS,silent=False, threshold=0.):
     L, H, A_1, A_2, PARAMS = RC.RC_mapping(PARAMS, silent=silent, shift=True, site_basis=True)
@@ -180,6 +199,21 @@ def get_H_and_L_additive(PARAMS,silent=False, threshold=0.):
         print("Chopping reduced the sparsity from {:0.3f}% to {:0.3f}%".format(spar0, sparse_percentage(L)))
 
     return H, L
+
+def get_wc_H_and_L(PARAMS):
+    import optical as opt
+    import weak_phonons_final as wp
+    reload(opt)
+    L = wp.weak_phonon(PARAMS['H_sub'], PARAMS)
+    
+    mu = PARAMS['mu']
+
+    sigma = sigma_m1 + mu*sigma_m2
+    if abs(PARAMS['alpha_EM'])>0:
+        #L +=  L_sec_wc_SES(PARAMS)
+        L += opt.L_BMME(PARAMS['H_sub'], sigma, PARAMS, ME_type='nonsecular', site_basis=True)
+    #H += 0.5*pi*(PARAMS['alpha_1']*sigma_m1.dag()*sigma_m1 + PARAMS['alpha_2']*sigma_m2.dag()*sigma_m2)
+    return PARAMS['H_sub'], -L
 
 def PARAMS_setup(bias=100., w_2=2000., V = 100., alpha=100.,
                                  T_EM=0., T_ph =300.,

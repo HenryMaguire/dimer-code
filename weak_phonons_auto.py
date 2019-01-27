@@ -118,7 +118,7 @@ def L_wc_auto(H_vib, A, w_0, Gamma, T, J, principal=False,
         print "Full optical Liouvillian took {} seconds.".format(time.time()- ti)
     return L
 
-def get_wc_H_and_L(PARAMS,silent=False, threshold=0.):
+def get_wc_H_and_L(PARAMS,silent=False, threshold=0., H = None):
     import optical as opt
     reload(opt)
     w_1 = PARAMS['w_1']
@@ -128,8 +128,10 @@ def get_wc_H_and_L(PARAMS,silent=False, threshold=0.):
     sigma_m2 =  OO*OX.dag()
     eps = PARAMS['bias']
     V = PARAMS['V']
-    H = PARAMS['H_sub'] #w_1*XO*XO.dag() + w_2*OX*OX.dag() + V*(OX*XO.dag() + XO*OX.dag())
-
+    if H == None:
+        H = PARAMS['H_sub'] #w_1*XO*XO.dag() + w_2*OX*OX.dag() + V*(OX*XO.dag() + XO*OX.dag())
+        H += 0.5*pi*PARAMS['alpha_1']*sigma_m1.dag()*sigma_m1
+        H += 0.5*pi*PARAMS['alpha_2']*sigma_m2.dag()*sigma_m2
     ti = time.time()
     L = L_wc_auto(H, sigma_m1.dag()*sigma_m1, PARAMS['w0_1'], PARAMS['Gamma_1'], PARAMS['T_1'], J_underdamped, principal=True, 
                             silent=False, alpha=PARAMS['alpha_1'])

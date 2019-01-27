@@ -2,7 +2,7 @@ import time
 
 import numpy as np
 import scipy as sp
-from numpy import pi
+from numpy import pi, sqrt
 from qutip import Qobj,basis, ket, mesolve, qeye, tensor, thermal_dm, destroy, steadystate, spost, spre, sprepost, enr_destroy, enr_identity, steadystate, to_super
 import multiprocessing
 from functools import partial
@@ -12,38 +12,35 @@ from utils import *
 
 
 
-def H_mapping_RC(H_sub, coupling_ops, Omega_1,
-                Omega_2, kap_1, kap_2, N_1, N_2, exc,
-                shift=True):
+def H_mapping_RC(args, shift=True):
     """ Builds RC Hamiltonian in excitation restricted subspace
 
     Input: Hamiltonian and system operators which couple to phonon bath 1 and 2
      Output: site basis Hamiltonian, all
     collapse operators in the enlarged space
     """
-
+    H_sub, coupling_ops = args['H_sub'], args['coupling_ops']
     I_sub = qeye(H_sub.shape[0])
-    I = enr_identity([N_1,N_2], exc)
-    shifts = [(kap_1**2)/Omega_1, (kap_2**2)/Omega_2]
+    I = enr_identity([args['N_1'],args['N_2']], args['exc'])
+    shifts = [args['shift_1'], args['shift_2']]
     if shift:
         for s, op in zip(shifts,coupling_ops):
             H_sub += s*op
 
     H_S = tensor(H_sub, I)
 
-    atemp = enr_destroy([N_1,N_2], exc)
+    atemp = enr_destroy([args['N_1'],args['N_2']], args['exc'])
 
     a_RC_exc = [tensor(I_sub, aa) for aa in atemp] # annhilation ops in exc restr basis
-    A_1 = a_RC_exc[0].dag() + a_RC_exc[0]
-    A_2 = a_RC_exc[1].dag() + a_RC_exc[1]
-    H_I1 = kap_1*tensor(coupling_ops[0], I)*A_1
-    H_I2 = kap_2*tensor(coupling_ops[1], I)*A_2
-
-    H_RC1 = Omega_1*a_RC_exc[0].dag()*a_RC_exc[0]
-    H_RC2 = Omega_2*a_RC_exc[1].dag()*a_RC_exc[1]
-
-    H = H_S + H_RC1 + H_RC2 - H_I1 - H_I2
-    return [H_sub, H], A_1, A_2
+    H = H_S
+    phonon_operators = []
+    for i in range(len(coupling_ops)):
+        A_i = a_RC_exc[i].dag() + a_RC_exc[i]
+        H_Ii = args['kappa_'+str(i+1)]*tensor(coupling_ops[i], I)*A_i
+        H_RCi = args['w0_'+str(i+1)]*a_RC_exc[i].dag()*a_RC_exc[i]
+        H += H_RCi - H_Ii
+        phonon_operators.append(A_i)
+    return [H_sub, H], phonon_operators
 
 
 def operator_func(idx_list, eVals=[], eVecs=[], A_1=[], A_2=[],
@@ -200,35 +197,40 @@ def liouvillian_build(H_RC, A_1, A_2, gamma_1, gamma_2,
     return H_RC, L
 
 
-def RC_mapping(args, silent=False, shift=True, site_basis=True, parity_flip=False):
-    H_sub = args['H_sub']
-    coupling_ops = args['coupling_ops']
-    # we define all of the RC parameters by the underdamped spectral density
-    w_1, w_2, w_xx, V = args['w_1'], args['w_2'], args['w_xx'], args['V']
-    T_1, T_2, mu = args['T_1'], args['T_2'], args['mu']
-    wRC_1, wRC_2, alpha_1, alpha_2 = args['w0_1'], args['w0_2'], args['alpha_1'], args['alpha_2']
-    N_1, N_2, exc = args['N_1'], args['N_2'], args['exc']
-    Gamma_1, Gamma_2 = args['Gamma_1'], args['Gamma_2']
-    gamma_1 = Gamma_1 / (2. * np.pi * wRC_1)
-    kappa_1 = np.sqrt(np.pi * alpha_1 * wRC_1 / 2.)  # coupling strength between the TLS and RC
+def underdamped_shift(alpha, Gamma, w0):
+    sfactor = sqrt(Gamma**2 -4*w0**2)
+    denom = sqrt(2)*(sqrt(Gamma**2 - 2*w0**2 - Gamma*sfactor)+sqrt(
+                        Gamma**2 - 2*w0**2 + Gamma*sfactor))
+    return pi*alpha*Gamma/denom
 
-    gamma_2 = Gamma_2 / (2. * np.pi * wRC_2)
-    
-    kappa_2 = np.sqrt(np.pi * alpha_2 * wRC_2 / 2.)
+def mapped_constants(w0, alpha_ph, Gamma):
+    gamma = Gamma / (2. * np.pi * w0)  # coupling between RC and residual bath
+    kappa= np.sqrt(np.pi * alpha_ph * w0 / 2.)  # coupling strength between the TLS and RC
+    shift = pi*alpha_ph/2.
+    """if Gamma>= 2*w0:
+        shift = pi*alpha_ph/2.#underdamped_shift(alpha_ph, Gamma, w0)
+    else:
+        print "Gamma must >= 2 w0, but Gamma={} and w0={}. Proceeding without shift.".format(Gamma, w0)
+        shift = 0."""
+    return w0, gamma, kappa, shift
+
+def RC_mapping(args, silent=False, shift=True, site_basis=True, parity_flip=False):
+    wRC_1, gamma_1, kappa_1, shift_1 = mapped_constants(args['w0_1'], args['alpha_1'], args['Gamma_1'])
+    wRC_2, gamma_2, kappa_2, shift_2 = mapped_constants(args['w0_2'], args['alpha_2'], args['Gamma_2'])
+
     if parity_flip:
         kappa_2*=-1 # Relative sign flip
-    shift1, shift2 = (kappa_1**2)/wRC_1, (kappa_2**2)/wRC_2
+    
+    #shift1, shift2 = (kappa_1**2)/wRC_1, (kappa_2**2)/wRC_2
     if not shift:
-        shift1, shift2 = 0., 0.
-    args.update({'gamma_1': gamma_1, 'gamma_2': gamma_2, 'w0_1': wRC_1, 'w0_2': wRC_2, 'kappa_1':kappa_1, 'kappa_2':kappa_2,'shift1':shift1, 'shift2':shift2})
+        shift_1, shift_1 = 0., 0.
+    args.update({'gamma_1': gamma_1, 'gamma_2': gamma_2, 'w0_1': wRC_1, 'w0_2': wRC_2, 'kappa_1':kappa_1, 'kappa_2':kappa_2,'shift_1':shift_1, 'shift_2':shift_1})
     #print args
-    H, A_1, A_2 = H_mapping_RC(H_sub, coupling_ops, wRC_1,
-                              wRC_2, kappa_1, kappa_2, N_1, N_2, exc,
-                                                shift=True)
-
+    H, phonon_operators = H_mapping_RC(args, shift=True)
+    A_1, A_2 = phonon_operators[0], phonon_operators[1]
     H_RC, L_RC =  liouvillian_build(H[1], A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2,
-                            T_1, T_2, num_cpus=args['num_cpus'], silent=silent, site_basis=site_basis)
-    full_size = (H_sub.shape[0]*N_1*N_2)**2
+                            args['T_1'], args['T_2'], num_cpus=args['num_cpus'], silent=silent, site_basis=site_basis)
+    full_size = (args['H_sub'].shape[0]*args['N_1']*args['N_2'])**2
     if not silent:
         note = (L_RC.shape[0], L_RC.shape[0], full_size, full_size)
         print "It is {}by{}. The full basis would be {}by{}".format(L_RC.shape[0],
