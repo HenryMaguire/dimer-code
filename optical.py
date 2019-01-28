@@ -42,15 +42,37 @@ def cauchyIntegrands(omega, beta, J, alpha, wc, ver):
         F = J(omega, alpha, wc)
     return F
 
-def integral_converge(f, a, omega):
+"""def integral_converge(f, a, omega):
     x = 30
     I = 0
     while abs(f(x))>1e-6:
-        print a, x
         I += integrate.quad(f, a, x, weight='cauchy', wvar=omega)[0]
         a+=30
         x+=30
-    return I # Converged integral
+    return I # Converged integral"""
+
+def int_conv(f, a, inc, omega):
+        x = inc
+        I = 0.
+        while abs(f(x))>1E-5:
+            #print inc, x, f(x), a, omega
+            I += integrate.quad(f, a, x, weight='cauchy', wvar=omega)[0]
+            a+=inc
+            x+=inc
+            #time.sleep(0.1)
+        #print "Integral converged to {} with step size of {}".format(I, inc)
+        return I # Converged integral
+
+def integral_converge(f, a, omega):
+    for inc in [300., 200., 100., 50., 25., 10, 5., 1, 0.5]:
+        inc += np.random.random()/10
+        try:
+            return int_conv(f, a, inc, omega) 
+        except:
+            if inc == 0.5:
+                raise ValueError("Integrals couldn't converge")
+            else:
+                pass
 
 def DecayRate(omega, beta, J, alpha, w0, imag_part=True, Gamma=0.):
     G = 0
@@ -75,8 +97,6 @@ def DecayRate(omega, beta, J, alpha, w0, imag_part=True, Gamma=0.):
         elif J == J_multipolar:
             G = 0
         elif J == J_underdamped:
-            print 'TRUE'
-            print alpha, Gamma, beta, w0
             G = (pi/2)*(2*alpha*Gamma)/(beta*(w0**2))
         else:
             raise ValueError("Only supports Ohmic, Cubic or Lorenztian spectral densities")
@@ -186,15 +206,12 @@ def L_BMME(H_vib, A, args, ME_type='nonsecular', site_basis=True, silent=False):
     eVals, eVecs = H_vib.eigenstates()
     if args['num_cpus'] <= 1:
         operators = eval(ME_type+'_ops')
-        X_ops = operators(eVals, eVecs, A, args, silent=False)
+        X_ops = operators(eVals, eVecs, A, args, silent=silent)
     else:
         operators = eval(ME_type+'_ops_par')
-        X_ops = operators(eVals, eVecs, A, args, silent=False)
-    # rotate operators to required basis
-    if site_basis:
-        X1, X2, X3, X4 = (op for op in X_ops)
-    else:
-        X1, X2, X3, X4 = change_basis(X_ops, eVals, eVecs, eig_to_site=False)
+        X_ops = operators(eVals, eVecs, A, args, silent=silent)
+    X1, X2, X3, X4 = (op for op in X_ops)
+    #X1, X2, X3, X4 = change_basis(X_ops, eVals, eVecs, eig_to_site=False) # rotate operators to required basis
     L = spre(A*X1) -sprepost(X1,A)+spost(X2*A)-sprepost(A,X2)
     L+= spre(A.dag()*X3)-sprepost(X3, A.dag())+spost(X4*A.dag())-sprepost(A.dag(), X4)
     if not silent:
@@ -490,6 +507,7 @@ def L_phenom_old(I, args):
 
     print "It took {} seconds to build the phenomenological Liouvillian".format(time.time()-ti)
     return L
+
 
 
 if __name__ == "__main__":

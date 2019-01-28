@@ -75,8 +75,8 @@ def exciton_states(PARS, shift=False):
     w_1, w_2, V, eps = PARS['w_1'], PARS['w_2'],PARS['V'], PARS['bias']
     if shift:
         try:
-            w_1 += PARS['shift1']
-            w_2 += PARS['shift2']
+            w_1 += PARS['shift_1']
+            w_2 += PARS['shift_2']
         except KeyError as e:
             print "No RC mapping performed yet."
             raise KeyError
@@ -275,7 +275,7 @@ def coth(x):
 
 def plot_UD_SD(Gamma, alpha, w_0, eps=2000., ax=None):
     Omega = np.linspace(0,eps,10000)
-    J_w = np.array([J_underdamped(w, alpha, Gamma, w_0) for w in Omega])
+    J_w = np.array([J_underdamped(w, alpha, w_0, Gamma=Gamma) for w in Omega])
     show_im = ax
     if ax is None:
         f, ax = plt.subplots(1,1)
@@ -302,7 +302,7 @@ def plot_UD_SD_PARAMS(PARAMS, ax=None):
 
 def SD_peak_position(Gamma, alpha, w_0):
     Omega = np.linspace(0,w_0*50,10000)
-    J_w = np.array([J_underdamped(w, alpha, Gamma, w_0) for w in Omega])
+    J_w = np.array([J_underdamped(w, alpha, w_0, Gamma=0.) for w in Omega])
     return Omega[np.argmax(J_w)]
 
 

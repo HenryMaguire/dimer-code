@@ -2,11 +2,11 @@ import numpy as np
 import scipy as sp
 from scipy import integrate
 import qutip as qt
-from qutip import destroy, tensor, qeye, spost, spre, sprepost
+from qutip import destroy, tensor, qeye, spost, spre, sprepost, basis
 import time
-from utils import J_minimal, beta_f, J_minimal_hard, J_underdamped, J_multipolar
+from utils import J_minimal, beta_f, J_minimal_hard, J_multipolar, lin_construct, exciton_states, rate_up, rate_down
 import sympy
-from numpy import pi
+from numpy import pi, sqrt
 
 def coth(x):
     return float(sympy.coth(x))
@@ -27,19 +27,20 @@ def cauchyIntegrands(omega, beta, J, Gamma, w0, ver, alpha=0.):
 def int_conv(f, a, inc, omega):
         x = inc
         I = 0.
-        while abs(f(x))>1E-5:
-            #print ince x, f(x), a, omega
+        while abs(f(x))>1E-3:
+            #print inc, x, f(x), a, omega
             I += integrate.quad(f, a, x, weight='cauchy', wvar=omega)[0]
             a+=inc
             x+=inc
             #time.sleep(0.1)
-        print "Integral converged to {} with step size of {}".format(I, inc)
+        #print "Integral converged to {} with step size of {}".format(I, inc)
         return I # Converged integral
 
 def integral_converge(f, a, omega):
-    for inc in [200., 100., 50., 25., 10, 5., 1, 0.5]:
+    for inc in [300., 200., 100., 50., 25., 10, 5., 1, 0.5]:
+        inc += np.random.random()/10
         try:
-            return int_conv(f, a, inc, omega)
+            return int_conv(f, a, inc, omega) 
         except:
             if inc == 0.5:
                 raise ValueError("Integrals couldn't converge")
@@ -65,7 +66,7 @@ def DecayRate(omega, beta, J, Gamma, w0, imag_part=True, c=1, alpha=0.):
 
         #print integrate.quad(F_m, 0, n, weight='cauchy', wvar=omega), integrate.quad(F_p, 0, n, weight='cauchy', wvar=-omega)
     elif omega==0.:
-        if J == J_underdamped:
+        if J == _J_underdamped:
             G = (pi*alpha*Gamma)/(beta*(w0**2))
         elif J == J_multipolar:
             G=0.
@@ -85,7 +86,7 @@ def DecayRate(omega, beta, J, Gamma, w0, imag_part=True, c=1, alpha=0.):
         #print integrate.quad(F_m, 0, n, weight='cauchy', wvar=-abs(omega)), integrate.quad(F_p, 0, n, weight='cauchy', wvar=abs(omega))
     return G
 
-def L_non_rwa(H_vib, A, w_0, Gamma, T_EM, J, principal=False, 
+def L_weak_phonon_auto(H_vib, A, w_0, Gamma, T_EM, J, principal=False, 
                                 silent=False, alpha=0.):
     ti = time.time()
     beta = beta_f(T_EM)
@@ -110,8 +111,9 @@ def L_non_rwa(H_vib, A, w_0, Gamma, T_EM, J, principal=False,
     if not silent:
         print "Calculating non-RWA Liouvilliian took {} seconds.".format(time.time()-ti)
     return -L
-del J_underdamped
-def J_underdamped(omega, Gamma, omega_0, alpha=0.):
+
+
+def _J_underdamped(omega, Gamma, omega_0, alpha=0.):
     return alpha*Gamma*(omega_0**2)*omega/(((omega_0**2)-(omega**2))**2+(Gamma*omega)**2)
 
 def weak_phonon(H_sub, PARAMS):
@@ -119,21 +121,32 @@ def weak_phonon(H_sub, PARAMS):
     L = 0
     for i in range(2):
         #print c_ops[i], PARAMS['w0_'+str(i+1)], PARAMS['Gamma_'+str(i+1)], PARAMS['alpha_'+str(i+1)]
-        L+= L_non_rwa(H_sub, c_ops[i], PARAMS['w0_'+str(i+1)], 
-                        PARAMS['Gamma_'+str(i+1)], PARAMS['T_'+str(i+1)], J_underdamped, 
+        L+= L_weak_phonon_auto(H_sub, c_ops[i], PARAMS['w0_'+str(i+1)], 
+                        PARAMS['Gamma_'+str(i+1)], PARAMS['T_'+str(i+1)], _J_underdamped, 
                         principal=True, silent=True, alpha=PARAMS['alpha_'+str(i+1)]) # need principal value parts
+    return -L
+
+def L_sec_wc_SES(args):
+    ti = time.time()
+    eps, V, w_xx = args['bias'], args['V'], args['w_xx']
+    mu, gamma, w_1, J, T = args['mu'], args['alpha_EM'], args['w_1'], args['J'], args['T_EM']
+    energies, states = exciton_states(args)
+    dark, lm = states[0], energies[0]
+    bright, lp = states[1], energies[1]
+    OO = basis(3,0)
+    eta = np.sqrt(4*V**2+eps**2)
+    pre_1 = (sqrt(eta-eps)+mu*sqrt(eta+eps))/sqrt(2*eta) # A_wxx_lp
+    pre_2 = -(sqrt(eta+eps)-mu*sqrt(eta-eps))/sqrt(2*eta) # A_wxx_lm
+    pre_3 = (sqrt(eta+eps)+mu*sqrt(eta-eps))/sqrt(2*eta) # A_lp
+    pre_4 = (sqrt(eta-eps)-mu*sqrt(eta+eps))/sqrt(2*eta) # A_lm
+    #print pre_p, pre_p
+    A_lp = pre_3*OO*bright.dag()
+    A_lm= pre_4*OO*dark.dag()
+    L = rate_up(lp, T, gamma, J, w_1)*lin_construct(A_lp.dag())
+    L += rate_up(lm, T, gamma, J, w_1)*lin_construct(A_lm.dag())
+    L += rate_down(lp, T, gamma, J, w_1)*lin_construct(A_lp)
+    L += rate_down(lm, T, gamma, J, w_1)*lin_construct(A_lm)
+    #print [(i, cf) for i, cf in enumerate(coeffs)]
+
+    print "It took {} seconds to build the phenomenological Liouvillian".format(time.time()-ti)
     return L
-
-def get_wc_H_and_L(PARAMS):
-    import optical as opt
-    reload(opt)
-    L = weak_phonon(PARAMS['H_sub'], PARAMS)
-    
-    mu = PARAMS['mu']
-
-    sigma = sigma_m1 + mu*sigma_m2
-    if abs(PARAMS['alpha_EM'])>0:
-        L +=  L_sec_wc_SES(PARAMS)
-        #L += opt.L_BMME(H, sigma, PARAMS, ME_type='secular', site_basis=True, silent=silent)
-    #H += 0.5*pi*(PARAMS['alpha_1']*sigma_m1.dag()*sigma_m1 + PARAMS['alpha_2']*sigma_m2.dag()*sigma_m2)
-    return H, -L

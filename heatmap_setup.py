@@ -93,9 +93,9 @@ def calculate_converged_steadystate(PARAMS, conv_percent_tol=1e-2, etol=1e-8, N_
         if N<8:
             silent = True
         if local:
-            H, L, L_add = get_H_and_L_local(PARAMS, silent=silent, threshold=threshold)
+            H, L, L_add, PARAMS = get_H_and_L_local(PARAMS, silent=silent, threshold=threshold)
         else:
-            H, L, L_add = get_H_and_L(PARAMS, silent=silent, threshold=threshold)
+            H, L, L_add, PARAMS = get_H_and_L(PARAMS, silent=silent, threshold=threshold)
         if additive:
             L = L_add
         op = make_expectation_operators(PARAMS)[observable]
@@ -206,9 +206,10 @@ def heat_map_calculator(PARAMS,
             silent = True
             if PARAMS['N_1'] >=8:
                 silent = False
+            # if trucation size is a parameter which gets changed then do things differently
             if ('N_1' in x_axis_parameters) or ('exc_diff' in y_axis_parameters):
                 # don't use converged steadystate solver
-                H, L, L_add = get_H_and_L(PARAMS, silent=silent, threshold=threshold)
+                H, L, L_add, PARAMS = get_H_and_L(PARAMS, silent=silent, threshold=threshold)
                 if additive:
                     print "Using additive theory"
                     L = L_add
@@ -240,6 +241,7 @@ def heat_map_calculator(PARAMS,
                     N_max=4
                 if additive and PARAMS['V']==0.:
                     N_min = 4
+                print print_PARAMS(PARAMS)
                 ss_array[i][j], info_array[i][j] = calculate_converged_steadystate(PARAMS, conv_percent_tol=conv_percent_tol,                                                                                 etol=etol, N_min=N_min, N_max=N_max,method="direct",                                                                       maxiter=6000, v0=None, observable=conv_obs, additive=additive)
                 print "calculation converged - {:0.1f}, {:0.1f} ({}/{})".format(x, y, k, len(x_values)*len(y_values))
                 k+=1
