@@ -27,7 +27,7 @@ def cauchyIntegrands(omega, beta, J, Gamma, w0, ver, alpha=0.):
 def int_conv(f, a, inc, omega):
         x = inc
         I = 0.
-        while abs(f(x))>1E-3:
+        while abs(f(x))>2E-3:
             #print inc, x, f(x), a, omega
             I += integrate.quad(f, a, x, weight='cauchy', wvar=omega)[0]
             a+=inc
@@ -38,7 +38,7 @@ def int_conv(f, a, inc, omega):
 
 def integral_converge(f, a, omega):
     for inc in [300., 200., 100., 50., 25., 10, 5., 1, 0.5]:
-        inc += np.random.random()/10
+        inc += np.random.random()
         try:
             return int_conv(f, a, inc, omega) 
         except:

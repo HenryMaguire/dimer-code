@@ -95,48 +95,7 @@ def exciton_states(PARS, shift=False):
 #(list of which subsystems you want to keep),
 #dims and excitations are the same as the ones you send to the other enr functions
 
-def ENR_ptrace(rho,sel,dims,excitations):
-    if isinstance(sel, int):
-        sel = np.array([sel])
-    else:
-        sel = np.asarray(sel)
 
-    if (sel < 0).any() or (sel >= len(rho.dims[0])).any():
-        raise TypeError("Invalid selection index in ptrace.")
-
-    #dimensions
-    #enr stuff for the original state
-    nstates, state2idx, idx2state = qt.enr_state_dictionaries(dims, excitations)
-
-    #number of states in selection
-    drho=rho.dims[0]
-    dims_short= np.asarray(drho).take(sel)
-    nstates2, state2idx2, idx2state2 = qt.enr_state_dictionaries(dims_short.tolist(), excitations)
-
-    # this is a list of the dimensions of the system one has traced out
-    rest = np.setdiff1d(np.arange(len(drho)), sel)
-
-    #rest_short= np.asarray(drho).take(rest)
-    #nstates3, state2idx3, idx2state3 = enr_state_dictionaries(rest_short.tolist(), excitations)
-
-    #construct matrix to return the new Density matrix
-    rhout = np.zeros((nstates2,nstates2),dtype=np.complex64)
-
-    for ind,state in idx2state.items():
-        for ind2,state2 in idx2state.items():
-            #if the parts of the states of the systems(s) being traced out are diagonal, add this to the new DM
-            if  np.all(np.asarray(state).take(rest) == np.asarray(state2).take(rest)):
-
-                rhout[state2idx2[tuple(np.asarray(state).take(sel))],
-                      state2idx2[tuple(np.asarray(state2).take(sel))]] += rho.data[state2idx[state],state2idx[state2]]
-
-
-    dims_kept0 = np.asarray(rho.dims[0]).take(sel)
-    dims_kept1 = np.asarray(rho.dims[0]).take(sel)
-    rho1_dims = [dims_kept0.tolist(), dims_kept1.tolist()]
-    rho1_shape = [nstates2, nstates2]
-
-    return qt.Qobj(rhout,rho1_dims,rho1_shape)
 
 def dimer_mutual_information(rho, args):
     N, exc = args['N_1'], args['exc']
@@ -386,3 +345,80 @@ def chop(X, threshold=1e-7):
     _X = copy.deepcopy(X)
     _X.tidyup(threshold)
     return _X
+
+from qutip import enr_state_dictionaries, Qobj
+def ENR_ptrace(rho, sel, excitations):
+    """
+    Partial trace for ENR states.   
+    Parameters
+    ----------
+    rho : Qobj
+        Qobj of an ENR system defined through  enr_fock enr_identity enr_thermal_dm enr_destroy or output from a solver
+        
+    sel : int/list
+            An ``int`` or ``list`` of components to keep after partial trace.  
+        
+    excitations : integer
+        The maximum number of excitations that are to be included in the
+        state space.  Should be consistent with the same assumptions used to construct rho.
+    
+    Returns
+    -------
+    oper : qobj
+        Quantum object representing partial trace with selected components
+        remaining.
+    
+    Notes
+    -----
+    The default Qobj.ptrace() will fail with ENR systems.  This should be used instead.
+    
+    """
+    if isinstance(sel, int):
+        sel = np.array([sel])
+    else:
+        sel = np.asarray(sel)
+
+    if (sel < 0).any() or (sel >= len(rho.dims[0])).any():
+        raise TypeError("Invalid selection index in ptrace.")
+    
+    drho=rho.dims[0]
+    
+    ############
+    #dimensions
+    ####################
+    #enr definitions for the original state
+    nstates, state2idx, idx2state = enr_state_dictionaries(drho, excitations)
+    
+
+    
+    ################
+    #definition of number of states in selection
+    ######################
+    #
+    
+    dims_short= np.asarray(drho).take(sel)
+    nstates2, state2idx2, idx2state2 = enr_state_dictionaries(dims_short.tolist(), excitations)
+
+    
+    # this is a list of the dimensions of the system one has traced out
+    rest = np.setdiff1d(np.arange(len(drho)), sel)
+    
+       
+    #construct matrix to return the new Density matrix
+    rhout = np.zeros((nstates2,nstates2),dtype=np.complex64)
+    
+    for ind,state in idx2state.items():
+        for ind2,state2 in idx2state.items():
+            #if the parts of the states of the systems(s) being traced out are diagonal, add this to the new DM
+            if  np.all(np.asarray(state).take(rest) == np.asarray(state2).take(rest)):
+
+                rhout[state2idx2[tuple(np.asarray(state).take(sel))],
+                      state2idx2[tuple(np.asarray(state2).take(sel))]] += rho.data[state2idx[state],
+                                                                                    state2idx[state2]]
+                
+    
+    dims_kept0 = np.asarray(drho).take(sel)
+    rho1_dims = [dims_kept0.tolist(), dims_kept0.tolist()]
+    rho1_shape = [nstates2, nstates2]
+    
+    return Qobj(rhout,rho1_dims,rho1_shape)

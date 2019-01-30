@@ -54,7 +54,7 @@ def cauchyIntegrands(omega, beta, J, alpha, wc, ver):
 def int_conv(f, a, inc, omega):
         x = inc
         I = 0.
-        while abs(f(x))>1E-5:
+        while abs(f(x))>1E-9:
             #print inc, x, f(x), a, omega
             I += integrate.quad(f, a, x, weight='cauchy', wvar=omega)[0]
             a+=inc
@@ -88,12 +88,10 @@ def DecayRate(omega, beta, J, alpha, w0, imag_part=True, Gamma=0.):
         if imag_part:
             G += (1j/2.)*(integral_converge(F_m, 0,omega))
             G -= (1j/2.)*(integral_converge(F_p, 0,-omega))
-
-        #print integrate.quad(F_m, 0, n, weight='cauchy', wvar=omega), integrate.quad(F_p, 0, n, weight='cauchy', wvar=-omega)
     elif omega==0.:
         #G =  #  old 
         if J == J_minimal:
-            G=2*alpha/(beta*w0)
+            G=alpha/(2*beta*w0)
         elif J == J_multipolar:
             G = 0
         elif J == J_underdamped:
@@ -102,13 +100,11 @@ def DecayRate(omega, beta, J, alpha, w0, imag_part=True, Gamma=0.):
             raise ValueError("Only supports Ohmic, Cubic or Lorenztian spectral densities")
         if imag_part:
             G += -(1j)*integral_converge(F_0, -1e-12,0)
-        #print (integrate.quad(F_0, -1e-12, 20, weight='cauchy', wvar=0)[0])
     elif omega<0.:
         G = (np.pi/2)*(coth(beta*abs(omega)/2.)+1)*J(abs(omega),alpha, w0)
         if imag_part:
             G += (1j/2.)*integral_converge(F_m, 0,-abs(omega))
             G -= (1j/2.)*integral_converge(F_p, 0,abs(omega))
-        #print integrate.quad(F_m, 0, n, weight='cauchy', wvar=-abs(omega)), integrate.quad(F_p, 0, n, weight='cauchy', wvar=abs(omega))
     return G
 
 def L_non_rwa(H_vib, sigma, PARAMS, silent=False, site_basis=True):
@@ -127,23 +123,17 @@ def L_non_rwa(H_vib, sigma, PARAMS, silent=False, site_basis=True):
         for j in xrange(d_dim):
             eta = eVals[i]-eVals[j]
             aij = A.matrix_element(eVecs[i].dag(), eVecs[j])
-            g = DecayRate(eta, beta, J, alpha, w_1, imag_part=False)
-            if (abs(g)>0) and (abs(aij)>0):
-                G+=g*aij*eVecs[i]*(eVecs[j].dag())
-    eVecs = np.transpose(np.array([v.dag().full()[0] for v in eVecs])) # get into columns of evecs
-    eVecs_inv = sp.linalg.inv(eVecs) # has a very low overhead
-    if site_basis:
-        G = to_site_basis(G, eVals, eVecs, eVecs_inv)
-    else:
-        A = to_eigenbasis(A, eVals, eVecs, eVecs_inv)
-        H_vib = to_eigenbasis(H_vib, eVals, eVecs, eVecs_inv)
+            if (abs(aij)>0):
+                g = DecayRate(eta, beta, J, alpha, w_1, imag_part=False)
+                if (abs(g)>0):
+                    G+=g*aij*eVecs[i]*(eVecs[j].dag())
     G_dag = G.dag()
     # Initialise liouvilliian
     L =  qt.spre(A*G) - qt.sprepost(G, A)
     L += qt.spost(G_dag*A) - qt.sprepost(A, G_dag)
     if not silent:
         print "Full optical Liouvillian took {} seconds.".format(time.time()- ti)
-    return -L*0.5
+    return -L
 
 def nonRWA_function(idx_list, **kwargs):
 

@@ -1,4 +1,3 @@
-from SES_setup import *
 import time
 from qutip import build_preconditioner, steadystate
 

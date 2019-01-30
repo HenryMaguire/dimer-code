@@ -32,15 +32,14 @@ def H_mapping_RC(args, shift=True):
     atemp = enr_destroy([args['N_1'],args['N_2']], args['exc'])
 
     a_RC_exc = [tensor(I_sub, aa) for aa in atemp] # annhilation ops in exc restr basis
-    H = H_S
     phonon_operators = []
     for i in range(len(coupling_ops)):
         A_i = a_RC_exc[i].dag() + a_RC_exc[i]
         H_Ii = args['kappa_'+str(i+1)]*tensor(coupling_ops[i], I)*A_i
         H_RCi = args['w0_'+str(i+1)]*a_RC_exc[i].dag()*a_RC_exc[i]
-        H += H_RCi - H_Ii
+        H_S += (H_RCi - H_Ii)
         phonon_operators.append(A_i)
-    return [H_sub, H], phonon_operators
+    return [H_sub, H_S], phonon_operators
 
 
 def operator_func(idx_list, eVals=[], eVecs=[], A_1=[], A_2=[],
@@ -235,8 +234,7 @@ def RC_mapping(args, silent=False, shift=True, site_basis=True, parity_flip=Fals
         note = (L_RC.shape[0], L_RC.shape[0], full_size, full_size)
         print "It is {}by{}. The full basis would be {}by{}".format(L_RC.shape[0],
                                             L_RC.shape[0], full_size, full_size)
-    return -L_RC, [H[0], H_RC], A_1, A_2, args
-    #H_dim_full = w_1*XO*XO.dag() + w_2*w_1*OX*OX.dag() + w_xx*XX*XX.dag() +                    V*((SIGMA_m1+SIGMA_m1.dag())*(SIGMA_m2+SIGMA_m2.dag()))
+    return L_RC, [H[0], H_RC], A_1, A_2, args
 
 
 def rate_operators(args):

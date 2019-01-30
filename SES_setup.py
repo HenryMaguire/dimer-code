@@ -140,33 +140,34 @@ def get_H_and_L(PARAMS,silent=False, threshold=0.):
     H_unshifted = PARAMS['w_1']*XO_proj + PARAMS['w_2']*OX_proj + PARAMS['V']*(site_coherence+site_coherence.dag())
     if abs(PARAMS['alpha_EM'])>0:
         L += opt.L_BMME(H[1], tensor(sigma,I), PARAMS, ME_type='nonsecular', site_basis=True, silent=silent)
-        L_add += opt.L_BMME(tensor(H_unshifted,I), tensor(sigma,I), PARAMS, ME_type='nonsecular',                                 site_basis=True, silent=silent)
+        L_add += opt.L_BMME(tensor(H_unshifted,I), tensor(sigma,I), PARAMS, 
+                            ME_type='nonsecular', site_basis=True, silent=silent)
         #L_add += opt.L_phenom_SES(PARAMS)
     else:
         print "Not including optical dissipator"
+
     spar0 = sparse_percentage(L)
     if threshold:
         L_add.tidyup(threshold)
         L.tidyup(threshold)
     if not silent:
         print("Chopping reduced the sparsity from {:0.3f}% to {:0.3f}%".format(spar0, sparse_percentage(L)))
-    return H, L, L_add, PARAMS
+    return H, -L, -L_add, PARAMS
 
 
-def get_H_and_L_RWA(PARAMS,silent=False, threshold=0.):
+def get_H_and_L_RWA(PARAMS, silent=False, threshold=0.):
     L, H, A_1, A_2, PARAMS = RC.RC_mapping(PARAMS, silent=silent, shift=True, site_basis=True, parity_flip=PARAMS['parity_flip'])
     L_RWA = copy.deepcopy(L)
     N_1 = PARAMS['N_1']
     N_2 = PARAMS['N_2']
     exc = PARAMS['exc']
     mu = PARAMS['mu']
-
     I = enr_identity([N_1,N_2], exc)
     sigma = sigma_m1 + mu*sigma_m2
     H_unshifted = PARAMS['w_1']*XO_proj + PARAMS['w_2']*OX_proj + PARAMS['V']*(site_coherence+site_coherence.dag())
     if abs(PARAMS['alpha_EM'])>0:
         L_RWA += opt.L_BMME(H[1], tensor(sigma,I), PARAMS, ME_type='nonsecular', site_basis=True, silent=silent)
-        L -= opt.L_non_rwa_par(H[1], tensor(sigma,I), PARAMS, silent=silent)
+        L+= opt.L_non_rwa(H[1], tensor(sigma,I), PARAMS, silent=silent)
     else:
         print "Not including optical dissipator"
     spar0 = sparse_percentage(L)
@@ -182,6 +183,7 @@ def get_H_and_L_wc(H, PARAMS):
     import weak_phonons_final as wp
     reload(wp)
     reload(opt)
+    ti = time.time()
     L_s = wp.weak_phonon(H, PARAMS)
     L_ns = copy.deepcopy(L_s)
     mu = PARAMS['mu']
@@ -192,7 +194,7 @@ def get_H_and_L_wc(H, PARAMS):
         L_s +=  wp.L_sec_wc_SES(PARAMS)
         #L += opt.L_BMME(H, sigma, PARAMS, ME_type='secular', site_basis=True, silent=silent)
     #H += 0.5*pi*(PARAMS['alpha_1']*sigma_m1.dag()*sigma_m1 + PARAMS['alpha_2']*sigma_m2.dag()*sigma_m2)
-    print "Non-secular and secular dissipators calculated"
+    print "WC non-secular and secular dissipators calculated in {} seconds".format(time.time() - ti)
     return H, -L_ns, -L_s
 
 def get_H_and_L_additive(PARAMS,silent=False, threshold=0.):
