@@ -18,8 +18,9 @@ import qutip.parallel as par
 #from dimer_weak_phonons import cauchyIntegrands, integral_converge, Gamma
 from utils import *
 import phonons as RC
+import imp
 
-reload(RC)
+imp.reload(RC)
 
 def chunks(l, n):
     """Yield successive n-sized chunks from l."""
@@ -119,8 +120,8 @@ def L_non_rwa(H_vib, sigma, PARAMS, silent=False, site_basis=True):
     J=J_minimal
     d_dim = len(eVals)
     G = 0
-    for i in xrange(d_dim):
-        for j in xrange(d_dim):
+    for i in range(d_dim):
+        for j in range(d_dim):
             eta = eVals[i]-eVals[j]
             aij = A.matrix_element(eVecs[i].dag(), eVecs[j])
             if (abs(aij)>0):
@@ -132,7 +133,7 @@ def L_non_rwa(H_vib, sigma, PARAMS, silent=False, site_basis=True):
     L =  qt.spre(A*G) - qt.sprepost(G, A)
     L += qt.spost(G_dag*A) - qt.sprepost(A, G_dag)
     if not silent:
-        print "Full optical Liouvillian took {} seconds.".format(time.time()- ti)
+        print("Full optical Liouvillian took {} seconds.".format(time.time()- ti))
     return -L
 
 def nonRWA_function(idx_list, **kwargs):
@@ -183,7 +184,7 @@ def L_non_rwa_par(H_vib, sigma, args, silent=False, site_basis=True):
     L += qt.spost(G_dag*A) - qt.sprepost(A, G_dag)
     
     if not silent:
-        print "It took ", time.time()-ti, " seconds to build the Non-secular RWA Liouvillian"
+        print("It took ", time.time()-ti, " seconds to build the Non-secular RWA Liouvillian")
     return -0.5*L
 
 
@@ -205,7 +206,7 @@ def L_BMME(H_vib, A, args, ME_type='nonsecular', site_basis=True, silent=False):
     L = spre(A*X1) -sprepost(X1,A)+spost(X2*A)-sprepost(A,X2)
     L+= spre(A.dag()*X3)-sprepost(X3, A.dag())+spost(X4*A.dag())-sprepost(A.dag(), X4)
     if not silent:
-        print "It took ", time.time()-ti, " seconds to build the Non-secular RWA Liouvillian"
+        print("It took ", time.time()-ti, " seconds to build the Non-secular RWA Liouvillian")
     return -0.5*L
 
 
@@ -258,7 +259,7 @@ def nonsecular_ops_par(eVals, eVecs, A, args, silent=False):
 def nonsecular_ops(eVals, eVecs, A, args, silent=False):
     Gamma, T, w_1, J= args['alpha_EM'], args['T_EM'], args['w_1'],args['J']
     dim_ham = eVecs[0].shape[0]
-    l = dim_ham*range(dim_ham) # Perform two loops in one
+    l = dim_ham*list(range(dim_ham)) # Perform two loops in one
     X1, X2, X3, X4 = 0,0,0,0
     for i,j in zip(sorted(l), l):
         eps_ij = abs(eVals[i]-eVals[j])
@@ -290,8 +291,8 @@ def L_nonsecular(H_vib, A, args, site_basis=True, silent=False):
     ti = time.time()
     eVals, eVecs = H_vib.eigenstates()
     if args['num_cpus'] <= 1:
-        print "Serial mode on optical"
-        print num_cpus
+        print("Serial mode on optical")
+        print(num_cpus)
         X_ops = nonsecular_ops(eVals, eVecs, A, args, silent=False)
     else:
         X_ops = nonsecular_ops_par(eVals, eVecs, A, args, silent=False)
@@ -304,7 +305,7 @@ def L_nonsecular(H_vib, A, args, site_basis=True, silent=False):
     L+= spre(A.dag()*X3)-sprepost(X3, A.dag())+spost(X4*A.dag())-sprepost(A.dag(), X4)
     #print np.sum(X1.full()), np.sum(X2.full()), np.sum(X3.full()), np.sum(X4.full())
     if not silent:
-        print "It took ", time.time()-ti, " seconds to build the Non-secular RWA Liouvillian"
+        print("It took ", time.time()-ti, " seconds to build the Non-secular RWA Liouvillian")
     return -L
 
 
@@ -352,7 +353,7 @@ def L_secular(H_vib, A, args, silent=False):
     #names = ['eVals', 'eVecs', 'A', 'w_1', 'Gamma', 'T', 'J']
     T = args['T_EM']
     w_1, Gamma, J = args['w_1'], args['alpha_EM'], args['J']
-    l = dim_ham*range(dim_ham)
+    l = dim_ham*list(range(dim_ham))
     i_j_gen = ((i,j) for i,j in zip(sorted(l), l))
     L = 0
     for i, j in i_j_gen:
@@ -378,7 +379,7 @@ def L_secular(H_vib, A, args, silent=False):
                 r_down = 2*pi*J(eps_ij, Gamma, w_1)*(Occ+1)
             L += Qobj(lam_ij_sq*(r_up*(spre(II) + spost(II) - 2*sprepost(JI, IJ))+r_down*(spost(JJ)+ spre(JJ) - 2*sprepost(IJ,JI))))
     if not silent:
-        print "It took ", time.time()-ti, " seconds to build the secular RWA Liouvillian"
+        print("It took ", time.time()-ti, " seconds to build the secular RWA Liouvillian")
     return -np.sum(L)*0.25
 
 def L_secular_par(H_vib, A, args):
@@ -400,11 +401,11 @@ def L_secular_par(H_vib, A, args):
     L = pool.imap_unordered(partial(secular_function,**kwargs), i_j_generator(dim_ham))
     pool.close()
     pool.join()
-    print "It took ", time.time()-ti, " seconds to build the secular RWA Liouvillian"
+    print("It took ", time.time()-ti, " seconds to build the secular RWA Liouvillian")
     L = [l for l in L]
     return -np.sum(L)*0.25
 
-def L_phenom_SES(args):
+def L_phenom_SES(args, silent=True):
     I = qt.enr_identity([args["N_1"], args['N_2']], args['exc'])
     ti = time.time()
     eps, V, w_xx = args['bias'], args['V'], args['w_xx']
@@ -427,8 +428,8 @@ def L_phenom_SES(args):
     L += rate_down(lp, T, gamma, J, w_1)*lin_construct(A_lp)
     L += rate_down(lm, T, gamma, J, w_1)*lin_construct(A_lm)
     #print [(i, cf) for i, cf in enumerate(coeffs)]
-
-    print "It took {} seconds to build the phenomenological Liouvillian".format(time.time()-ti)
+    if not silent:
+        print("It took {} seconds to build the phenomenological Liouvillian".format(time.time()-ti))
     return L
 
 def L_phenom_dimer(I, args):
@@ -459,7 +460,7 @@ def L_phenom_dimer(I, args):
     L += rate_down(w_xx-lm, T, gamma, J, w_1)*lin_construct(A_wxx_lm)
     #print [(i, cf) for i, cf in enumerate(coeffs)]
 
-    print "It took {} seconds to build the phenomenological Liouvillian".format(time.time()-ti)
+    print("It took {} seconds to build the phenomenological Liouvillian".format(time.time()-ti))
     return L
 
 def L_phenom_old(I, args):
@@ -495,9 +496,8 @@ def L_phenom_old(I, args):
                     ]
     #print [(i, cf) for i, cf in enumerate(coeffs)]
 
-    print "It took {} seconds to build the phenomenological Liouvillian".format(time.time()-ti)
+    print("It took {} seconds to build the phenomenological Liouvillian".format(time.time()-ti))
     return L
-
 
 
 if __name__ == "__main__":

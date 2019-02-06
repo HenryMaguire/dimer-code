@@ -13,6 +13,7 @@ from phonons import RC_mapping
 from optical import L_non_rwa, L_phenom_SES
 from qutip import basis, qeye, enr_identity, enr_destroy, tensor, enr_thermal_dm, steadystate
 from utils import *
+import imp
 
 
 OO = basis(3,0)
@@ -33,8 +34,8 @@ sigma_x2 = sigma_m2+sigma_m2.dag()
 
 I_sys = qeye(3)
 
-reload(RC)
-reload(opt)
+imp.reload(RC)
+imp.reload(opt)
 
 labels = [ 'OO', 'XO', 'OX', 'site_coherence', 
             'bright', 'dark', 'eig_x', 'eig_y', 'eig_z', 'eig_x_equiv', 'sigma_x', 'sigma_y', 'sigma_z',
@@ -54,12 +55,12 @@ def make_expectation_labels():
     return dict((key_val[0], key_val[1]) for key_val in zip(labels, tex_labels))
 
 
-def make_expectation_operators(PARAMS, H=None, site_basis=True):
+def make_expectation_operators(PARAMS, H=None, weak_coupling=False, shift=False):
     # makes a dict: keys are names of observables values are operators
     I_sys=qeye(PARAMS['sys_dim'])
     I = enr_identity([PARAMS['N_1'], PARAMS['N_2']], PARAMS['exc'])
     N_1, N_2, exc = PARAMS['N_1'], PARAMS['N_2'], PARAMS['exc']
-    energies, states = exciton_states(PARAMS, shift=False)
+    energies, states = exciton_states(PARAMS, shift=shift)
     bright_vec = states[1]
     dark_vec = states[0]
     sigma_x = site_coherence+site_coherence.dag()
@@ -81,17 +82,19 @@ def make_expectation_operators(PARAMS, H=None, site_basis=True):
     # RC operators
     # RC positions, RC number state1, RC number state1, RC upper N fock, RC ground fock
 
-    
-    a_enr_ops = enr_destroy([N_1, N_2], exc)
-    position1 = a_enr_ops[0].dag() + a_enr_ops[0]
-    position2 = a_enr_ops[1].dag() + a_enr_ops[1]
-    number1   = a_enr_ops[0].dag()*a_enr_ops[0]
-    number2   = a_enr_ops[1].dag()*a_enr_ops[1]
+    if weak_coupling:
+        return dict((key_val[0], key_val[1]) for key_val in zip(labels[0:len(subspace_ops)], subspace_ops))
+    else:
+        a_enr_ops = enr_destroy([N_1, N_2], exc)
+        position1 = a_enr_ops[0].dag() + a_enr_ops[0]
+        position2 = a_enr_ops[1].dag() + a_enr_ops[1]
+        number1   = a_enr_ops[0].dag()*a_enr_ops[0]
+        number2   = a_enr_ops[1].dag()*a_enr_ops[1]
 
-    subspace_ops = [position1, position2, number1, number2]
-    fullspace_ops += [tensor(I_sys, op) for op in subspace_ops]
+        subspace_ops = [position1, position2, number1, number2]
+        fullspace_ops += [tensor(I_sys, op) for op in subspace_ops]
 
-    return dict((key_val[0], key_val[1]) for key_val in zip(labels, fullspace_ops))
+        return dict((key_val[0], key_val[1]) for key_val in zip(labels, fullspace_ops))
 
 def get_H_and_L_local(PARAMS, silent=False, threshold=0.):
     V = PARAMS['V']
@@ -116,13 +119,13 @@ def get_H_and_L_local(PARAMS, silent=False, threshold=0.):
         L_add += opt.L_BMME(tensor(PARAMS['H_sub'],I), tensor(sigma,I), PARAMS, ME_type='nonsecular', site_basis=True, silent=silent)
         #L_add += opt.L_phenom_SES(PARAMS)
     else:
-        print "Not including optical dissipator"
+        print("Not including optical dissipator")
     spar0 = sparse_percentage(L)
     if threshold:
         L_add.tidyup(threshold)
         L.tidyup(threshold)
     if not silent:
-        print("Chopping reduced the sparsity from {:0.3f}% to {:0.3f}%".format(spar0, sparse_percentage(L)))
+        print(("Chopping reduced the sparsity from {:0.3f}% to {:0.3f}%".format(spar0, sparse_percentage(L))))
     PARAMS.update({'V': V})
     
     return H, L, L_add
@@ -139,20 +142,20 @@ def get_H_and_L(PARAMS,silent=False, threshold=0.):
     sigma = sigma_m1 + mu*sigma_m2
     H_unshifted = PARAMS['w_1']*XO_proj + PARAMS['w_2']*OX_proj + PARAMS['V']*(site_coherence+site_coherence.dag())
     if abs(PARAMS['alpha_EM'])>0:
-        L += opt.L_BMME(H[1], tensor(sigma,I), PARAMS, ME_type='nonsecular', site_basis=True, silent=silent)
-        L_add += opt.L_BMME(tensor(H_unshifted,I), tensor(sigma,I), PARAMS, 
-                            ME_type='nonsecular', site_basis=True, silent=silent)
+        L += opt.L_non_rwa(H[1], tensor(sigma,I), PARAMS, silent=silent) #opt.L_BMME(H[1], tensor(sigma,I), PARAMS, ME_type='nonsecular', site_basis=True, silent=silent)
+        L_add += opt.L_non_rwa(tensor(H_unshifted,I), tensor(sigma,I), PARAMS, silent=silent) #opt.L_BMME(tensor(H_unshifted,I), tensor(sigma,I), PARAMS, 
+                            #ME_type='nonsecular', site_basis=True, silent=silent)
         #L_add += opt.L_phenom_SES(PARAMS)
     else:
-        print "Not including optical dissipator"
+        print("Not including optical dissipator")
 
     spar0 = sparse_percentage(L)
     if threshold:
         L_add.tidyup(threshold)
         L.tidyup(threshold)
     if not silent:
-        print("Chopping reduced the sparsity from {:0.3f}% to {:0.3f}%".format(spar0, sparse_percentage(L)))
-    return H, -L, -L_add, PARAMS
+        print(("Chopping reduced the sparsity from {:0.3f}% to {:0.3f}%".format(spar0, sparse_percentage(L))))
+    return H, L, L_add, PARAMS
 
 
 def get_H_and_L_RWA(PARAMS, silent=False, threshold=0.):
@@ -169,33 +172,34 @@ def get_H_and_L_RWA(PARAMS, silent=False, threshold=0.):
         L_RWA += opt.L_BMME(H[1], tensor(sigma,I), PARAMS, ME_type='nonsecular', site_basis=True, silent=silent)
         L+= opt.L_non_rwa(H[1], tensor(sigma,I), PARAMS, silent=silent)
     else:
-        print "Not including optical dissipator"
+        print("Not including optical dissipator")
     spar0 = sparse_percentage(L)
     if threshold:
         L_RWA.tidyup(threshold)
         L.tidyup(threshold)
     if not silent:
-        print("Chopping reduced the sparsity from {:0.3f}% to {:0.3f}%".format(spar0, sparse_percentage(L)))
+        print(("Chopping reduced the sparsity from {:0.3f}% to {:0.3f}%".format(spar0, sparse_percentage(L))))
     return H, L, L_RWA, PARAMS
 
-def get_H_and_L_wc(H, PARAMS):
+def get_H_and_L_wc(H, PARAMS, silent=True, secular_phonon=False, shift=True):
     import optical as opt
-    import weak_phonons_final as wp
-    reload(wp)
-    reload(opt)
+    import weak_phonons as wp
+    imp.reload(wp)
+    imp.reload(opt)
     ti = time.time()
-    L_s = wp.weak_phonon(H, PARAMS)
+    L_s = wp.weak_phonon(H, PARAMS, secular=secular_phonon)
     L_ns = copy.deepcopy(L_s)
     mu = PARAMS['mu']
-
     sigma = sigma_m1 + mu*sigma_m2
     if abs(PARAMS['alpha_EM'])>0:
-        L_ns += opt.L_BMME(H, sigma, PARAMS, ME_type='nonsecular', site_basis=True, silent=True)
-        L_s +=  wp.L_sec_wc_SES(PARAMS)
+        L_ns += opt.L_non_rwa(H, sigma, PARAMS, silent=silent)
+        #opt.L_BMME(H, sigma, PARAMS, ME_type='nonsecular', site_basis=True, silent=silent)
+        L_s +=  wp.L_sec_wc_SES(PARAMS, silent=silent)
         #L += opt.L_BMME(H, sigma, PARAMS, ME_type='secular', site_basis=True, silent=silent)
     #H += 0.5*pi*(PARAMS['alpha_1']*sigma_m1.dag()*sigma_m1 + PARAMS['alpha_2']*sigma_m2.dag()*sigma_m2)
-    print "WC non-secular and secular dissipators calculated in {} seconds".format(time.time() - ti)
-    return H, -L_ns, -L_s
+    if not silent:
+        print("WC non-secular and secular dissipators calculated in {} seconds".format(time.time() - ti))
+    return H, L_ns, L_s
 
 def get_H_and_L_additive(PARAMS,silent=False, threshold=0.):
     L, H, A_1, A_2, PARAMS = RC.RC_mapping(PARAMS, silent=silent, shift=True, site_basis=True)
@@ -212,12 +216,12 @@ def get_H_and_L_additive(PARAMS,silent=False, threshold=0.):
         L += opt.L_BMME(H[1], tensor(sigma,I), PARAMS, ME_type='nonsecular', site_basis=True, silent=silent)
 
     else:
-        print "Not including optical dissipator"
+        print("Not including optical dissipator")
     spar0 = sparse_percentage(L)
     if threshold:
         L.tidyup(threshold)
     if not silent:
-        print("Chopping reduced the sparsity from {:0.3f}% to {:0.3f}%".format(spar0, sparse_percentage(L)))
+        print(("Chopping reduced the sparsity from {:0.3f}% to {:0.3f}%".format(spar0, sparse_percentage(L))))
 
     return H, L
 
@@ -245,8 +249,8 @@ def PARAMS_setup(bias=100., w_2=2000., V = 100., alpha=100.,
         plot_UD_SD(Gamma_1, alpha, w_0, eps=w_2)
     w_xx = w_2 + w_1
     if not silent:
-        print("Gap is {}. Phonon thermal energy is {}. Phonon SD peak is {}. N={}.".format(gap, phonon_energy, 
-        SD_peak_position(Gamma, 1, w_0), N))
+        print(("Gap is {}. Phonon thermal energy is {}. Phonon SD peak is {}. N={}.".format(gap, phonon_energy, 
+        SD_peak_position(Gamma, 1, w_0), N)))
 
     J = J_minimal
     H_sub = w_1*XO_proj + w_2*OX_proj + V*(site_coherence+site_coherence.dag())

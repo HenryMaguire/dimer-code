@@ -6,7 +6,6 @@ import qutip as qt
 import pickle
 import sympy
 
-
 from scipy.linalg import eig, inv
 
 
@@ -17,7 +16,7 @@ def chunks(l, n):
         yield l[i:i + n]
 
 def i_j_generator(dim_ham, num_cpus):
-    l = dim_ham*range(dim_ham) # Perform two loops in one
+    l = dim_ham*list(range(dim_ham)) # Perform two loops in one
     i_j_gen = [(i,j) for i,j in zip(sorted(l), l)]
     return chunks(i_j_gen, 1+len(i_j_gen)//int(num_cpus))
 
@@ -55,7 +54,7 @@ def to_site_basis(op, evals, evecs, evecs_inv):
 def change_basis(ops, evals, evecs, eig_to_site=True):
     evals, evecs = sort_eigs(evals, evecs)
     evecs = np.transpose(np.array([v.dag().full()[0] for v in evecs])) # get into columns of evecs
-    print 
+    print() 
     evecs_inv = sp.linalg.inv(evecs) # has a very low overhead
     if eig_to_site:
         basis_change_op = to_site_basis
@@ -78,7 +77,7 @@ def exciton_states(PARS, shift=False):
             w_1 += PARS['shift_1']
             w_2 += PARS['shift_2']
         except KeyError as e:
-            print "No RC mapping performed yet."
+            print("No RC mapping performed yet.")
             raise KeyError
     eps = (w_1-w_2)
     eta = np.sqrt(eps**2 + 4*V**2)
@@ -109,9 +108,9 @@ def dimer_mutual_information(rho, args):
 
 ev_to_inv_cm = 8065.5
 inv_ps_to_inv_cm = 5.309
-def load_obj(name ):
+def load_obj(name, encoding='utf8' ):
     with open(name + '.pickle', 'rb') as f:
-        return pickle.load(f)
+        return pickle.load(f, encoding=encoding)
 
 def save_obj(obj, name ):
     with open(name + '.pickle', 'wb') as f:
@@ -172,8 +171,8 @@ def get_dimer_info(rho, I):
 
     e1e2 = (rho*e1e2).tr()
     e2e1 = (rho*e2e1).tr()
-    print g
-    print e1, e1e2
+    print(g)
+    print(e1, e1e2)
     xx = (rho*XX).tr()
     return qt.Qobj([[g.real, 0,0,0], [0, e1.real,e1e2.real,0],[0, e2e1.real,e2.real,0],[0, 0,0,xx.real]])#/(g+e1+e2+xx)
 
@@ -277,7 +276,7 @@ def print_PARAMS(PARAMS):
     not_useful = np.concatenate((keys, ['J', 'num_cpus']))
 
     param_strings = []
-    for key in PARAMS.keys():
+    for key in list(PARAMS.keys()):
         try:
             if key not in not_useful:
                 param_strings.append("{}={:0.2f}".format(key, PARAMS[key]))
@@ -285,7 +284,7 @@ def print_PARAMS(PARAMS):
             pass
         except ValueError as err:
             raise Exception("Cannot print parameters for "+key + " because "+str(err))
-    print(", ".join(param_strings))
+    print((", ".join(param_strings)))
 
 
 # conversions between alphas and the ratios in terms of w_2
@@ -407,8 +406,8 @@ def ENR_ptrace(rho, sel, excitations):
     #construct matrix to return the new Density matrix
     rhout = np.zeros((nstates2,nstates2),dtype=np.complex64)
     
-    for ind,state in idx2state.items():
-        for ind2,state2 in idx2state.items():
+    for ind,state in list(idx2state.items()):
+        for ind2,state2 in list(idx2state.items()):
             #if the parts of the states of the systems(s) being traced out are diagonal, add this to the new DM
             if  np.all(np.asarray(state).take(rest) == np.asarray(state2).take(rest)):
 

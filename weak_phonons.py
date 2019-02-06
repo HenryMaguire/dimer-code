@@ -1,313 +1,259 @@
-# -*- coding: utf-8 -*-
-"""
-Weak-coupling spin-boson model solution
-written in Python 2.7
-"""
-import qutip as qt
 import numpy as np
-import matplotlib.pyplot as plt
+import scipy as sp
 from scipy import integrate
-from utils import *
-import sympy
-from qutip import basis
+import qutip as qt
+from qutip import destroy, tensor, qeye, spost, spre, sprepost, basis
 import time
-#import ctypes
+from utils import (J_minimal, beta_f, J_minimal_hard, J_multipolar, lin_construct, 
+                    exciton_states, rate_up, rate_down, Occupation)
+import sympy
+from numpy import pi, sqrt
 
+def coth(x):
+    return float(sympy.coth(x))
 
-
-def cauchyIntegrands(omega, beta, J, alpha, Gamma, omega_0, ver):
+def cauchyIntegrands(omega, beta, J, Gamma, w0, ver, alpha=0.):
     # J_overdamped(omega, alpha, wc)
     # Function which will be called within another function where J, beta and
     # the eta are defined locally
     F = 0
     if ver == 1:
-        F = J(omega, alpha, Gamma, omega_0)*(coth(beta*omega/2.)+1)
+        F = J(omega, Gamma, w0, alpha=alpha)*(coth(beta*omega/2.)+1)
     elif ver == -1:
-        F = J(omega, alpha, Gamma, omega_0)*(coth(beta*omega/2.)-1)
+        F = J(omega, Gamma, w0, alpha=alpha)*(coth(beta*omega/2.)-1)
     elif ver == 0:
-        F = J(omega, alpha, Gamma, omega_0)
+        F = J(omega, Gamma, w0, alpha=alpha)
     return F
 
-def integral_converge(f, a, omega):
-    x = 30
-    I = 0
-    while abs(f(x))>0.001:
-        #print a, x
-        I += integrate.quad(f, a, x, weight='cauchy', wvar=omega)[0]
-        a+=30
-        x+=30
-    return I # Converged integral
+def int_conv(f, a, inc, omega, tol=1E-4):
+        x = inc
+        I = 0.
+        while abs(f(x))>tol:
+            #print inc, x, f(x), a, omega
+            I += integrate.quad(f, a, x, weight='cauchy', wvar=omega)[0]
+            a+=inc
+            x+=inc
+            #time.sleep(0.1)
+        #print "Integral converged to {} with step size of {}".format(I, inc)
+        return I # Converged integral
 
-def Decay(omega, beta, J, alpha, Gamma, omega_0, imag_part=True):
+def integral_converge(f, a, omega, tol=2E-3):
+    for inc in [300., 200., 100., 50., 25., 10, 5., 1, 0.5]:
+        inc += np.random.random()
+        try:
+            return int_conv(f, a, inc, omega, tol=tol) 
+        except:
+            if inc == 0.5:
+                raise ValueError("Integrals couldn't converge")
+            else:
+                pass
+                
+    
+
+def DecayRate(omega, beta, J, Gamma, w0, imag_part=True, alpha=0., tol=1e-4):
     G = 0
     # Here I define the functions which "dress" the integrands so they
     # have only 1 free parameter for Quad.
-    F_p = (lambda x: (cauchyIntegrands(x, beta, J, alpha, Gamma, omega_0, 1)))
-    F_m = (lambda x: (cauchyIntegrands(x, beta, J, alpha, Gamma, omega_0, -1)))
-    F_0 = (lambda x: (cauchyIntegrands(x, beta, J, alpha, Gamma, omega_0, 0)))
+    F_p = (lambda x: (cauchyIntegrands(x, beta, J, Gamma, w0, 1 , alpha=alpha)))
+    F_m = (lambda x: (cauchyIntegrands(x, beta, J, Gamma, w0, -1, alpha=alpha)))
+    F_0 = (lambda x: (cauchyIntegrands(x, beta, J, Gamma, w0, 0,  alpha=alpha)))
     w='cauchy'
+    if beta> 0.01:
+        tol=1e-6
     if omega>0.:
         # These bits do the Cauchy integrals too
-        G = (np.pi/2)*(coth(beta*omega/2.)-1)*J(omega, alpha, Gamma, omega_0)
+        G = (np.pi/2)*(coth(beta*omega/2.)-1)*J(omega, Gamma, w0, alpha=alpha)
         if imag_part:
-            G += (1j/2.)*(integral_converge(F_m, 0,omega))
-            G -= (1j/2.)*(integral_converge(F_p, 0,-omega))
+            G += (1j/2.)*(integral_converge(F_m, 0,omega, tol=tol))
+            G -= (1j/2.)*(integral_converge(F_p, 0,-omega, tol=tol))
 
         #print integrate.quad(F_m, 0, n, weight='cauchy', wvar=omega), integrate.quad(F_p, 0, n, weight='cauchy', wvar=-omega)
     elif omega==0.:
-        #G = (np.pi/2)*(2*alpha/beta)
-        G = (pi*alpha*Gamma)/(beta*(omega_0**2))
+        G = (pi*alpha*Gamma)/(beta*(w0**2))
         if imag_part:
-            G += -(1j)*integral_converge(F_0, -1e-12,0)
+            G += -(1j)*integral_converge(F_0, -1e-12,0., tol=tol)
         #print (integrate.quad(F_0, -1e-12, 20, weight='cauchy', wvar=0)[0])
     elif omega<0.:
-        G = (np.pi/2)*(coth(beta*abs(omega)/2.)+1)*J(abs(omega),alpha, Gamma, omega_0)
+        G = (np.pi/2)*(coth(beta*abs(omega)/2.)+1)*J(abs(omega),Gamma, w0, alpha=alpha)
         if imag_part:
-            G += (1j/2.)*integral_converge(F_m, 0,-abs(omega))
-            G -= (1j/2.)*integral_converge(F_p, 0,abs(omega))
+            G += (1j/2.)*integral_converge(F_m, 0,-abs(omega), tol=tol)
+            G -= (1j/2.)*integral_converge(F_p, 0,abs(omega), tol=tol)
         #print integrate.quad(F_m, 0, n, weight='cauchy', wvar=-abs(omega)), integrate.quad(F_p, 0, n, weight='cauchy', wvar=abs(omega))
     return G
 
-def commutate(A, A_i, anti = False):
-    if anti:
-        return qt.spre(A*A_i) - qt.sprepost(A_i,A) + qt.sprepost(A, A_i.dag()) - qt.spre(A_i.dag()*A)
-    else:
-        return qt.spre(A*A_i) - qt.sprepost(A_i,A) - qt.sprepost(A, A_i.dag()) + qt.spre(A_i.dag()*A)
-
-
-def auto_L(PARAMS, A, T, alpha):
-    eig = zip(*check.exciton_states(PARAMS))
-    L = 0
-    beta = beta_f(T)
-    for eig_i in eig:
-        for eig_j in eig:
-            omega = eig_i[0]-eig_j[0]
-            A_ij = eig_i[1]*eig_j[1].dag()*A.matrix_element(eig_i[1].dag(), eig_j[1])
-            L += Gamma(omega, beta, J_underdamped, alpha, PARAMS['wc'], imag_part=False) * commutate(A, A_ij)
-            # Imaginary part
-            G = Gamma(omega, beta, J_underdamped, alpha, PARAMS['wc'], imag_part=True)
-            print G
-            L += G.imag * commutate(A, A_ij, anti=True)
-    return -0.5*L
-"""
-
-def L_weak_phonon(PARAMS):
-    w_1 = PARAMS['w_1']
-    w_2 = PARAMS['w_2']
-    w_xx = PARAMS['w_xx']
-    OO = basis(4,0)
-
-    eps = PARAMS['bias']
-    V = PARAMS['V']
-    alpha_1 = PARAMS['alpha_1']
-    alpha_2 = PARAMS['alpha_2']
-    wc = PARAMS['wc']
-
-    energies, states = exciton_states(PARAMS)
-    psi_m = states[0]
-    psi_p = states[1]
-    eta = np.sqrt(eps**2 + 4*V**2)
-
-    PARAMS['beta_1'] = beta_1 = beta_f(PARAMS['T_1'])
-    PARAMS['beta_2'] = beta_2 = beta_f(PARAMS['T_2'])
-    MM = psi_m*psi_m.dag()
-    PP =psi_p*psi_p.dag()
-    MP = psi_m*psi_p.dag()
-    PM = psi_p*psi_m.dag()
-    XX_proj = basis(4,3)*basis(4,3).dag()
-    J=J_overdamped
-    
-    site_1 = (0.5*((eta-eps)*MM + (eta+eps)*PP) +V*(PM + MP))/eta
-    Z_1 = (Gamma(0, beta_1, J, alpha_1, wc)*((eta-eps)*MM + (eta+eps)*PP))/(2.*eta)
-    Z_1 += (V/eta)*Gamma(eta, beta_1, J, alpha_1, wc)*PM
-    Z_1 += (V/eta)*Gamma(-eta, beta_1, J, alpha_1, wc)*MP
-
-    site_2 = (0.5*((eta+eps)*MM + (eta-eps)*PP) -V*(PM + MP))/eta
-    Z_2 = (Gamma(0, beta_2, J, alpha_2, wc)*((eta+eps)*MM + (eta-eps)*PP))/(2.*eta)
-    Z_2 -= (V/eta)*Gamma(eta, beta_2, J, alpha_2, wc)*PM
-    Z_2 -= (V/eta)*Gamma(-eta, beta_2, J, alpha_2, wc)*MP
-    print site_1, site_2
-    # Initialise liouvilliian
-    L =  qt.spre(site_1*Z_1) - qt.sprepost(Z_1, site_1)
-    L += qt.spost(Z_1.dag()*site_1) - qt.sprepost(site_1, Z_1.dag())
-    L +=  qt.spre(site_2*Z_2) - qt.sprepost(Z_2, site_2)
-    L += qt.spost(Z_2.dag()*site_2) - qt.sprepost(site_2, Z_2.dag())
-
-    L_xx = (alpha_1+alpha_2)*(qt.spre(XX_proj) + qt.spost(XX_proj)
-                            -2*qt.sprepost(XX_proj,XX_proj))
-    L+=L_xx
-    # Second attempt
-    return L
-"""
-
-def exciton_states(PARS):
-    w_1, w_2, V, bias = PARS['w_1'], PARS['w_2'],PARS['V'], PARS['bias']
-    v_p, v_m = 0, 0
-    eta = np.sqrt(4*(V**2)+bias**2)
-    lam_p = w_2+(bias+eta)*0.5
-    lam_m = w_2+(bias-eta)*0.5
-    v_m = np.array([0., -(w_1-lam_p)/V, -1])
-    #v_p/= /(1+(V/(w_2-lam_m))**2)
-    v_m/= np.sqrt(np.dot(v_m, v_m))
-    v_p = np.array([0, V/(w_2-lam_m),1.])
-
-    v_p /= np.sqrt(np.dot(v_p, v_p))
-    #print  np.dot(v_p, v_m) < 1E-15
-    return [lam_m, lam_p], [qt.Qobj(v_m), qt.Qobj(v_p)]
-
-def L_weak_phonon_SES(PARAMS, silent=False):
-    ti = time.time()
-    w_1 = PARAMS['w_1']
-    w_2 = PARAMS['w_2']
-    OO = basis(3,0)
-
-    eps = PARAMS['bias']
-    V = PARAMS['V']
-    energies, states = exciton_states(PARAMS)
-    psi_m = states[0]
-    psi_p = states[1]
-    eta = np.sqrt(eps**2 + 4*V**2)
-
-    PARAMS['beta_1'] = beta_1 = beta_f(PARAMS['T_1'])
-    PARAMS['beta_2'] = beta_2 = beta_f(PARAMS['T_2'])
-    MM = psi_m*psi_m.dag()
-    PP = psi_p*psi_p.dag()
-    MP = psi_m*psi_p.dag()
-    PM = psi_p*psi_m.dag()
-    J = J_underdamped
-    site_1 = (0.5*((eta-eps)*MM + (eta+eps)*PP) +V*(PM + MP))/eta
-    Z_1 = (Decay(0, beta_1, J, PARAMS['alpha_1'], PARAMS['Gamma_1'], PARAMS['w0_1'])*((eta-eps)*MM + (eta+eps)*PP))/(2.*eta)
-    Z_1 += (V/eta)*Decay(eta, beta_1, J, PARAMS['alpha_1'], PARAMS['Gamma_1'], PARAMS['w0_1'])*PM
-    Z_1 += (V/eta)*Decay(-eta, beta_1, J, PARAMS['alpha_1'], PARAMS['Gamma_1'], PARAMS['w0_1'])*MP
-    site_2 = (0.5*((eta+eps)*MM + (eta-eps)*PP) -V*(PM + MP))/eta
-
-    Z_2 = (Decay(0, beta_2, J, PARAMS['alpha_2'], PARAMS['Gamma_2'], PARAMS['w0_2'])*((eta+eps)*MM + (eta-eps)*PP))/(2.*eta)
-    Z_2 -= (V/eta)*Decay(eta, beta_2, J, PARAMS['alpha_2'], PARAMS['Gamma_2'], PARAMS['w0_2'])*PM
-    Z_2 -= (V/eta)*Decay(-eta, beta_2, J, PARAMS['alpha_2'], PARAMS['Gamma_2'], PARAMS['w0_2'])*MP
-    # Initialise liouvilliian
-    L =  qt.spre(site_1*Z_1) - qt.sprepost(Z_1, site_1)
-    L += qt.spost(Z_1.dag()*site_1) - qt.sprepost(site_1, Z_1.dag())
-    L +=  qt.spre(site_2*Z_2) - qt.sprepost(Z_2, site_2)
-    L += qt.spost(Z_2.dag()*site_2) - qt.sprepost(site_2, Z_2.dag())
-    # Second attempt
-    #print site_1, site_2
-    if not silent:
-        print "Weak coupling Liouvillian took {:0.2f} seconds".format(time.time()-ti)
-    return -L
-
-
-def L_wc_auto(H_vib, A, w_0, Gamma, T_EM, J, principal=False, 
+def L_weak_phonon_auto(H_vib, A, w_0, Gamma, T_EM, J, principal=False, 
                                 silent=False, alpha=0.):
-    import optical as opt
-    reload(opt)
+    
     ti = time.time()
-    eVals, eVecs = H_vib.eigenstates()
-    d_dim = len(eVals)
     beta = beta_f(T_EM)
+    eVals, eVecs = H_vib.eigenstates()
+    #J=J_minimal # J_minimal(omega, Gamma, omega_0)
+    d_dim = len(eVals)
     G = 0
-    for i in xrange(d_dim):
-        for j in xrange(d_dim):
+    for i in range(d_dim):
+        for j in range(d_dim):
             eta = eVals[i]-eVals[j]
-            aij = A.matrix_element(eVecs[i].dag(), eVecs[j])
-            g = opt.DecayRate(eta, beta, J, alpha, w_0, imag_part=True, Gamma=Gamma)
-            if (abs(g)>0) and (abs(aij)>0):
-                G+=g*aij*eVecs[i]*(eVecs[j].dag())
-                
+            s = eVecs[i]*(eVecs[j].dag())
+            
+            #print A.matrix_element(eVecs[i].dag(), eVecs[j])
+            overlap = A.matrix_element(eVecs[i].dag(), eVecs[j])
+            if abs(overlap)>0:
+                dr = DecayRate(eta, beta, J, Gamma, w_0, imag_part=principal, alpha=alpha)
+                s*= overlap*dr
+                G+=s
     G_dag = G.dag()
     # Initialise liouvilliian
     L =  qt.spre(A*G) - qt.sprepost(G, A)
     L += qt.spost(G_dag*A) - qt.sprepost(A, G_dag)
     if not silent:
-        print "Full optical Liouvillian took {} seconds.".format(time.time()- ti)
-    return -L*0.5
+        print("Calculating non-RWA Liouvilliian took {} seconds.".format(time.time()-ti))
+    return -L
 
-def get_wc_H_and_L(PARAMS,silent=False, threshold=0., auto=False):
-    import optical as opt
-    w_1 = PARAMS['w_1']
-    w_2 = PARAMS['w_2']
-    OO, XO, OX = basis(3,0), basis(3,1), basis(3,2)
-    sigma_m1 =  OO*XO.dag()
-    sigma_m2 =  OO*OX.dag()
-    eps = PARAMS['bias']
-    V = PARAMS['V']
-    H = PARAMS['H_sub'] #w_1*XO*XO.dag() + w_2*OX*OX.dag() + V*(OX*XO.dag() + XO*OX.dag())
-    if auto:
-        print "Auto"
-        ti = time.time()
-        L = L_wc_auto(H, sigma_m1.dag()*sigma_m1, PARAMS['w0_1'], PARAMS['Gamma_1'], PARAMS['T_1'], J_underdamped, principal=True, 
-                                silent=False, alpha=PARAMS['alpha_1'])
-        L += L_wc_auto(H, sigma_m2.dag()*sigma_m2, PARAMS['w0_2'], PARAMS['Gamma_2'], PARAMS['T_2'], J_underdamped, principal=True, 
-                                silent=False, alpha=PARAMS['alpha_2'])
-        print "auto wc phonon liouvs took {} seconds".format(time.time() - ti)
-    else:
-        L = L_weak_phonon_SES(PARAMS, silent=False)
 
-    
-    mu = PARAMS['mu']
+def _J_underdamped(omega, Gamma, omega_0, alpha=0.):
+    return alpha*Gamma*(omega_0**2)*omega/(((omega_0**2)-(omega**2))**2+(Gamma*omega)**2)
 
-    sigma = sigma_m1 + mu*sigma_m2
-    if abs(PARAMS['alpha_EM'])>0:
-        L += opt.L_BMME(H, sigma, PARAMS, ME_type='nonsecular', site_basis=True, silent=silent)
-    H += 0.5*pi*(PARAMS['alpha_1']*sigma_m1.dag()*sigma_m1 + PARAMS['alpha_2']*sigma_m2.dag()*sigma_m2)
-    return H, L
+def weak_phonon(H_sub, PARAMS, secular=False, shift=True):
+    c_ops = PARAMS['coupling_ops']
+    L = 0
+    J = _J_underdamped
+    """for i in range(2):
+        #print c_ops[i], PARAMS['w0_'+str(i+1)], PARAMS['Gamma_'+str(i+1)], PARAMS['alpha_'+str(i+1)]
+        if secular:
+            l =L_full_secular(H_sub, c_ops[i], PARAMS['w0_'+str(i+1)], 
+                        PARAMS['Gamma_'+str(i+1)], PARAMS['T_'+str(i+1)], J,
+                        silent=True, alpha=PARAMS['alpha_'+str(i+1)])
+            print( "Secular phonon dissipator: ", l)
+            L += l
+        else:
+            L_ = L_weak_phonon_auto(H_sub, c_ops[i], PARAMS['w0_'+str(i+1)], 
+                        PARAMS['Gamma_'+str(i+1)], PARAMS['T_'+str(i+1)], J,
+                        principal=True, silent=True, alpha=PARAMS['alpha_'+str(i+1)]) # need principal value parts
+            L+= L_"""
+    L = L_wc_analytic(PARAMS, shift=shift, tol=1e-6)
+    return L
 
-def get_dynamics(w_2=100., bias=10., V=10., alpha_1=1., alpha_2=1., end_time=1):
+def L_sec_wc_SES(args, silent=True):
+    ti = time.time()
+    eps, V, w_xx = args['bias'], args['V'], args['w_xx']
+    mu, gamma, w_1, J, T = args['mu'], args['alpha_EM'], args['w_1'], args['J'], args['T_EM']
+    energies, states = exciton_states(args)
+    dark, lm = states[0], energies[0]
+    bright, lp = states[1], energies[1]
+    OO = basis(3,0)
+    eta = np.sqrt(4*V**2+eps**2)
+    pre_1 = (sqrt(eta-eps)+mu*sqrt(eta+eps))/sqrt(2*eta) # A_wxx_lp
+    pre_2 = -(sqrt(eta+eps)-mu*sqrt(eta-eps))/sqrt(2*eta) # A_wxx_lm
+    pre_3 = (sqrt(eta+eps)+mu*sqrt(eta-eps))/sqrt(2*eta) # A_lp
+    pre_4 = (sqrt(eta-eps)-mu*sqrt(eta+eps))/sqrt(2*eta) # A_lm
+    #print pre_p, pre_p
+    A_lp = pre_3*OO*bright.dag()
+    A_lm= pre_4*OO*dark.dag()
+    L = rate_up(lp, T, gamma, J, w_1)*lin_construct(A_lp.dag())
+    L += rate_up(lm, T, gamma, J, w_1)*lin_construct(A_lm.dag())
+    L += rate_down(lp, T, gamma, J, w_1)*lin_construct(A_lp)
+    L += rate_down(lm, T, gamma, J, w_1)*lin_construct(A_lm)
+    #print [(i, cf) for i, cf in enumerate(coeffs)]
+    if not silent:
+        print("It took {} seconds to build the phenomenological Liouvillian".format(time.time()-ti))
+    return L
 
-    OO = basis(4,0)
-    XO = basis(4,1)
-    OX = basis(4,2)
-    XX = basis(4,3)
-    OO_p = OO*OO.dag()
-    XO_p = XO*XO.dag()
-    OX_p = OX*OX.dag()
-    XX_p = XX*XX.dag()
-    site_coherence = OX*XO.dag()
-    w_1 = w_2 + bias
-    dipole_1, dipole_2 = 1., 1.
-    mu = w_2*dipole_2/(w_1*dipole_1)
 
-    T_1, T_2 = 300., 300. # Phonon bath temperature
 
-    wc = 1*53.08 # Ind.-Boson frame phonon cutoff freq
-    w0_2, w0_1 = 500., 500. # underdamped SD parameter omega_0
-    w_xx = w_2 + w_1
-
-    J = J_overdamped
-
-    PARAM_names = ['w_1', 'w_2', 'V', 'bias', 'w_xx', 'T_1', 'T_2', 'wc',
-                    'w0_1', 'w0_2', 'alpha_1', 'alpha_2', 'J', 'dipole_1','dipole_2']
-
-    scope = locals() # Lets eval below use local variables, not global
-    PARAMS = dict((name, eval(name, scope)) for name in PARAM_names)
-    print PARAMS
-    L = auto_L(PARAMS, XO_p, T_1, alpha_1)+auto_L(PARAMS, OX_p, T_2, alpha_2)#_weak_phonon(PARAMS)
-
-    H_dim = w_1*XO_p + w_2*OX_p + w_xx*XX_p + V*(site_coherence + site_coherence.dag())
-    energies, states = check.exciton_states(PARAMS)
-    N_en, N_st = H_dim.eigenstates()
-    bright = states[1]*states[1].dag()
-    dark = states[0]*states[0].dag()
-    exciton_coherence = states[0]*states[1].dag()
-    ops = [OO_p, XO_p, OX_p, XX_p]
-    # Expectation values and time increments needed to calculate the dynamics
-    expects = ops + [dark, bright, exciton_coherence, site_coherence]
-    opts = qt.Options(num_cpus=1, nsteps=6000)
-    timelist = np.linspace(0,end_time,4000*end_time)
-    DATA = qt.mesolve(H_dim, XO_p, timelist, [L], e_ops=expects, progress_bar=True, options=opts)
+def L_full_secular(H_vib, A, w_0, Gamma, T, J, time_units='cm', silent=False, alpha=0.):
     '''
-    J_1 = lambda x : J_overdamped(x, alpha_1, wc)
-    J_2 = lambda x : J_overdamped(x, alpha_2, wc)
-    J_12 = lambda x : J_overdamped(x, alpha_1+alpha_2, wc)
-    DATA = qt.bloch_redfield.brmesolve(H_dim, XO_p, timelist, [site_1, site_2], expects, [J_1, J_2], options=opts)'''
-    fig = plt.figure(figsize=(12,8))
-    plot_eig_dynamics(DATA, timelist, expects, fig.add_subplot(211), title='', ss_dm = False)
-    plot_coherences(DATA, timelist, expects, fig.add_subplot(212), title='', ss_dm = False)
-    plt.savefig("weak_coupling_test.pdf")
-    plt.show()
-    print "figure saved at weak_coupling_test.pdf"
-    return DATA
+    Does not assume that the vibronic eigenstructure has no
+    degeneracy. Must be of the form
+    '''
+    alpha *= 2
+    ti = time.time()
+    d = H_vib.shape[0]
+    L = 0
+    eVals, eVecs = H_vib.eigenstates()
+    A_dag = A.dag()
+    terms = 0
+    for l in range(int(d)):
+        for m in range(int(d)):
+            for p in range(int(d)):
+                for q in range(int(d)):
+                    secular_freq = (eVals[l]-eVals[m]) - (eVals[p]-eVals[q])
+                    if abs(secular_freq) <1E-10:
+                        terms+=1
+                        A_lm = A.matrix_element(eVecs[l].dag(), eVecs[m])
+                        A_lm_star = A_dag.matrix_element(eVecs[m].dag(), eVecs[l])
+                        A_pq = A.matrix_element(eVecs[p].dag(), eVecs[q])
+                        A_pq_star = A_dag.matrix_element(eVecs[q].dag(), eVecs[p])
+                        coeff_1 = A_lm*A_pq_star
+                        coeff_2 = A_lm_star*A_pq
+                        eps_pq = abs(eVals[p]-eVals[q])
+                        Occ = Occupation(eps_pq, T, time_units)
+                        # omega, Gamma, omega_0, alpha=0.)
+                        r_up = np.pi*J(eps_pq, Gamma, w_0, alpha=alpha)*Occ
+                        r_down = np.pi*J(eps_pq, Gamma, w_0, alpha=alpha)*(Occ+1)
+                        LM = eVecs[l]*eVecs[m].dag()
+                        ML = LM.dag()
+                        PQ = eVecs[p]*eVecs[q].dag()
+                        QP = PQ.dag()
+                        """
+                        if abs(secular_freq) !=0:
+                            print (abs(secular_freq), r_up, A_lm, A_lm_star,
+                                   A_pq, A_pq_star, r_down, l,m,p,q, m==q, l==p)
+                        """
+                        if abs(r_up*coeff_1)>0:
+                            L+= r_up*coeff_1*(spre(LM*QP)-sprepost(QP,LM))
+                        if abs(r_up*coeff_2)>0:
+                            L+= r_up*coeff_2*(spost(PQ*ML)- sprepost(ML,PQ))
+                        if abs(r_down*coeff_1)>0:
+                            L+= r_down*coeff_1*(spre(ML*PQ)-sprepost(PQ, ML))
+                        if abs(r_down*coeff_2)>0:
+                            L+= r_down*coeff_2*(spost(QP*LM)-sprepost(LM, QP))
+    if not silent:
+        print ("It took ", time.time()-ti, " seconds to build the secular Liouvillian")
+        print ("Secular approximation kept {:0.2f}% of total ME terms. \n".format(100*float(terms)/(d*d*d*d)))
+    return -L
 
-if __name__ == "__main__":
 
-    # w_2, bias, V, T_EM, alpha_EM, alpha_1, alpha_2, end_time
-    DATA = get_dynamics(w_2=12400., bias=10., V=100., alpha_1=5., alpha_2=5., end_time=10)
+def L_wc_analytic(PARAMS, shift=True, tol=1e-7):
+    energies, states = exciton_states(PARAMS, shift=shift)
+    dark_proj = states[0]*states[0].dag()
+    bright_proj = states[1]*states[1].dag()
+    ct_p = states[1]*states[0].dag()
+    ct_m = states[0]*states[1].dag()
+    cross_term = (ct_p + ct_m)
+    epsilon = PARAMS['bias']
+    V = PARAMS['V']
+    if shift:
+
+        epsilon = PARAMS['shifted_bias']
+    
+    eta = sqrt(epsilon**2 + 4*V**2)
+
+    # Bath 1
+    G = (lambda x: (DecayRate(x, beta_f(PARAMS['T_1']), _J_underdamped, 
+                        PARAMS['Gamma_1'], PARAMS['w0_1'], imag_part=True, 
+                        alpha=PARAMS['alpha_1'], tol=tol)))
+    G_0 = G(0.)
+    G_p = G(eta)
+    G_m = G(-eta)
+
+    site_1 = (0.5/eta)*((eta+epsilon)*bright_proj + (eta-epsilon)*dark_proj + 2*V*cross_term)
+
+    Z_1 = (0.5/eta)*(G_0*((eta+epsilon)*bright_proj + (eta-epsilon)*dark_proj) + 2*V*(ct_p*G_p + ct_m*G_m))
+    # Bath 2
+    G = (lambda x: (DecayRate(x, beta_f(PARAMS['T_2']), _J_underdamped, 
+                        PARAMS['Gamma_2'], PARAMS['w0_2'], imag_part=True, 
+                        alpha=PARAMS['alpha_2'], tol=tol)))
+    site_2 = (0.5/eta)*((eta-epsilon)*bright_proj + (eta+epsilon)*dark_proj - 2*V*cross_term)
+    G_0 = G(0.)
+    G_p = G(eta)
+    G_m = G(-eta)
+
+    Z_2 = (0.5/eta)*(G_0*((eta-epsilon)*bright_proj + (eta+epsilon)*dark_proj) - 2*V*(ct_p*G_p + ct_m*G_m))
+
+    L =  - qt.spre(site_1*Z_1) + qt.sprepost(Z_1, site_1)
+    L += -qt.spost(Z_1.dag()*site_1) + qt.sprepost(site_1, Z_1.dag())
+
+    L +=  - qt.spre(site_2*Z_2) + qt.sprepost(Z_2, site_2)
+    L += -qt.spost(Z_2.dag()*site_2) + qt.sprepost(site_2, Z_2.dag())
+
+    return L

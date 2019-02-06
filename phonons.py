@@ -26,7 +26,6 @@ def H_mapping_RC(args, shift=True):
     if shift:
         for s, op in zip(shifts,coupling_ops):
             H_sub += s*op
-
     H_S = tensor(H_sub, I)
 
     atemp = enr_destroy([args['N_1'],args['N_2']], args['exc'])
@@ -141,7 +140,7 @@ def liouvillian_build(H_RC, A_1, A_2, gamma_1, gamma_2,
     if T_1 == 0.0:
         beta_1 = np.infty # This is a hack but hopefully won't have to be used
         #RCnb_1 = 0
-        print "Temperature is too low in RC 1, this won't work"
+        print("Temperature is too low in RC 1, this won't work")
     else:
         beta_1 = 1./(conversion * T_1)
         #RCnb_1 = (1 / (sp.exp( beta_1 * wRC_1)-1))
@@ -150,7 +149,7 @@ def liouvillian_build(H_RC, A_1, A_2, gamma_1, gamma_2,
     if T_2 == 0.0:
         beta_2 = np.infty
         #RCnb_2 = 0
-        print "Temperature is too low in RC 2, this won't work"
+        print("Temperature is too low in RC 2, this won't work")
     else:
         beta_2 = 1./(conversion * T_2)
         #RCnb_2 = (1 / (sp.exp( beta_2 * wRC_2)-1))
@@ -175,8 +174,8 @@ def liouvillian_build(H_RC, A_1, A_2, gamma_1, gamma_2,
         Z_1, Z_2, A_1, A_2, H_RC = change_basis([Z_1, Z_2, A_1, A_2, H_RC], 
                                                 eVals, eVecs, eig_to_site=False)"""
     if not silent:
-        print "****************************************************************"
-        print "The operators took {} and have dimension {}.".format(time.time()-ti, H_RC.shape[0])
+        print("****************************************************************")
+        print("The operators took {} and have dimension {}.".format(time.time()-ti, H_RC.shape[0]))
     
     L = 0
     #Z_1 = Z_1.dag() # if these are uncommented, code is not like Ahsan's
@@ -192,7 +191,7 @@ def liouvillian_build(H_RC, A_1, A_2, gamma_1, gamma_2,
         L-=sprepost(Xi, A)
         L-=spost(Xi*A)
     if not silent:
-        print "Building the RC Liouvillian took {:0.3f} seconds.".format(time.time()-ti)
+        print("Building the RC Liouvillian took {:0.3f} seconds.".format(time.time()-ti))
     return H_RC, L
 
 
@@ -221,9 +220,13 @@ def RC_mapping(args, silent=False, shift=True, site_basis=True, parity_flip=Fals
         kappa_2*=-1 # Relative sign flip
     
     #shift1, shift2 = (kappa_1**2)/wRC_1, (kappa_2**2)/wRC_2
+    shifted_bias = args['bias']+(shift_1 - shift_2)
+
     if not shift:
         shift_1, shift_1 = 0., 0.
-    args.update({'gamma_1': gamma_1, 'gamma_2': gamma_2, 'w0_1': wRC_1, 'w0_2': wRC_2, 'kappa_1':kappa_1, 'kappa_2':kappa_2,'shift_1':shift_1, 'shift_2':shift_1})
+    args.update({'gamma_1': gamma_1, 'gamma_2': gamma_2, 'w0_1': wRC_1, 
+                'w0_2': wRC_2, 'kappa_1':kappa_1, 'kappa_2':kappa_2,'shift_1':shift_1, 
+                'shift_2':shift_1, 'shifted_bias': shifted_bias})
     #print args
     H, phonon_operators = H_mapping_RC(args, shift=True)
     A_1, A_2 = phonon_operators[0], phonon_operators[1]
@@ -232,8 +235,8 @@ def RC_mapping(args, silent=False, shift=True, site_basis=True, parity_flip=Fals
     full_size = (args['H_sub'].shape[0]*args['N_1']*args['N_2'])**2
     if not silent:
         note = (L_RC.shape[0], L_RC.shape[0], full_size, full_size)
-        print "It is {}by{}. The full basis would be {}by{}".format(L_RC.shape[0],
-                                            L_RC.shape[0], full_size, full_size)
+        print("It is {}by{}. The full basis would be {}by{}".format(L_RC.shape[0],
+                                            L_RC.shape[0], full_size, full_size))
     return L_RC, [H[0], H_RC], A_1, A_2, args
 
 
@@ -276,6 +279,8 @@ def construct_thermal(args):
     D = (-H_0/(0.695*T_EM)).expm()
     return D/D.tr()
 
+
+# Nothing below here used
 def RC_mapping_OD(args, silent=False):
 
     # we define all of the RC parameters by the underdamped spectral density
@@ -295,10 +300,10 @@ def RC_mapping_OD(args, silent=False):
                             T_1, T_2, num_cpus=args['num_cpus'], silent=silent)
     full_size = (4*N_1*N_1)**2
     if not silent:
-        print "****************************************************************"
+        print("****************************************************************")
         note = (L_RC.shape[0], L_RC.shape[0], full_size, full_size)
-        print "It is {}by{}. The full basis would be {}by{}".format(L_RC.shape[0],
-                                            L_RC.shape[0], full_size, full_size)
+        print("It is {}by{}. The full basis would be {}by{}".format(L_RC.shape[0],
+                                            L_RC.shape[0], full_size, full_size))
     return -L_RC, H, A_1, A_2, SIGMA_1, SIGMA_2, args
 
 def dimer_ham_RC(w_1, w_2, w_xx, V, Omega_1,

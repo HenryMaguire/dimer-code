@@ -12,8 +12,9 @@ import optical as opt
 import optical as opt
 from qutip import basis, qeye, enr_identity, enr_destroy, tensor, enr_thermal_dm, steadystate
 from utils import *
-reload(RC)
-reload(opt)
+import imp
+imp.reload(RC)
+imp.reload(opt)
 
 OO = basis(4,0)
 XO = basis(4,1)
@@ -34,13 +35,14 @@ sigma_x2 = sigma_m2+sigma_m2.dag()
 
 I_dimer = qeye(4)
 
-reload(RC)
-reload(opt)
+imp.reload(RC)
+imp.reload(opt)
 
-labels = [ 'OO', 'XO', 'OX', 'site_coherence', 
+labels = [ 'OO', 'XO', 'OX', 'XX', 'site_coherence', 
             'bright', 'dark', 'eig_x', 'eig_y', 'eig_z', 'eig_x_equiv', 'sigma_x', 'sigma_y', 'sigma_z',
              'RC1_position1', 'RC2_position', 
-             'RC1_number', 'RC2_number', 'XX']
+             'RC1_number', 'RC2_number']
+
 
 tex_labels = [ '$\\rho_0$', '$\\rho_1$', '$\\rho_2$', '$\\rho_12$', 
             '$|+ \\rangle$', '$|- \\rangle$', '$\\tilde{\\sigma}_x$', '$\\tilde{\\sigma}_y^{\prime}$','$\\tilde{\\sigma}_z^{\prime}$', 'eig_x_equiv',
@@ -71,12 +73,12 @@ def make_expectation_operators(PARAMS, H=None, site_basis=True):
 
     # electronic operators
      # site populations site coherences, eig pops, eig cohs
-    subspace_ops = [OO_proj, XO_proj, OX_proj, site_coherence,
+    subspace_ops = [OO_proj, XO_proj, OX_proj, XX_proj, site_coherence,
                    bright_vec*bright_vec.dag(), dark_vec*dark_vec.dag(),
                    dark_vec*bright_vec.dag()+dark_vec.dag()*bright_vec,
                    1j*(dark_vec*bright_vec.dag()-dark_vec.dag()*bright_vec),
                    bright_vec*bright_vec.dag()-dark_vec.dag()*dark_vec, eig_x_equiv,
-                    sigma_x, sigma_y, sigma_z, XX_proj]
+                    sigma_x, sigma_y, sigma_z]
     # put operators into full RC tensor product basis
     fullspace_ops = [tensor(op, I) for op in subspace_ops]
     # RC operators
@@ -117,14 +119,14 @@ def get_H_and_L_add(PARAMS,silent=False, threshold=0., site_basis=True, rwa=True
         L_add += optical_liouv(tensor(PARAMS['H_sub'],I), tensor(sigma,I), 
                                 PARAMS, silent=silent)
     else:
-        print "Not including optical dissipator"
+        print("Not including optical dissipator")
     spar0 = sparse_percentage(L)
     if threshold:
         L.tidyup(threshold)
     if not silent:
         if abs(threshold)>0:
-            print("Chopping reduced the sparsity from {:0.3f}% to {:0.3f}%".format(spar0, sparse_percentage(L)))
-        print comment
+            print(("Chopping reduced the sparsity from {:0.3f}% to {:0.3f}%".format(spar0, sparse_percentage(L))))
+        print(comment)
     output_names = ['H', 'L', 'L_add', 'PARAMS']
     scope = locals() # Lets eval below use local variables, not global
     output_dict = dict((name, eval(name, scope)) for name in output_names)
@@ -146,7 +148,7 @@ def get_H_and_L_RWA(PARAMS,silent=False, threshold=0.):
         L_RWA += opt.L_BMME(H_RWA[1], tensor(sigma,I), PARAMS_RWA, 
                              ME_type='nonsecular', silent=silent)
     else:
-        print "Not including optical dissipator"
+        print("Not including optical dissipator")
     #L*= -1
     #L_RWA*= -1 # Hacky minus sign
     spar0 = sparse_percentage(L)
@@ -155,7 +157,7 @@ def get_H_and_L_RWA(PARAMS,silent=False, threshold=0.):
         L_RWA.tidyup(threshold)
     if not silent:
         if abs(threshold)>0:
-            print("Chopping reduced the sparsity from {:0.3f}% to {:0.3f}%".format(spar0, sparse_percentage(L)))
+            print(("Chopping reduced the sparsity from {:0.3f}% to {:0.3f}%".format(spar0, sparse_percentage(L))))
         print("Completed non-additive liouvillians in RWA and non-RWA form")
     # returns non-rwa
     output_names = ['H', 'L', 'PARAMS', 'H_RWA', 'PARAMS_RWA', 'L_RWA']
@@ -183,7 +185,7 @@ def get_L(PARS,silent=False, threshold=0., site_basis=True):
             L += opt.L_non_rwa(H[1], tensor(sigma,I), PARS, silent=silent, 
                                                             site_basis=site_basis)
     else:
-        print "Not including optical dissipator"
+        print("Not including optical dissipator")
     L = -1*qt.liouvillian(H[1], c_ops=[L])
     if threshold:
         L.tidyup(threshold)
@@ -216,7 +218,7 @@ def PARAMS_setup(bias=100., w_2=2000., V = 100., alpha=0.1,
     H_sub += V*exciton_coupling + w_xx*XX_proj
     coupling_ops = [sigma_m1.dag()*sigma_m1, sigma_m2.dag()*sigma_m2] # system-RC operators
     if not silent:
-        print "Gap is {}. Phonon thermal energy is {}. Phonon SD peak is {}. N={}.".format(gap, phonon_energy, SD_peak_position(Gamma, 1, w_0),N)
+        print("Gap is {}. Phonon thermal energy is {}. Phonon SD peak is {}. N={}.".format(gap, phonon_energy, SD_peak_position(Gamma, 1, w_0),N))
 
     J = J_minimal
 

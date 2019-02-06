@@ -22,19 +22,19 @@ def _steadystate(H, L, tol=1e-8, sigma=1e-12, ncv=25, print_coh=True):
     L_full = -1*qt.liouvillian(H[1], c_ops=[L]).data
     ti = time.time()
     evals, evec = eigs(L_full, 1, which='LM', sigma=sigma, tol=tol, ncv=ncv)
-    print("Steadystate took {:0.3f} seconds".format(time.time() - ti))
+    print(("Steadystate took {:0.3f} seconds".format(time.time() - ti)))
     rho = vec_to_dm(evec, H)
     if print_coh:
-        print("Coherence is {}".format(coherence_exp(rho)))
+        print(("Coherence is {}".format(coherence_exp(rho))))
     return rho
 
 def eigen_steadystate(L, tol=1e-8, sigma=1e-12, ncv=18, print_coh=True, v0=None):
     ti = time.time()
     evals, evec = eigs(L.data, 1, which='LM', sigma=sigma, tol=tol, ncv=ncv, v0=v0)
-    print("Steadystate took {:0.3f} seconds".format(time.time() - ti))
+    print(("Steadystate took {:0.3f} seconds".format(time.time() - ti)))
     rho = vec_to_dm(evec, H)
     if print_coh:
-        print("Coherence is {}".format(expectation(rho)))
+        print(("Coherence is {}".format(expectation(rho))))
     return rho
 
 def calculate_steadystate_L(L, fill_factor=500, tol=1e-8, persistent=False, 
@@ -52,24 +52,24 @@ def calculate_steadystate_L(L, fill_factor=500, tol=1e-8, persistent=False,
                                         drop_tol=1e-4, use_rcm=True, ILU_MILU='smilu_2', 
                                                  maxiter=maxiter, x0=v0)
                 use_precond=True
-                print "Building preconditioner took {} seconds".format(time.time()-ti)
+                print("Building preconditioner took {} seconds".format(time.time()-ti))
                 # print m_info['ilu_fill_factor']
             ss, info = steadystate(L, method=method, M=M,
                                     use_precond=False,
                                     return_info=True, tol=tol, maxiter=maxiter, x0=v0)
-            print "Steady state took {:0.3f} seconds".format(info['solution_time'])
+            print("Steady state took {:0.3f} seconds".format(info['solution_time']))
             return ss, info
         except Exception as err:
-            print "Steadystate failed because {}.".format(err)
+            print("Steadystate failed because {}.".format(err))
             if persistent:
                 if "tolerance" in str(err):
                     return 0, 0 # if it's a convergence error, don't bother
                 elif "preconditioner" in str(err):
                     ff -= 5
                     time.sleep(5) # Basically just giving the computer a breather
-                    print("Trying a smaller fill factor ({})...".format(ff))
+                    print(("Trying a smaller fill factor ({})...".format(ff)))
                     if ff<10:
-                        print("Failed with a lower limit fill factor of 38. Skipping...".format(ff))
+                        print(("Failed with a lower limit fill factor of 38. Skipping...".format(ff)))
                         return 0, 0 # ff is too low, don't bother
                 else:
                     raise Exception(str(err))
@@ -99,22 +99,12 @@ def calculate_converged_steadystate(PARAMS, conv_percent_tol=1e-2, etol=1e-8, N_
             L = L_add
         op = make_expectation_operators(PARAMS)[observable]
         try:
-            M=None
-            use_precond=False
-            if "iterative" in method:
-                ti = time.time()
-                M, m_info = build_preconditioner(H[1], [L], fill_factor=fill_factor,return_info=True,
-                                        drop_tol=1e-4, use_rcm=True, ILU_MILU='smilu_2', 
-                                                 maxiter=maxiter, x0=v0)
-                use_precond=True
-                print "Building preconditioner took {} seconds".format(time.time()-ti)
-
-            ss, info = steadystate(H[1], [L], method=method, M=M,
+            ss, info = steadystate(H[1], [L], method=method,
                                    return_info=True, tol=etol, maxiter=maxiter)
             
             conv_percent = abs(100*(ss_obs_old - (ss*op).tr())/ss_obs_old).real
-            print( "Steady state for {} took {:0.3f} seconds with {}, {} changed by {:0.4f}%".format(N, info['solution_time'], 
-                                                                                                     method, observable, conv_percent))
+            print(( "Steady state for {} took {:0.3f} seconds with {}, {} changed by {:0.4f}%".format(N, info['solution_time'], 
+                                                                                                     method, observable, conv_percent)))
             if (conv_percent < conv_percent_tol) or N>=N_max:
                 converged = True
                 info.update({'N' : N, 'exc' : exc})
@@ -126,7 +116,7 @@ def calculate_converged_steadystate(PARAMS, conv_percent_tol=1e-2, etol=1e-8, N_
                 exc = PARAMS['exc'] + 1
                 PARAMS.update({'N_1' : N, 'N_2' : N, 'exc' : exc})
         except Exception as err:
-            print( "Steadystate failed due to {}.".format(err) )
+            print(( "Steadystate failed due to {}.".format(err) ))
             return 0, 0
 
 
@@ -146,7 +136,7 @@ def calculate_steadystate(H, L, fill_factor=500, tol=1e-8, persistent=False,
                                         drop_tol=1e-4, use_rcm=True, ILU_MILU='smilu_2', 
                                                  maxiter=maxiter, x0=v0)
                 use_precond=True
-                print "Building preconditioner took {} seconds".format(time.time()-ti)
+                print("Building preconditioner took {} seconds".format(time.time()-ti))
                 # print m_info['ilu_fill_factor']
             #print H[1].shape, np.sqrt(L.shape)
             #ss, info = steadystate(H[1], [L], method=method, M=M,
@@ -155,19 +145,19 @@ def calculate_steadystate(H, L, fill_factor=500, tol=1e-8, persistent=False,
             ss, info = steadystate(H[1], [L], method=method, 
                                     return_info=True, tol=tol, maxiter=maxiter, M=M)
             #print ss.shape
-            print "Steady state took {:0.3f} seconds with {}".format(info['solution_time'], method)
+            print("Steady state took {:0.3f} seconds with {}".format(info['solution_time'], method))
             return ss, info
         except Exception as err:
-            print "Steadystate failed because {}.".format(err)
+            print("Steadystate failed because {}.".format(err))
             if persistent:
                 if "tolerance" in str(err):
                     return 0, 0 # if it's a convergence error, don't bother
                 elif "preconditioner" in str(err):
                     ff -= 5
                     time.sleep(5) # Basically just giving the computer a breather
-                    print("Trying a smaller fill factor ({})...".format(ff))
+                    print(("Trying a smaller fill factor ({})...".format(ff)))
                     if ff<10:
-                        print("Failed with a lower limit fill factor of 38. Skipping...".format(ff))
+                        print(("Failed with a lower limit fill factor of 38. Skipping...".format(ff)))
                         return 0, 0 # ff is too low, don't bother
                 else:
                     raise Exception(str(err))
@@ -210,11 +200,11 @@ def heat_map_calculator(PARAMS,
                 # don't use converged steadystate solver
                 H, L, L_add, PARAMS = get_H_and_L(PARAMS, silent=silent, threshold=threshold)
                 if additive:
-                    print "Using additive theory"
+                    print("Using additive theory")
                     L = L_add
                     N_min = 5
                 tf = time.time()
-                print "N_1 = {}, N_2 = {}, exc= {}, H_dim={}".format(PARAMS['N_1'], PARAMS['N_2'], PARAMS['exc'], H[1].shape[0])
+                print("N_1 = {}, N_2 = {}, exc= {}, H_dim={}".format(PARAMS['N_1'], PARAMS['N_2'], PARAMS['exc'], H[1].shape[0]))
                 
                 ss, info = calculate_steadystate(H, L, fill_factor=fill_factor,
                                                 persistent=persistent, method=method)
@@ -225,14 +215,14 @@ def heat_map_calculator(PARAMS,
                 ss_array[i][j], info_array[i][j] = ss, info                
                 try:
                     ts = info['solution_time']
-                    print ops['sigma_x'].shape, ss.shape
-                    print "Build time: {:0.3f} \t | \t Solution time: {:0.3f} \t | \t Sigma x {}".format(tf-ti,
-                                                                                    ts, (ops['sigma_x']*ss).tr().real)
+                    print(ops['sigma_x'].shape, ss.shape)
+                    print("Build time: {:0.3f} \t | \t Solution time: {:0.3f} \t | \t Sigma x {}".format(tf-ti,
+                                                                                    ts, (ops['sigma_x']*ss).tr().real))
                     #print "Build time: {:0.3f} \t | \t Solution time: {:0.3f} \t | \t Sigma x {}".format(tf-ti,ts, 'none')                                                                  
                 except TypeError:
-                    print "N_1 = {}, N_2 = {}, exc= {} - Calculation skipped...".format(PARAMS['N_1'],
+                    print("N_1 = {}, N_2 = {}, exc= {} - Calculation skipped...".format(PARAMS['N_1'],
                                                                                         PARAMS['N_2'],
-                                                                                        PARAMS['exc'])
+                                                                                        PARAMS['exc']))
             else:
                 N_max = 10
                 if ('alpha_1' in x_axis_parameters) and PARAMS['alpha_1']<1:
@@ -240,9 +230,9 @@ def heat_map_calculator(PARAMS,
                     N_max=4
                 if additive and PARAMS['V']==0.:
                     N_min = 4
-                print print_PARAMS(PARAMS)
+                print(print_PARAMS(PARAMS))
                 ss_array[i][j], info_array[i][j] = calculate_converged_steadystate(PARAMS, conv_percent_tol=conv_percent_tol,                                                                                 etol=etol, N_min=N_min, N_max=N_max,method="direct",                                                                       maxiter=6000, v0=None, observable=conv_obs, additive=additive)
-                print "calculation converged - {:0.1f}, {:0.1f} ({}/{})".format(x, y, k, len(x_values)*len(y_values))
+                print("calculation converged - {:0.1f}, {:0.1f} ({}/{})".format(x, y, k, len(x_values)*len(y_values)))
                 k+=1
     # Pass variables through so heatmap_plotter knows what to do
     PARAMS.update({'x_axis_parameters': x_axis_parameters,
@@ -260,7 +250,7 @@ def heat_map_calculator(PARAMS,
                 save_obj(PARAMS, directory+'/PARAMS')
                 save_obj(info_array, directory+'/info_array')
                 saved = True
-                print "Files saved at {}".format(directory)
+                print("Files saved at {}".format(directory))
             else:
                 k+=1
     return ss_array, info_array

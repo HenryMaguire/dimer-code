@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import os
 # Load style file
-plt.style.use(os.path.join('./../', 'plot_style.mplstyle'))
+#plt.style.use(os.path.join('./../', 'plot_style.mplstyle'))
 # Make some style choices for plotting
 colourWheel =['#329932',
             '#ff6961',
