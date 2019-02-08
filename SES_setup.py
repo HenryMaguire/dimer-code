@@ -130,7 +130,7 @@ def get_H_and_L_local(PARAMS, silent=False, threshold=0.):
     
     return H, L, L_add
 
-def get_H_and_L(PARAMS,silent=False, threshold=0.):
+def get_H_and_L(PARAMS,silent=False, threshold=0., shift_in_additive=False):
     L, H, A_1, A_2, PARAMS = RC.RC_mapping(PARAMS, silent=silent, shift=True, site_basis=True, parity_flip=PARAMS['parity_flip'])
     L_add = copy.deepcopy(L)
     N_1 = PARAMS['N_1']
@@ -140,11 +140,15 @@ def get_H_and_L(PARAMS,silent=False, threshold=0.):
 
     I = enr_identity([N_1,N_2], exc)
     sigma = sigma_m1 + mu*sigma_m2
-    H_unshifted = PARAMS['w_1']*XO_proj + PARAMS['w_2']*OX_proj + PARAMS['V']*(site_coherence+site_coherence.dag())
+    if shift_in_additive:
+        H_add = tensor(H[0],I)
+    else:
+        H_add = tensor(PARAMS['w_1']*XO_proj + PARAMS['w_2']*OX_proj + PARAMS['V']*(site_coherence+site_coherence.dag()) ,I)
+
     if abs(PARAMS['alpha_EM'])>0:
         L += opt.L_non_rwa(H[1], tensor(sigma,I), PARAMS, silent=silent) #opt.L_BMME(H[1], tensor(sigma,I), PARAMS, ME_type='nonsecular', site_basis=True, silent=silent)
-        L_add += opt.L_non_rwa(tensor(H_unshifted,I), tensor(sigma,I), PARAMS, silent=silent) #opt.L_BMME(tensor(H_unshifted,I), tensor(sigma,I), PARAMS, 
-                            #ME_type='nonsecular', site_basis=True, silent=silent)
+        L_add += opt.L_non_rwa(H_add, tensor(sigma,I), PARAMS, silent=silent) #opt.L_BMME(tensor(H_unshifted,I), tensor(sigma,I), PARAMS, 
+        #ME_type='nonsecular', site_basis=True, silent=silent)
         #L_add += opt.L_phenom_SES(PARAMS)
     else:
         print("Not including optical dissipator")
@@ -192,7 +196,7 @@ def get_H_and_L_wc(H, PARAMS, silent=True, secular_phonon=False, shift=True):
     mu = PARAMS['mu']
     sigma = sigma_m1 + mu*sigma_m2
     if abs(PARAMS['alpha_EM'])>0:
-        L_ns += opt.L_non_rwa(H, sigma, PARAMS, silent=silent)
+        L_ns += opt.L_non_rwa(PARAMS['H_sub'], sigma, PARAMS, silent=silent)
         #opt.L_BMME(H, sigma, PARAMS, ME_type='nonsecular', site_basis=True, silent=silent)
         L_s +=  wp.L_sec_wc_SES(PARAMS, silent=silent)
         #L += opt.L_BMME(H, sigma, PARAMS, ME_type='secular', site_basis=True, silent=silent)

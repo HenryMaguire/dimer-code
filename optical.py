@@ -134,7 +134,7 @@ def L_non_rwa(H_vib, sigma, PARAMS, silent=False, site_basis=True):
     L += qt.spost(G_dag*A) - qt.sprepost(A, G_dag)
     if not silent:
         print("Full optical Liouvillian took {} seconds.".format(time.time()- ti))
-    return -L
+    return -0.5*L
 
 def nonRWA_function(idx_list, **kwargs):
 
@@ -306,7 +306,9 @@ def L_nonsecular(H_vib, A, args, site_basis=True, silent=False):
     #print np.sum(X1.full()), np.sum(X2.full()), np.sum(X3.full()), np.sum(X4.full())
     if not silent:
         print("It took ", time.time()-ti, " seconds to build the Non-secular RWA Liouvillian")
-    return -L
+    return -0.5*L
+
+
 
 
 def secular_function(args, eVecs=[], eVals=[], T_EM=0.,
@@ -339,6 +341,7 @@ def secular_function(args, eVecs=[], eVals=[], T_EM=0.,
         s2 = r_down*(spost(JJ)+ spre(JJ) - 2*sprepost(IJ,JI))
         L = lam_ij_sq*(s1+s2)
     return Qobj(L)
+
 
 def L_secular(H_vib, A, args, silent=False):
     '''

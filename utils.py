@@ -95,6 +95,21 @@ def exciton_states(PARS, shift=False):
 #dims and excitations are the same as the ones you send to the other enr functions
 
 
+def convergence_parameter(alpha, T_ph, w_0):
+    # phenomenological score for estimating convergence. higher = 'Takes more of states to converge'
+    return np.sqrt(Occupation(w_0, T_ph)*np.exp((alpha/w_0)))
+
+def converged_N(alpha, T_ph, w_0):
+    # estimates a suitable N to use for dynamics
+    return int(4+2*convergence_parameter(alpha, T_ph, w_0))
+
+"""
+print(converged_N(100., 300., 100.), convergence_parameter(100., 300., 100.)) # should be about 8
+print(converged_N(50., 300., 100.), convergence_parameter(50., 300., 100.)) # should be about 7
+print(converged_N(1., 500., 400.), convergence_parameter(1., 500., 400.)) # should be about 5
+print(converged_N(1., 77., 400.), convergence_parameter(1., 77., 400.)) # should be 4
+print(converged_N(10., 77., 400.), convergence_parameter(10., 77., 400.)) # should be about 4
+"""
 
 def dimer_mutual_information(rho, args):
     N, exc = args['N_1'], args['exc']
