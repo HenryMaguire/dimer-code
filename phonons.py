@@ -204,7 +204,7 @@ def underdamped_shift(alpha, Gamma, w0):
 def mapped_constants(w0, alpha_ph, Gamma):
     gamma = Gamma / (2. * np.pi * w0)  # coupling between RC and residual bath
     kappa= np.sqrt(np.pi * alpha_ph * w0 / 2.)  # coupling strength between the TLS and RC
-    shift = pi*alpha_ph/2.
+    shift = 0.5*pi*alpha_ph/2.
     """if Gamma>= 2*w0:
         shift = pi*alpha_ph/2.#underdamped_shift(alpha_ph, Gamma, w0)
     else:

@@ -32,6 +32,9 @@ sigma_m2 =  OO*OX.dag()
 sigma_x1 = sigma_m1+sigma_m1.dag()
 sigma_x2 = sigma_m2+sigma_m2.dag()
 
+sigma_x = 0.5*(site_coherence+site_coherence.dag())
+sigma_y = 0.5*(1j*(site_coherence-site_coherence.dag()))
+
 I_sys = qeye(3)
 
 imp.reload(RC)
@@ -55,7 +58,7 @@ def make_expectation_labels():
     return dict((key_val[0], key_val[1]) for key_val in zip(labels, tex_labels))
 
 
-def make_expectation_operators(PARAMS, H=None, weak_coupling=False, shift=False):
+def make_expectation_operators(PARAMS, H=None, weak_coupling=False, shift=True):
     # makes a dict: keys are names of observables values are operators
     I_sys=qeye(PARAMS['sys_dim'])
     I = enr_identity([PARAMS['N_1'], PARAMS['N_2']], PARAMS['exc'])
@@ -63,11 +66,9 @@ def make_expectation_operators(PARAMS, H=None, weak_coupling=False, shift=False)
     energies, states = exciton_states(PARAMS, shift=shift)
     bright_vec = states[1]
     dark_vec = states[0]
-    sigma_x = site_coherence+site_coherence.dag()
-    sigma_y = 1j*(site_coherence-site_coherence.dag())
     sigma_z = XO_proj - OX_proj
     eta = np.sqrt(PARAMS['bias']**2 + 4*PARAMS['V']**2)
-    eig_x_equiv = (2*PARAMS['V']/eta)*sigma_z - (0.5*PARAMS['bias']/eta)*sigma_x
+    eig_x_equiv = (2*PARAMS['V']/eta)*sigma_z - (PARAMS['bias']/eta)*sigma_x
 
     # electronic operators
      # site populations site coherences, eig pops, eig cohs
@@ -143,7 +144,7 @@ def get_H_and_L(PARAMS,silent=False, threshold=0., shift_in_additive=False):
     if shift_in_additive:
         H_add = tensor(H[0],I)
     else:
-        H_add = tensor(PARAMS['w_1']*XO_proj + PARAMS['w_2']*OX_proj + PARAMS['V']*(site_coherence+site_coherence.dag()) ,I)
+        H_add = tensor(PARAMS['H_sub'], I)
 
     if abs(PARAMS['alpha_EM'])>0:
         L += opt.L_non_rwa(H[1], tensor(sigma,I), PARAMS, silent=silent) #opt.L_BMME(H[1], tensor(sigma,I), PARAMS, ME_type='nonsecular', site_basis=True, silent=silent)
@@ -159,7 +160,7 @@ def get_H_and_L(PARAMS,silent=False, threshold=0., shift_in_additive=False):
         L.tidyup(threshold)
     if not silent:
         print(("Chopping reduced the sparsity from {:0.3f}% to {:0.3f}%".format(spar0, sparse_percentage(L))))
-    return H, L, L_add, PARAMS
+    return H, {'nonadd':L , 'add': L_add}, PARAMS
 
 
 def get_H_and_L_RWA(PARAMS, silent=False, threshold=0.):
@@ -196,7 +197,7 @@ def get_H_and_L_wc(H, PARAMS, silent=True, secular_phonon=False, shift=True):
     mu = PARAMS['mu']
     sigma = sigma_m1 + mu*sigma_m2
     if abs(PARAMS['alpha_EM'])>0:
-        L_ns += opt.L_non_rwa(PARAMS['H_sub'], sigma, PARAMS, silent=silent)
+        L_ns += opt.L_non_rwa(H, sigma, PARAMS, silent=silent)
         #opt.L_BMME(H, sigma, PARAMS, ME_type='nonsecular', site_basis=True, silent=silent)
         L_s +=  wp.L_sec_wc_SES(PARAMS, silent=silent)
         #L += opt.L_BMME(H, sigma, PARAMS, ME_type='secular', site_basis=True, silent=silent)
@@ -207,7 +208,9 @@ def get_H_and_L_wc(H, PARAMS, silent=True, secular_phonon=False, shift=True):
 
 def get_H_and_L_additive(PARAMS,silent=False, threshold=0.):
     L, H, A_1, A_2, PARAMS = RC.RC_mapping(PARAMS, silent=silent, shift=True, site_basis=True)
-
+    H_unshifted = PARAMS['w_1']*XO_proj + PARAMS['w_2']*OX_proj + PARAMS['V']*(site_coherence+site_coherence.dag())
+    L_add = copy.deepcopy(L)
+    L_add_shift = copy.deepcopy(L)
     N_1 = PARAMS['N_1']
     N_2 = PARAMS['N_2']
     exc = PARAMS['exc']
@@ -217,8 +220,9 @@ def get_H_and_L_additive(PARAMS,silent=False, threshold=0.):
     sigma = sigma_m1 + mu*sigma_m2
     
     if abs(PARAMS['alpha_EM'])>0:
-        L += opt.L_BMME(H[1], tensor(sigma,I), PARAMS, ME_type='nonsecular', site_basis=True, silent=silent)
-
+        L += opt.L_non_rwa(H[1], tensor(sigma,I), PARAMS, silent=silent)
+        L_add += opt.L_non_rwa(tensor(H_unshifted,I), tensor(sigma,I), PARAMS, silent=silent)
+        L_add_shift += opt.L_non_rwa(tensor(H[0],I), tensor(sigma,I), PARAMS, silent=silent)
     else:
         print("Not including optical dissipator")
     spar0 = sparse_percentage(L)
@@ -227,7 +231,7 @@ def get_H_and_L_additive(PARAMS,silent=False, threshold=0.):
     if not silent:
         print(("Chopping reduced the sparsity from {:0.3f}% to {:0.3f}%".format(spar0, sparse_percentage(L))))
 
-    return H, L
+    return H, {'nonadd':L, 'add-shift':L_add_shift , 'add': L_add}, PARAMS
 
 def PARAMS_setup(bias=100., w_2=2000., V = 100., alpha=100.,
                                  T_EM=0., T_ph =300.,
@@ -286,5 +290,55 @@ def PARAMS_update_bias(PARAMS_init=None, bias_value=10.):
     scope = locals() # Lets eval below use local variables, not global
     PARAMS_init.update(dict((name, eval(name, scope)) for name in PARAM_names))
     return PARAMS_init
+
+
+def displace(offset, a):
+    return (offset*(a.dag()) - offset.conjugate()*a).expm()
+
+def undisplaced_initial(init_sys, PARAMS):
+    n1 = Occupation(PARAMS['w0_1'], PARAMS['T_1'])
+    n2 = Occupation(PARAMS['w0_2'], PARAMS['T_2'])
+    return tensor(init_sys, qt.enr_thermal_dm([PARAMS['N_1'], PARAMS['N_2']], PARAMS['exc'], 
+                                              [n1, n2]))
+def position_ops(PARAMS):
+    atemp = enr_destroy([PARAMS['N_1'], PARAMS['N_2']], PARAMS['exc'])
+    return [tensor(I_sys, (a + a.dag())*0.5) for a in atemp] # Should have a 0.5 in this
+
+def displaced_initial(init_sys, PARAMS, silent=False, return_error=False):
+    # Works for 
+    offset_1 = 0.5*sqrt(pi*PARAMS['alpha_1']/(2*PARAMS['w0_1']))
+    offset_2 = 0.5*sqrt(pi*PARAMS['alpha_2']/(2*PARAMS['w0_2']))
+    atemp = enr_destroy([PARAMS['N_1'], PARAMS['N_2']], PARAMS['exc'])
+    x = position_ops(PARAMS)
+    
+    r0 = undisplaced_initial(init_sys, PARAMS)
+    disp = copy.deepcopy(r0)
+    for offset, a_ in zip([offset_1, offset_2], atemp):
+        d = tensor(I_sys, displace(offset, a_))
+        disp =  d * disp * d.dag()
+    error = 100*(abs((disp*x[0]).tr()- offset_1)/offset_1 + abs((disp*x[1]).tr()- offset_2)/offset_2)
+    if not silent:
+        print ("Error in displacement: {:0.8f}%".format(error))
+        print ("Ratio of kBT to Omega: {:0.4f}".format(0.695*PARAMS['T_1']/PARAMS['w0_1']))
+        if ((PARAMS['T_1'] != PARAMS['T_2']) or (PARAMS['w0_1'] != PARAMS['w0_2'])):
+           print("Ratio of kBT to Omega (2): {:0.4f}".format(0.695*PARAMS['T_2']/PARAMS['w0_2']))
+    if return_error:   
+        return disp, error
+    else:
+        return disp
+
+def get_converged_N(PARAMS, err_threshold=1e-2, min_N=4, max_N=10, silent=True, exc_diff_N=False):
+    err = 0
+    for N in range(min_N,max_N+1):
+        if exc_diff_N:
+            exc_diff = N # when using partial traces we can't use ENR
+        else:
+            exc_diff = 0
+        PARAMS.update({'N_1':N, 'N_2':N, 'exc':N+exc_diff})
+        disp, err = displaced_initial(OO_proj, PARAMS, silent=True, return_error=True)
+        if err<err_threshold:
+            return PARAMS
+    print("Error could only converge to {}".format(err))
+    return PARAMS
 
 print("SES_setup loaded globally")

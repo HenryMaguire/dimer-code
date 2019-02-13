@@ -1,14 +1,15 @@
 import numpy as np
-from numpy import pi
+from numpy import pi, sqrt
 import scipy as sp
-from qutip import spre, spost, sprepost, tensor, basis, qeye
+from qutip import spre, spost, sprepost, tensor, basis, qeye, enr_destroy
 import qutip as qt
 import pickle
 import sympy
 
 from scipy.linalg import eig, inv
 
-
+def gap(bias, V):
+    return sqrt(bias**2 +4*(V**2))
 
 def chunks(l, n):
     """Yield successive n-sized chunks from l."""
@@ -54,7 +55,6 @@ def to_site_basis(op, evals, evecs, evecs_inv):
 def change_basis(ops, evals, evecs, eig_to_site=True):
     evals, evecs = sort_eigs(evals, evecs)
     evecs = np.transpose(np.array([v.dag().full()[0] for v in evecs])) # get into columns of evecs
-    print() 
     evecs_inv = sp.linalg.inv(evecs) # has a very low overhead
     if eig_to_site:
         basis_change_op = to_site_basis
@@ -77,8 +77,9 @@ def exciton_states(PARS, shift=False):
             w_1 += PARS['shift_1']
             w_2 += PARS['shift_2']
         except KeyError as e:
-            print("No RC mapping performed yet.")
-            raise KeyError
+            print("No RC mapping performed yet. Using 0.5*pi*alpha/2")
+            w_1 += 0.5*pi*PARS['alpha_1']/2
+            w_2 += 0.5*pi*PARS['alpha_2']/2
     eps = (w_1-w_2)
     eta = np.sqrt(eps**2 + 4*V**2)
     lam_m = ((w_2+eps)+w_2-eta)*0.5
@@ -102,6 +103,8 @@ def convergence_parameter(alpha, T_ph, w_0):
 def converged_N(alpha, T_ph, w_0):
     # estimates a suitable N to use for dynamics
     return int(4+2*convergence_parameter(alpha, T_ph, w_0))
+
+
 
 """
 print(converged_N(100., 300., 100.), convergence_parameter(100., 300., 100.)) # should be about 8
@@ -300,6 +303,7 @@ def print_PARAMS(PARAMS):
         except ValueError as err:
             raise Exception("Cannot print parameters for "+key + " because "+str(err))
     print((", ".join(param_strings)))
+
 
 
 # conversions between alphas and the ratios in terms of w_2
