@@ -29,7 +29,6 @@ def H_mapping_RC(args, shift=True):
     H_S = tensor(H_sub, I)
 
     atemp = enr_destroy([args['N_1'],args['N_2']], args['exc'])
-
     a_RC_exc = [tensor(I_sub, aa) for aa in atemp] # annhilation ops in exc restr basis
     phonon_operators = []
     for i in range(len(coupling_ops)):
@@ -204,7 +203,7 @@ def underdamped_shift(alpha, Gamma, w0):
 def mapped_constants(w0, alpha_ph, Gamma):
     gamma = Gamma / (2. * np.pi * w0)  # coupling between RC and residual bath
     kappa= np.sqrt(np.pi * alpha_ph * w0 / 2.)  # coupling strength between the TLS and RC
-    shift = 0.5*pi*alpha_ph/2.
+    shift = pi*alpha_ph/2.
     """if Gamma>= 2*w0:
         shift = pi*alpha_ph/2.#underdamped_shift(alpha_ph, Gamma, w0)
     else:
@@ -216,9 +215,6 @@ def RC_mapping(args, silent=False, shift=True, site_basis=True, parity_flip=Fals
     wRC_1, gamma_1, kappa_1, shift_1 = mapped_constants(args['w0_1'], args['alpha_1'], args['Gamma_1'])
     wRC_2, gamma_2, kappa_2, shift_2 = mapped_constants(args['w0_2'], args['alpha_2'], args['Gamma_2'])
 
-    if parity_flip:
-        kappa_2*=-1 # Relative sign flip
-    
     #shift1, shift2 = (kappa_1**2)/wRC_1, (kappa_2**2)/wRC_2
     shifted_bias = args['bias']+(shift_1 - shift_2)
 
@@ -228,6 +224,7 @@ def RC_mapping(args, silent=False, shift=True, site_basis=True, parity_flip=Fals
                 'w0_2': wRC_2, 'kappa_1':kappa_1, 'kappa_2':kappa_2,'shift_1':shift_1, 
                 'shift_2':shift_1, 'shifted_bias': shifted_bias})
     #print args
+
     H, phonon_operators = H_mapping_RC(args, shift=True)
     A_1, A_2 = phonon_operators[0], phonon_operators[1]
     H_RC, L_RC =  liouvillian_build(H[1], A_1, A_2, gamma_1, gamma_2,  wRC_1, wRC_2,
@@ -239,6 +236,19 @@ def RC_mapping(args, silent=False, shift=True, site_basis=True, parity_flip=Fals
                                             L_RC.shape[0], full_size, full_size))
     return L_RC, [H[0], H_RC], A_1, A_2, args
 
+def mapped_H(args):
+    wRC_1, gamma_1, kappa_1, shift_1 = mapped_constants(args['w0_1'], args['alpha_1'], args['Gamma_1'])
+    wRC_2, gamma_2, kappa_2, shift_2 = mapped_constants(args['w0_2'], args['alpha_2'], args['Gamma_2'])
+    
+    #shift1, shift2 = (kappa_1**2)/wRC_1, (kappa_2**2)/wRC_2
+    shifted_bias = args['bias']+(shift_1 - shift_2)
+    
+    args.update({'gamma_1': gamma_1, 'gamma_2': gamma_2, 'w0_1': wRC_1, 
+                'w0_2': wRC_2, 'kappa_1':kappa_1, 'kappa_2':kappa_2,'shift_1':shift_1, 
+                'shift_2':shift_1, 'shifted_bias': shifted_bias})
+    #print args
+    H, phonon_operators = H_mapping_RC(args, shift=True)
+    return H, phonon_operators, args
 
 def rate_operators(args):
     # we define all of the RC parameters by the underdamped spectral density

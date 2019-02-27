@@ -68,7 +68,9 @@ def thermal_state(T, H):
     return p/p.tr()
 
 def Coth(x):
-    return (np.exp(2*x)+1)/(np.exp(2*x)-1)
+    #return (np.exp(2*x)+1)/(np.exp(2*x)-1)
+    return float(sympy.coth(x))
+    
 
 def exciton_states(PARS, shift=False):
     w_1, w_2, V, eps = PARS['w_1'], PARS['w_2'],PARS['V'], PARS['bias']
@@ -77,9 +79,9 @@ def exciton_states(PARS, shift=False):
             w_1 += PARS['shift_1']
             w_2 += PARS['shift_2']
         except KeyError as e:
-            print("No RC mapping performed yet. Using 0.5*pi*alpha/2")
-            w_1 += 0.5*pi*PARS['alpha_1']/2
-            w_2 += 0.5*pi*PARS['alpha_2']/2
+            print("No RC mapping performed yet. Using pi*alpha/2")
+            w_1 += pi*PARS['alpha_1']/2
+            w_2 += pi*PARS['alpha_2']/2
     eps = (w_1-w_2)
     eta = np.sqrt(eps**2 + 4*V**2)
     lam_m = ((w_2+eps)+w_2-eta)*0.5

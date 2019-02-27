@@ -233,6 +233,12 @@ def get_H_and_L_additive(PARAMS,silent=False, threshold=0.):
 
     return H, {'nonadd':L, 'add-shift':L_add_shift , 'add': L_add}, PARAMS
 
+def get_H(PARAMS):
+    H, phonon_operators, PARAMS = RC.mapped_H(PARAMS)
+    sigma = sigma_m1 + PARAMS['mu']*sigma_m2 
+    I = enr_identity([PARAMS['N_1'], PARAMS['N_2']], PARAMS['exc'])
+    return H, phonon_operators, tensor(sigma+sigma.dag(), I), PARAMS
+
 def PARAMS_setup(bias=100., w_2=2000., V = 100., alpha=100.,
                                  T_EM=0., T_ph =300.,
                                  alpha_EM=1., shift=True,
@@ -302,12 +308,12 @@ def undisplaced_initial(init_sys, PARAMS):
                                               [n1, n2]))
 def position_ops(PARAMS):
     atemp = enr_destroy([PARAMS['N_1'], PARAMS['N_2']], PARAMS['exc'])
-    return [tensor(I_sys, (a + a.dag())*0.5) for a in atemp] # Should have a 0.5 in this
+    return [tensor(I_sys, (a + a.dag())/sqrt(2)) for a in atemp] # Should have a 0.5 in this
 
 def displaced_initial(init_sys, PARAMS, silent=False, return_error=False):
     # Works for 
-    offset_1 = 0.5*sqrt(pi*PARAMS['alpha_1']/(2*PARAMS['w0_1']))
-    offset_2 = 0.5*sqrt(pi*PARAMS['alpha_2']/(2*PARAMS['w0_2']))
+    offset_1 = sqrt(pi*PARAMS['alpha_1']/(2*PARAMS['w0_1']))
+    offset_2 = sqrt(pi*PARAMS['alpha_2']/(2*PARAMS['w0_2']))
     atemp = enr_destroy([PARAMS['N_1'], PARAMS['N_2']], PARAMS['exc'])
     x = position_ops(PARAMS)
     
