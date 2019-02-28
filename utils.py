@@ -366,6 +366,30 @@ def chop(X, threshold=1e-7):
     _X.tidyup(threshold)
     return _X
 
+def sort_eigs(evals, evecs):
+    idx = evals.argsort()
+    return evals[idx], evecs[idx]
+
+def dark_bright_check(states, ops):
+    # ensures the states have the correct symmetry properties
+    dark_states = states['dark']
+    bright_states = states['bright']
+    ground_states = states['ground']
+    i = 0
+    for g in ground_states:
+        assert abs((g*g.dag()*ops["OO"]).tr()-1) <1e-10
+        for d in dark_states:
+            assert abs((d.dag()*g).tr()) <1e-10
+    for d in dark_states:
+        #print((d.dag()*d).tr())
+        assert abs((d.dag()*d).tr()-1) <1e-10
+        for b in bright_states:
+            #print ((d.dag()*b))
+            assert abs((b.dag()*b).tr()-1) <1e-10
+            assert abs((d.dag()*b).tr()) <1e-10
+            assert abs((d.dag()*d).tr()-1) <1e-10
+            i += 1
+
 from qutip import enr_state_dictionaries, Qobj
 def ENR_ptrace(rho, sel, excitations):
     """

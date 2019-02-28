@@ -97,6 +97,41 @@ def make_expectation_operators(PARAMS, H=None, weak_coupling=False, shift=True):
 
         return dict((key_val[0], key_val[1]) for key_val in zip(labels, fullspace_ops))
 
+def separate_states(H, PARAMS, trunc=0.8):
+    # truncation removes the really dodgy states for which the parity is unclear 
+    # (this might not be numerical error, but it probs is)
+    ops = make_expectation_operators(PARAMS)
+    energies, states = H.eigenstates()
+    energies, states = sort_eigs(energies, states)
+    energies, states = energies[0:int(len(states)*trunc)], states[0:int(len(states)*trunc)]
+    parities = [(state*state.dag()*ops['sigma_x']).tr() for state in states]
+    phonon_occ_dict = {'dark': [], 'bright': [], 'ground': []}
+    states_dict = {'dark': [], 'bright': [], 'ground': []}
+    energies_dict = {'dark': [], 'bright': [], 'ground': []} # for checking
+    for i, parity in enumerate(parities):
+        occ_1 = (states[i].dag()*ops['RC1_number']*states[i]).tr().real
+        occ_2 = (states[i].dag()*ops['RC2_number']*states[i]).tr().real
+        if abs(parity)<1e-10:
+            states_dict['ground'].append(states[i])
+            energies_dict['ground'].append(energies[i])
+            phonon_occ_dict['ground'].append((occ_1, occ_2))
+        elif parity>1e-10:
+            states_dict['bright'].append(states[i])
+            energies_dict['bright'].append(energies[i])
+            phonon_occ_dict['bright'].append((occ_1, occ_2))
+        elif parity<-1e-10:
+            states_dict['dark'].append(states[i])
+            energies_dict['dark'].append(energies[i])
+            phonon_occ_dict['dark'].append((occ_1, occ_2))
+        else:
+            raise ValueError("Parity is {} ".format(parity))
+    if len(states_dict['ground'])  == len(states):
+        print("This will not work for V=0. Ground contains all states.")
+    #print(len(states_dict['dark']), len(states_dict['bright']), len(states_dict['ground']))
+    #assert (len(states_dict['dark']) == len(states_dict['bright']))
+    dark_bright_check(states_dict, ops)
+    return energies_dict, states_dict, phonon_occ_dict
+
 def get_H_and_L_local(PARAMS, silent=False, threshold=0.):
     V = PARAMS['V']
     PARAMS['H_sub'] = PARAMS['w_1']*XO_proj + PARAMS['w_2']*OX_proj 
@@ -130,6 +165,65 @@ def get_H_and_L_local(PARAMS, silent=False, threshold=0.):
     PARAMS.update({'V': V})
     
     return H, L, L_add
+
+
+def get_H_and_L_add_and_sec(PARAMS,silent=False, threshold=0., shift_in_additive=False):
+    L, H, A_1, A_2, PARAMS = RC.RC_mapping(PARAMS, silent=silent, shift=True, site_basis=True, parity_flip=PARAMS['parity_flip'])
+    L_add = copy.deepcopy(L)
+    L_sec = copy.deepcopy(L)
+    N_1 = PARAMS['N_1']
+    N_2 = PARAMS['N_2']
+    exc = PARAMS['exc']
+    mu = PARAMS['mu']
+
+    I = enr_identity([N_1,N_2], exc)
+    sigma = sigma_m1 + mu*sigma_m2
+    if shift_in_additive:
+        H_add = tensor(H[0],I)
+    else:
+        H_add = tensor(PARAMS['H_sub'], I)
+
+    if abs(PARAMS['alpha_EM'])>0:
+        L += opt.L_non_rwa(H[1], tensor(sigma,I), PARAMS, silent=silent) #opt.L_BMME(H[1], tensor(sigma,I), PARAMS, ME_type='nonsecular', site_basis=True, silent=silent)
+        L_add += opt.L_non_rwa(H_add, tensor(sigma,I), PARAMS, silent=silent) #opt.L_BMME(tensor(H_unshifted,I), tensor(sigma,I), PARAMS, 
+        L_sec += opt.L_secular(H[1], tensor(sigma,I), PARAMS) #opt.L_BMME(tensor(H_unshifted,I), tensor(sigma,I), PARAMS, 
+        #ME_type='nonsecular', site_basis=True, silent=silent)
+        #L_secular(H_vib, A, args, silent=False)
+        #L_add += opt.L_phenom_SES(PARAMS)
+    else:
+        print("Not including optical dissipator")
+
+    spar0 = sparse_percentage(L)
+    if threshold:
+        L_add.tidyup(threshold)
+        L.tidyup(threshold)
+    if not silent:
+        print(("Chopping reduced the sparsity from {:0.3f}% to {:0.3f}%".format(spar0, sparse_percentage(L))))
+    return H, {'nonadd':L , 'add': L_add, 'sec': L_sec}, PARAMS
+
+def get_H_and_L_full(PARAMS,silent=False, threshold=0.):
+    L, H, A_1, A_2, PARAMS = RC.RC_mapping(PARAMS, silent=silent, shift=True, site_basis=True)
+    N_1 = PARAMS['N_1']
+    N_2 = PARAMS['N_2']
+    exc = PARAMS['exc']
+    mu = PARAMS['mu']
+
+    I = enr_identity([N_1,N_2], exc)
+    sigma = sigma_m1 + mu*sigma_m2
+
+
+    if abs(PARAMS['alpha_EM'])>0:
+        L += opt.L_non_rwa(H[1], tensor(sigma,I), PARAMS, silent=silent) #opt.L_BMME(H[1], tensor(sigma,I), PARAMS, ME_type='nonsecular', site_basis=True, silent=silent)
+
+    else:
+        print("Not including optical dissipator")
+
+    spar0 = sparse_percentage(L)
+    if threshold:
+        L.tidyup(threshold)
+    if not silent:
+        print(("Chopping reduced the sparsity from {:0.3f}% to {:0.3f}%".format(spar0, sparse_percentage(L))))
+    return H, {'nonadd':L }, PARAMS
 
 def get_H_and_L(PARAMS,silent=False, threshold=0., shift_in_additive=False):
     L, H, A_1, A_2, PARAMS = RC.RC_mapping(PARAMS, silent=silent, shift=True, site_basis=True, parity_flip=PARAMS['parity_flip'])
@@ -286,7 +380,7 @@ def PARAMS_update_bias(PARAMS_init=None, bias_value=10.):
     bias = bias_value
     w_2 = PARAMS_init['w_2']
     w_1 = w_2 + bias
-    dipole_1, dipole_2 = 1., 1.
+    dipole_1, dipole_2 = PARAMS_init['dipole_1'], PARAMS_init['dipole_2']
     mu = (w_2*dipole_2)/(w_1*dipole_1)
 
     w_xx = w_2 + w_1

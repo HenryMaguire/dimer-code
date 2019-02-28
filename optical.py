@@ -65,12 +65,12 @@ def int_conv(f, a, inc, omega):
         return I # Converged integral
 
 def integral_converge(f, a, omega):
-    for inc in [300., 200., 100., 50., 25., 10, 5., 1, 0.5]:
+    for inc in [300., 200., 100., 50., 25., 10, 5., 1, 0.5, 0.3, 0.2, 0.1]:
         inc += np.random.random()/10
         try:
             return int_conv(f, a, inc, omega) 
         except:
-            if inc == 0.5:
+            if inc < 0.1:
                 raise ValueError("Integrals couldn't converge")
             else:
                 pass
@@ -351,7 +351,7 @@ def L_secular(H_vib, A, args, silent=False):
     ti = time.time()
     #num_cpus = args['num_cpus']
     dim_ham = H_vib.shape[0]
-    eVals, eVecs = sorted_eig(H_vib)
+    eVals, eVecs = H_vib.eigenstates()
     #print [(i, ev) for i, ev in enumerate(eVals)] # Understanding manifold structure
     #names = ['eVals', 'eVecs', 'A', 'w_1', 'Gamma', 'T', 'J']
     T = args['T_EM']
@@ -401,7 +401,7 @@ def L_secular_par(H_vib, A, args):
     #for name in names:
     #    kwargs[name] = eval(name)
     pool = multiprocessing.Pool(num_cpus)
-    L = pool.imap_unordered(partial(secular_function,**kwargs), i_j_generator(dim_ham))
+    L = pool.imap_unordered(partial(secular_function,**kwargs), i_j_generator(dim_ham, num_cpus))
     pool.close()
     pool.join()
     print("It took ", time.time()-ti, " seconds to build the secular RWA Liouvillian")
