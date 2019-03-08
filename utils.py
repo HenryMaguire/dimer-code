@@ -196,8 +196,17 @@ def get_dimer_info(rho, I):
     xx = (rho*XX).tr()
     return qt.Qobj([[g.real, 0,0,0], [0, e1.real,e1e2.real,0],[0, e2e1.real,e2.real,0],[0, 0,0,xx.real]])#/(g+e1+e2+xx)
 
-
-
+def calculate_expval(rho_list, op_list, obs='OO'):
+    return [(op_list[i][obs]*rho).tr() for i, rho in enumerate(rho_list)]
+    
+def polaron_gap(PARAMS):
+    disp_1 = sqrt(pi*PARAMS['alpha_1']/(2*PARAMS['w0_1']))
+    disp_2 = sqrt(pi*PARAMS['alpha_2']/(2*PARAMS['w0_2']))
+    B1 = np.exp(-(disp_1**2)/2)  # Coth(beta_f(PARAMS['T_1'])*PARAMS['w0_1']/2)*
+    B2 = np.exp(-(disp_2**2)/2) # Coth(beta_f(PARAMS['T_2'])*PARAMS['w0_2']/2)*
+    eta = gap(PARAMS['bias'], PARAMS['V'])
+    L = sqrt(PARAMS['bias']**2 + 4*B1*B2*(PARAMS['V']**2))**2
+    return B1, B2, L/eta
 
 def J_multipolar(omega, Gamma, omega_0):
     return Gamma*(omega**3)/(2*np.pi*(omega_0**3))

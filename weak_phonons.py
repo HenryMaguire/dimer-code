@@ -37,18 +37,16 @@ def int_conv(f, a, inc, omega, tol=1E-4):
         #print "Integral converged to {} with step size of {}".format(I, inc)
         return I # Converged integral
 
-def integral_converge(f, a, omega, tol=2E-3):
-    for inc in [300., 200., 100., 50., 25., 10, 5., 1, 0.5]:
-        inc += np.random.random()
+def integral_converge(f, a, omega, tol=2e-3):
+    for inc in [300., 200., 100., 50., 25., 10, 5., 1, 0.5, 0.3, 0.2, 0.1]:
+        inc += np.random.random()/10
         try:
-            return int_conv(f, a, inc, omega, tol=tol) 
+            return int_conv(f, a, inc, omega, tol=tol)
         except:
-            if inc == 0.5:
+            if inc < 0.1:
                 raise ValueError("Integrals couldn't converge")
             else:
                 pass
-                
-    
 
 def DecayRate(omega, beta, J, Gamma, w0, imag_part=True, alpha=0., tol=1e-4):
     G = 0
