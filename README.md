@@ -8,11 +8,12 @@ This repository contains the notes and code for investigating the charge dynamic
 All the python files are written in Python 2.7. Requirements are:
 - qutip >=4.0
 
-For information regarding qutip installation, please see qutip.org/docs/latest/installation.html 
+Conda install is recommended. For information regarding qutip installation, please see qutip.org/docs/latest/installation.html 
+
 
 # Getting started
 
-
+Open up the `intro.ipynb` notebook and follow along
 
 # Bugs
 
