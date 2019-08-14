@@ -96,6 +96,40 @@ def make_expectation_operators(PARAMS, H=None, site_basis=True):
 
     return dict((key_val[0], key_val[1]) for key_val in zip(labels, fullspace_ops))
 
+def get_H_and_L(PARAMS,silent=False, threshold=0., site_basis=True, rwa=True):
+    # this makes the RWA and compares additive to non-additive
+    comment = 'Completed additive and non-additive liouvillians'
+    if rwa:
+        PARAMS = to_RWA(PARAMS)
+        comment+= ' in RWA'
+    L, H, A_1, A_2, PARAMS = RC.RC_mapping(PARAMS,silent=silent, shift=True,                                                site_basis=site_basis)
+    I = enr_identity([PARAMS['N_1'], PARAMS['N_2']], PARAMS['exc'])
+    sigma = sigma_m1 + PARAMS['mu']*sigma_m2
+
+    if abs(PARAMS['alpha_EM'])>0:
+        if rwa:
+            # always assumes nonsecular
+            optical_liouv = opt.L_BMME
+        else:
+            optical_liouv = opt.L_non_rwa
+
+        L += optical_liouv(H[1], tensor(sigma,I), 
+                            PARAMS, silent=silent)
+    else:
+        print("Not including optical dissipator")
+    spar0 = sparse_percentage(L)
+    if threshold:
+        L.tidyup(threshold)
+    if not silent:
+        if abs(threshold)>0:
+            print(("Chopping reduced the sparsity from {:0.3f}% to {:0.3f}%".format(spar0, sparse_percentage(L))))
+        print(comment)
+    output_names = ['H', 'L', 'PARAMS']
+    scope = locals() # Lets eval below use local variables, not global
+    output_dict = dict((name, eval(name, scope)) for name in output_names)
+
+    return output_dict
+
 def get_H_and_L_add(PARAMS,silent=False, threshold=0., site_basis=True, rwa=True):
     # this makes the RWA and compares additive to non-additive
     comment = 'Completed additive and non-additive liouvillians'
@@ -131,7 +165,7 @@ def get_H_and_L_add(PARAMS,silent=False, threshold=0., site_basis=True, rwa=True
     scope = locals() # Lets eval below use local variables, not global
     output_dict = dict((name, eval(name, scope)) for name in output_names)
 
-    return output_names
+    return output_dict
 
 def get_H_and_L_RWA(PARAMS,silent=False, threshold=0.):
     L, H, A_1, A_2, PARAMS = RC.RC_mapping(PARAMS, silent=silent)

@@ -128,9 +128,15 @@ def dimer_mutual_information(rho, args):
 
 ev_to_inv_cm = 8065.5
 inv_ps_to_inv_cm = 5.309
+
+
 def load_obj(name, encoding='utf8' ):
-    with open(name + '.pickle', 'rb') as f:
-        return pickle.load(f, encoding=encoding)
+    try:
+        with open(name + '.pickle', 'rb') as f:
+            return pickle.load(f, encoding=encoding)
+    except:
+        with open(name + '.pickle', 'rb') as f:
+            return pickle.load(f)
 
 def save_obj(obj, name ):
     with open(name + '.pickle', 'wb') as f:
@@ -261,7 +267,7 @@ def coth(x):
 
 
 def plot_UD_SD(Gamma, alpha, w_0, eps=2000., ax=None):
-    Omega = np.linspace(0,eps,10000)
+    Omega = np.linspace(0.,eps,10000)
     J_w = np.array([J_underdamped(w, alpha, w_0, Gamma=Gamma) for w in Omega])
     show_im = ax
     if ax is None:
@@ -276,7 +282,7 @@ def plot_UD_SD_PARAMS(PARAMS, ax=None):
     eps = PARAMS['w_2']
     alpha = PARAMS['alpha_2']
     w_0 = PARAMS['w0_2']
-    Omega = np.linspace(0,eps,10000)
+    Omega = np.linspace(0.,eps,10000)
     J_w = np.array([J_underdamped(w, alpha, Gamma, w_0) for w in Omega])
     show_im = ax
     if ax is None:
