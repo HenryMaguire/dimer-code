@@ -278,10 +278,11 @@ def plot_UD_SD(Gamma, alpha, w_0, eps=2000., ax=None):
     if show_im is None:
         plt.show()
 
-def plot_UD_SD_PARAMS(PARAMS, ax=None):
+def plot_UD_SD_PARAMS(PARAMS, gap=0, ax=None):
     eps = PARAMS['w_2']
     alpha = PARAMS['alpha_2']
     w_0 = PARAMS['w0_2']
+    Gamma = PARAMS['w0_2']
     Omega = np.linspace(0.,eps,10000)
     J_w = np.array([J_underdamped(w, alpha, Gamma, w_0) for w in Omega])
     show_im = ax
@@ -295,7 +296,7 @@ def plot_UD_SD_PARAMS(PARAMS, ax=None):
 
 def SD_peak_position(Gamma, alpha, w_0):
     Omega = np.linspace(0,w_0*50,10000)
-    J_w = np.array([J_underdamped(w, alpha, w_0, Gamma=0.) for w in Omega])
+    J_w = np.array([J_underdamped(w, alpha, w_0, Gamma=Gamma) for w in Omega])
     return Omega[np.argmax(J_w)]
 
 

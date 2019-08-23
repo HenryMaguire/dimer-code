@@ -111,7 +111,7 @@ def L_weak_phonon_auto(H_vib, A, w_0, Gamma, T_EM, J, principal=False,
 def _J_underdamped(omega, Gamma, omega_0, alpha=0.):
     return alpha*Gamma*(omega_0**2)*omega/(((omega_0**2)-(omega**2))**2+(Gamma*omega)**2)
 
-def weak_phonon(H_sub, PARAMS, secular=False, shift=True):
+def weak_phonon(H_sub, PARAMS, secular=False, shift=True, tol=1e-6):
     c_ops = PARAMS['coupling_ops']
     L = 0
     J = _J_underdamped
@@ -128,7 +128,7 @@ def weak_phonon(H_sub, PARAMS, secular=False, shift=True):
                         PARAMS['Gamma_'+str(i+1)], PARAMS['T_'+str(i+1)], J,
                         principal=True, silent=True, alpha=PARAMS['alpha_'+str(i+1)]) # need principal value parts
             L+= L_"""
-    L = L_wc_analytic(PARAMS, shift=shift, tol=1e-6)
+    L = L_wc_analytic(PARAMS, shift=shift, tol=tol)
     return L
 
 def L_sec_wc_SES(args, silent=True):

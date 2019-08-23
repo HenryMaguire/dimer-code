@@ -280,13 +280,14 @@ def get_H_and_L_RWA(PARAMS, silent=False, threshold=0.):
         print(("Chopping reduced the sparsity from {:0.3f}% to {:0.3f}%".format(spar0, sparse_percentage(L))))
     return H, L, L_RWA, PARAMS
 
-def get_H_and_L_wc(H, PARAMS, silent=True, secular_phonon=False, shift=True):
+def get_H_and_L_wc(H, PARAMS, silent=True, secular_phonon=False, 
+                                shift=True, tol=1e-6):
     import optical as opt
     import weak_phonons as wp
     imp.reload(wp)
     imp.reload(opt)
     ti = time.time()
-    L_s = wp.weak_phonon(H, PARAMS, secular=secular_phonon)
+    L_s = wp.weak_phonon(H, PARAMS, secular=secular_phonon, tol=tol)
     L_ns = copy.deepcopy(L_s)
     mu = PARAMS['mu']
     sigma = sigma_m1 + mu*sigma_m2
@@ -295,7 +296,7 @@ def get_H_and_L_wc(H, PARAMS, silent=True, secular_phonon=False, shift=True):
         #opt.L_BMME(H, sigma, PARAMS, ME_type='nonsecular', site_basis=True, silent=silent)
         L_s +=  wp.L_sec_wc_SES(PARAMS, silent=silent)
         #L += opt.L_BMME(H, sigma, PARAMS, ME_type='secular', site_basis=True, silent=silent)
-    #H += 0.5*pi*(PARAMS['alpha_1']*sigma_m1.dag()*sigma_m1 + PARAMS['alpha_2']*sigma_m2.dag()*sigma_m2)
+    H += 0.5*pi*(PARAMS['alpha_1']*sigma_m1.dag()*sigma_m1 + PARAMS['alpha_2']*sigma_m2.dag()*sigma_m2)
     if not silent:
         print("WC non-secular and secular dissipators calculated in {} seconds".format(time.time() - ti))
     return H, L_ns, L_s
